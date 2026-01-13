@@ -7,7 +7,7 @@ import asyncio, sys, secrets, string
 login_username = "mythic_admin"
 login_password = "" # Add password
 login_server_ip = "" # Add server IP address
-login_server_port = 7443
+login_server_port = 7443 # Mythic Web UI Port
 
 # logs into mythic to begin user creation
 async def login(username: str, password: str, server_ip: str, server_port: int):
