@@ -70,5 +70,5 @@ admin_passwd=$(grep "MYTHIC_ADMIN_PASSWORD" /opt/Mythic/.env | cut -d '"' -f 2)
 echo "Use mythic_admin:$admin_passwd to connect to the C2 server!";
 
 echo "Dumping mythic_admin creds to creds.txt";
-echo "mythic_admin:$admin_password" > creds.txt;
+echo "mythic_admin:$admin_password" > $PWD/creds.txt;
 exit 0;
