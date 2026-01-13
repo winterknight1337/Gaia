@@ -11,7 +11,7 @@ login_server_port = 7443 # Mythic Web UI Port
 
 http_callback_url = "" # Add a callback url, redirector or direct
 http_callback_port = 80 # Mythic listens on 80 for callbacks by default over HTTP
-http_callback_killdate = ""
+http_callback_killdate = "" # YYYY-MM-DD date that will terminate the executables
 
 # logs into mythic to begin user creation
 async def login(username: str, password: str, server_ip: str, server_port: int):
