@@ -5,15 +5,23 @@
 4. User credentials will be created in a file called `users.txt`
 5. Populate the global variables of `create_users.py` with those applicable to your mythic install
 6. Run create_users.py with python
+7. Run create_payloads.py with python
 
 # Acknowledgements
-[@its-a-feature](https://github.com/its-a-feature) for creating Mythic and the docker install scripts this project uses.
+[@its-a-feature](https://github.com/its-a-feature) for creating Mythic, the docker install scripts this project uses (that I shamelessly stole from the Mythic repo), and the jupyter notebooks that I based most of these scripts on.
 
 # TODO
+- [ ] Script out operation creation
 - [ ] Figure out webhooks
-- [ ] Pre-compile the following
-    - [ ] Apollo (Windows) executable
-    - [ ] Apollo (Windows) shellcode
-    - [ ] Poseidon (Linux and macOS) executable
+- [x] Pre-compile the following
+    - [x] Apollo (Windows) Windows PE executable
+    - [x] Apollo (Windows) Windows Service executable
+    - [x] Apollo (Windows) shellcode
+    - [x] Poseidon (Linux x86) executables
+    - [x] Poseidon (Linux ARM) executables
+    - [x] Poseidon (MacOS ARM) executables
+    - [ ] Athena payloads
 - [x] Figure out some sort of automated user provisioning?
+- [ ] Major refactor to clean this mess up
+    - [ ] Work on a real CLI
 - [ ] Work on a defender-bypassing Apollo shellcode loader (separate repo)
