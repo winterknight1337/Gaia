@@ -53,6 +53,9 @@ $PWD/mythic-cli install github https://github.com/MythicAgents/Apollo.git;
 echo "Installing Poseidon (Linux Agent)!";
 $PWD/mythic-cli install github https://github.com/MythicAgents/poseidon.git;
 
+echo "Installing Athena (Cross-Platform Agent)";
+$PWD/mythic-cli install github https://github.com/MythicAgents/Athena.git;
+
 echo "Installing http C2 profile!";
 $PWD/mythic-cli install github https://github.com/MythicC2Profiles/http.git;
 
