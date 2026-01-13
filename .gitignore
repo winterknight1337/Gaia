@@ -210,3 +210,7 @@ __marimo__/
 Include/
 Scripts/
 pyvenv.cfg
+
+# User account related files
+users.txt
+creds.txt
