@@ -68,4 +68,7 @@ sudo $PWD/mythic-cli install github https://github.com/MythicAgents/forge.git;
 echo "Mythic webserver hosted and ready via HTTPS on port 7443!";
 admin_passwd=$(grep "MYTHIC_ADMIN_PASSWORD" /opt/Mythic/.env | cut -d '"' -f 2)
 echo "Use mythic_admin:$admin_passwd to connect to the C2 server!";
+
+echo "Dumping mythic_admin creds to creds.txt";
+echo "mythic_admin:$admin_password" > creds.txt;
 exit 0;
