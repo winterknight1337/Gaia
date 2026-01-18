@@ -118,10 +118,9 @@ async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, p
             {
                 "name": "egress_order",
                 "value": [
-                    "httpx"
                     "http",
+                    "httpx",
                     "websocket",
-                    "dynamichttp",
                 ]
             },
             {
