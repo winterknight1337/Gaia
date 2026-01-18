@@ -27,7 +27,7 @@ async def login(username: str, password: str, server_ip: str, server_port: int):
 
 # Creates chonky apollo payloads based on what's passed to this function. 
 # Parameter names and values are taken directly from the payload builder in the web UI
-async def create_apollo_payload(mythic_instance: mythic, payload_type: str, payload_name: str, payload_description: str):
+async def create_apollo_payload(mythic_instance: mythic, output_type: str, payload_name: str, payload_description: str):
     payload_response = await mythic.create_payload(
         mythic=mythic_instance,
         payload_type_name="apollo",
@@ -49,7 +49,7 @@ async def create_apollo_payload(mythic_instance: mythic, payload_type: str, payl
         build_parameters=[
             {
                 "name": "output_type",
-                "value": payload_type
+                "value": output_type
             },
             {
                 "name": "debug",
