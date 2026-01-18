@@ -56,6 +56,14 @@ async def create_apollo_payload(mythic_instance: mythic, payload_type: str, payl
                 "value": False
             },
             {
+                "name": "shellcode_bypass",
+                "value": "Continue on fail"
+            },
+            {
+                "name": "shellcode_format",
+                "value": "Binary"
+            },
+            {
                 "name": "adjust_filename",
                 "value": False
             }
