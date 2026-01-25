@@ -11,7 +11,7 @@
 [@its-a-feature](https://github.com/its-a-feature) for creating Mythic, the docker install scripts this project uses (that I shamelessly stole from the Mythic repo), and the jupyter notebooks that I based most of these scripts on.
 
 # TODO
-- [ ] Script out operation creation
+- [x] Script out operation creation
 - [ ] Figure out webhooks
 - [x] Pre-compile the following
     - [x] Apollo (Windows) Windows PE executable
