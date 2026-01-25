@@ -20,7 +20,7 @@
     - [x] Poseidon (Linux x86) executables
     - [x] Poseidon (Linux ARM) executables
     - [x] Poseidon (MacOS ARM) executables
-    - [ ] Athena payloads
+    - [x] Athena payloads
 - [x] Figure out some sort of automated user provisioning?
 - [ ] Major refactor to clean this mess up
     - [ ] Work on a real CLI
