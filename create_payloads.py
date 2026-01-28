@@ -41,7 +41,7 @@ async def create_apollo_payload(mythic_instance: mythic, output_type: str, paylo
                 "callback_host": str(http_callback_url),
                 "callback_port": str(http_callback_port),
                 "callback_interval": "2",
-                "callback_jitter": "25",
+                "callback_jitter": "70",
                 "killdate": str(http_callback_killdate),
                },
             },
@@ -89,7 +89,7 @@ async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, p
                 "callback_host": str(http_callback_url),
                 "callback_port": str(http_callback_port),
                 "callback_interval": "2",
-                "callback_jitter": "25",
+                "callback_jitter": "70",
                 "killdate": str(http_callback_killdate),
                },
             },
@@ -156,7 +156,7 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
                 "callback_host": str(http_callback_url),
                 "callback_port": str(http_callback_port),
                 "callback_interval": "2",
-                "callback_jitter": "25",
+                "callback_jitter": "70",
                 "killdate": str(http_callback_killdate),
                },
             },
@@ -211,8 +211,6 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
         return_on_complete=False
     )
     return payload_response
-
-
 
 
 def main():
