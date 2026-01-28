@@ -12,7 +12,7 @@
 
 # TODO
 - [x] Script out operation creation
-- [ ] Figure out webhooks
+- [x] Figure out webhooks
 - [x] Pre-compile the following
     - [x] Apollo (Windows) Windows PE executable
     - [x] Apollo (Windows) Windows Service executable
