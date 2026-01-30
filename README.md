@@ -9,6 +9,7 @@
 
 # Acknowledgements
 [@its-a-feature](https://github.com/its-a-feature) for creating Mythic, the docker install scripts this project uses (that I shamelessly stole from the Mythic repo), and the jupyter notebooks that I based most of these scripts on.
+[@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for pointing me to some resources to get this project off the ground. 
 
 # TODO
 - [x] Script out operation creation
