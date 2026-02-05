@@ -1,17 +1,22 @@
 #!/usr/bin/python3
 
 from mythic import mythic
-import asyncio, sys
+from dotenv import load_dotenv
+import asyncio, sys, os
 
-# Modify these parameters until I develop a real CLI
-login_username = "mythic_admin"
-login_password = "" # Add password
-login_server_ip = "" # Add server IP address
-login_server_port = 7443 # Mythic Web UI Port
+# Load the environment file .env
+load_dotenv()
 
-http_callback_url = "" # Add a callback url, redirector or direct
-http_callback_port = 80 # Mythic listens on 80 for callbacks by default over HTTP
-http_callback_killdate = "" # YYYY-MM-DD date that will terminate the executables
+# Mythic login creds
+login_username = os.getenv("MYTHIC_LOGIN_USERNAME")
+login_password = os.getenv("MYTHIC_LOGIN_PASSWORD")
+login_server_ip = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
+login_server_port = os.getenv("MYTHIC_LOGIN_SERVER_PORT")
+
+# HTTP C2 Profile information
+http_callback_url = os.getenv("MYTHIC_HTTP_CALLBACK_URL")
+http_callback_port = os.getenv("MYTHIC_HTTP_CALLBACK_PORT")
+http_callback_killdate = os.getenv("MYTHIC_HTTP_CALLBACK_KILLDATE")
 
 # logs into mythic to begin user creation
 async def login(username: str, password: str, server_ip: str, server_port: int):

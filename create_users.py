@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 
 from mythic import mythic
-import asyncio, sys, secrets, string
+from dotenv import load_dotenv
+import asyncio, os, sys, secrets, string
 
-# Modify these parameters until I develop a real CLI
-login_username = "mythic_admin"
-login_password = "" # Add password
-login_server_ip = "" # Add server IP address
-login_server_port = 7443 # Mythic Web UI Port
+# Load the environmnet file .env
+load_dotenv()
+
+# Mythic login creds
+login_username = os.getenv("MYTHIC_LOGIN_USERNAME")
+login_password = os.getenv("MYTHIC_LOGIN_PASSWORD")
+login_server_ip = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
+login_server_port = os.getenv("MYTHIC_LOGIN_SERVER_PORT")
 operation_name = "" # Name for newly created operation
 
 # logs into mythic to begin user creation
