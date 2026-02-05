@@ -2,7 +2,7 @@
 
 from mythic import mythic
 from dotenv import load_dotenv
-import asyncio, sys, os
+import asyncio, os, sys
 
 # Load the environment file .env
 load_dotenv()
