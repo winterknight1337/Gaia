@@ -69,7 +69,7 @@ async def create_apollo_payload(mythic_instance: mythic, output_type: str, paylo
             }
         ],
         include_all_commands=True,
-        return_on_complete=False
+        return_on_complete=True
     )
     return payload_response
 
