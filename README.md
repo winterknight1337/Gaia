@@ -5,6 +5,7 @@
 4. Copy `.env-template` to `.env`
 5. Populate the values of `.env` with values of your choosing
 6. Execute the script that executes your desired set of actions
+7. **NOTE** for `create_operation.py` and `create_users.py` create a users.txt file
 
 # Acknowledgements
 [@its-a-feature](https://github.com/its-a-feature) for creating Mythic, the docker install scripts this project uses (that I shamelessly stole from the [Mythic repo](https://github.com/its-a-feature/Mythic)), and the jupyter notebooks that I based most of these scripts on.
