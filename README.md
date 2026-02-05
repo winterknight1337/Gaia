@@ -1,14 +1,13 @@
 # Usage Instructions
-1. Install the `mythic` package from pip (I highly recommend a virtual environemnt)
-2. Create a file called `users.txt` with the usernames you would like to provision
-3. Run install.sh as root on a debian, kali, or ubuntu box. It will install Mythic and create a default admin account
-4. User credentials will be created in a file called `users.txt`
-5. Populate the global variables of `create_users.py` with those applicable to your mythic install
-6. Run create_users.py with python
-7. Run create_payloads.py with python
+1. Create a and activate a python venv 
+2. Install requisite packages `pip install -r requirements.txt`
+3. Run `install.sh` as root on a debian, kali, or ubuntu box. It will install Mythic and create a default admin account on the box that executes `install.sh`
+4. Copy `.env-template` to `.env`
+5. Populate the values of `.env` with values of your choosing
+6. Execute the script that executes your desired set of actions
 
 # Acknowledgements
-[@its-a-feature](https://github.com/its-a-feature) for creating Mythic, the docker install scripts this project uses (that I shamelessly stole from the Mythic repo), and the jupyter notebooks that I based most of these scripts on.
+[@its-a-feature](https://github.com/its-a-feature) for creating Mythic, the docker install scripts this project uses (that I shamelessly stole from the [Mythic repo](https://github.com/its-a-feature/Mythic)), and the jupyter notebooks that I based most of these scripts on.
 [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for pointing me to some resources to get this project off the ground. 
 
 # TODO
