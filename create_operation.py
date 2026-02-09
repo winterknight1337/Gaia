@@ -2,6 +2,7 @@
 
 from mythic import mythic
 from dotenv import load_dotenv
+from utils.auth import *
 import asyncio, os, sys
 
 # Load the environment file .env
@@ -10,21 +11,9 @@ load_dotenv()
 # Mythic login creds
 login_username = os.getenv("MYTHIC_LOGIN_USERNAME")
 login_password = os.getenv("MYTHIC_LOGIN_PASSWORD")
-login_server_ip = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
+login_server_host = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
 login_server_port = os.getenv("MYTHIC_LOGIN_SERVER_PORT")
-
 operation_name = os.getenv("MYTHIC_OPERATION_NAME")
-
-# logs into mythic to begin user creation
-async def login(username: str, password: str, server_ip: str, server_port: int):
-    mythic_instance = await mythic.login(
-        username=username,
-        password=password,
-        server_ip=server_ip,
-        server_port=server_port,
-        timeout=-1
-    )
-    return mythic_instance
 
 async def create_operation(mythic_instance: mythic, operation_name: str):
     results = await mythic.create_operation(mythic=mythic_instance, operation_name=operation_name)
@@ -42,7 +31,7 @@ async def main():
         user_list = users.readlines()
 
     # Authenticate to Mythic
-    mythic_session = await login(username=login_username, password=login_password, server_ip=login_server_ip, server_port=login_server_port)
+    mythic_session = await mythic_login_with_user_creds(username=login_username, password=login_password, server_host=login_server_host, server_port=login_server_port)
     print(mythic_session)
 
     # Creates a new operation

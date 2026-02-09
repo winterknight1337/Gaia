@@ -2,6 +2,7 @@
 
 from mythic import mythic
 from dotenv import load_dotenv
+from utils.auth import *
 import asyncio, os, sys
 
 # Load the environment file .env
@@ -10,25 +11,13 @@ load_dotenv()
 # Mythic login creds
 login_username = os.getenv("MYTHIC_LOGIN_USERNAME")
 login_password = os.getenv("MYTHIC_LOGIN_PASSWORD")
-login_server_ip = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
+login_server_host = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
 login_server_port = os.getenv("MYTHIC_LOGIN_SERVER_PORT")
 
 # HTTP C2 Profile information
 http_callback_url = os.getenv("MYTHIC_HTTP_CALLBACK_URL")
 http_callback_port = os.getenv("MYTHIC_HTTP_CALLBACK_PORT")
 http_callback_killdate = os.getenv("MYTHIC_HTTP_CALLBACK_KILLDATE")
-
-# logs into mythic to begin user creation
-async def login(username: str, password: str, server_ip: str, server_port: int):
-    mythic_instance = await mythic.login(
-        username=username,
-        password=password,
-        server_ip=server_ip,
-        server_port=server_port,
-        timeout=-1,
-    )
-    return mythic_instance
-
 
 # Creates chonky apollo payloads based on what's passed to this function. 
 # Parameter names and values are taken directly from the payload builder in the web UI
@@ -220,7 +209,7 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
 
 async def main():
     # Authenticate to Mythic
-    mythic_session = await login(username=login_username, password=login_password, server_ip=login_server_ip, server_port=login_server_port)
+    mythic_session = await mythic_login_with_user_creds(username=login_username, password=login_password, server_host=login_server_host, server_port=login_server_port)
     print(mythic_session)
 
     # Create Apollo Executable
