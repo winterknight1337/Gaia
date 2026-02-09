@@ -36,21 +36,21 @@ async def add_operator_to_operation(mythic_instance: mythic, operation_name: str
     print(results)
     return results
 
-def main():
+async def main():
     # Read the usernames for the accounts that are to be assigned to the new operation
     with open("users.txt", "r") as users:
         user_list = users.readlines()
 
     # Authenticate to Mythic
-    mythic_session = asyncio.run(login(username=login_username, password=login_password, server_ip=login_server_ip, server_port=login_server_port))
+    mythic_session = await login(username=login_username, password=login_password, server_ip=login_server_ip, server_port=login_server_port)
     print(mythic_session)
 
     # Creates a new operation
-    asyncio.run(create_operation(mythic_session, operation_name))
+    await create_operation(mythic_session, operation_name)
 
     for i in user_list:
         # Strips whitespaces and newlines
         i = i.strip()
 
         # Assigns the operator to the new operation
-        asyncio.run(add_operator_to_operation(mythic_session, operation_name, i))
+        await add_operator_to_operation(mythic_session, operation_name, i)

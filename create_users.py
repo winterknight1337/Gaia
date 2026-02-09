@@ -42,13 +42,13 @@ async def create_operator(mythic_instance: mythic, username: str):
     print("Creds: " + credentials)
     return credentials
 
-def main():
+async def main():
     # Read the usernames for the accounts that are to be created
     with open("users.txt", "r") as users:
         user_list = users.readlines()
     
     # Authenticate to Mythic
-    mythic_session = asyncio.run(login(username=login_username, password=login_password, server_ip=login_server_ip, server_port=login_server_port))
+    mythic_session = await login(username=login_username, password=login_password, server_ip=login_server_ip, server_port=login_server_port)
     print(mythic_session)
 
     # Create a user account
@@ -57,7 +57,7 @@ def main():
         i = i.strip()
 
         # Actually creates the user
-        created_user = asyncio.run(create_operator(mythic_instance=mythic_session, username=i))
+        created_user = await create_operator(mythic_instance=mythic_session, username=i)
 
         # Dump creds to file
         with open("creds.txt", "a") as creds:
