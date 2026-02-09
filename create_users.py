@@ -63,5 +63,5 @@ async def main():
         with open("creds.txt", "a") as creds:
             creds.write(created_user + "\n")
 
-main()
+asyncio.run(main())
 sys.exit()

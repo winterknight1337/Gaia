@@ -54,3 +54,6 @@ async def main():
 
         # Assigns the operator to the new operation
         await add_operator_to_operation(mythic_session, operation_name, i)
+
+asyncio.run(main())
+sys.exit()
