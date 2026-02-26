@@ -6,7 +6,7 @@ global_parser = argparse.ArgumentParser(
     prog='gaia.py',
     description='Lightweight helper tool to deploy and manage mythic c2 installs.')
 global_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
-global_parser.add_argument('-p', '--mythic-port', nargs=1, metavar='', default=7443, help="port for admin interface on mythic server. Defaults to 7443.")
+global_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
 global_parser.add_argument('-aP', '--auth-password', nargs=1, metavar='', help='password for mythic user account')
 global_parser.add_argument('-aU', '--auth-user', nargs=1, metavar='', help='mythic user account to authenticate as')
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable SSL verification checks')
