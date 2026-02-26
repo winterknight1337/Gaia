@@ -4,13 +4,12 @@ import argparse, sys, asyncio
 global_parser = argparse.ArgumentParser(
     prog='gaia.py',
     description='Lightweight helper tool to deploy and manage mythic c2 installs.')
-global_parser.add_argument('-s', '--mythic-server', nargs=1, metavar='', help="fqdn or ip address for mythic server")
-global_parser.add_argument('-p', '--mythic-port', nargs=1, metavar='', help="port for admin interface on mythic server")
+global_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
+global_parser.add_argument('-p', '--mythic-port',  required=True, nargs=1, metavar='', help="port for admin interface on mythic server")
 
-
-subparsers = global_parser.add_subparsers(title='modules', help='')
 
 # 'Core' modules
+subparsers = global_parser.add_subparsers(title='modules', help='')
 # c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
