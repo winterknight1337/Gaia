@@ -32,10 +32,10 @@ user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide o
 # user_parser.add_argument('-uL', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
 
 # Operation Administration
-# operation_parser.add_argument('-o', '--operation', required=True, nargs='+', metavar='', help='specify operations to manage')
-# operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
-# operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
-# operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
+operation_parser.add_argument('-o', '--operation', required=True, nargs='+', metavar='', help='specify operations to manage')
+operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
+operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
+operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
 
 
 args = global_parser.parse_args()
@@ -68,6 +68,25 @@ async def main():
             users = args.users
             for i in users:
                 await utils.users.create_user(mythic_instance=mythic_session, username=i)
+
+    # Process operations
+    if args.subcommand == "operation":
+        import utils.operations
+
+        # user creation
+        if args.create == True:
+            operation = args.operation
+            for i in operation:
+                await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=i)
+
+        # user assignment to operation
+        if args.assign == True:
+            operation = args.operation
+            users = args.users
+            for i in operation:
+                for j in users:
+                    await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=i, username=j)
+
 
 if __name__ == '__main__':
      asyncio.run(main())
