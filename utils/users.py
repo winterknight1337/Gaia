@@ -8,7 +8,6 @@ import secrets, string
 def generate_password():
     valid_chars = string.ascii_letters + string.digits
     password = "".join(secrets.choice(valid_chars) for i in range(16))
-    print(password)
     return password
 
 
