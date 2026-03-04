@@ -1,19 +1,8 @@
 #!/usr/bin/python3
 
 from mythic import mythic
-from dotenv import load_dotenv
 from utils.auth import *
-import os, secrets, string
-
-# Load the environmnet file .env
-load_dotenv()
-
-# Mythic login creds
-login_username = os.getenv("MYTHIC_LOGIN_USERNAME")
-login_password = os.getenv("MYTHIC_LOGIN_PASSWORD")
-login_server_host = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
-login_server_port = os.getenv("MYTHIC_LOGIN_SERVER_PORT")
-
+import secrets, string
 
 # Generates a password with the secrets module
 def generate_password():
