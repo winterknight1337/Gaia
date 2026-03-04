@@ -1,5 +1,4 @@
 import argparse, sys, asyncio
-import utils.auth
 
 # Root options that are available across the whole application
 global_parser = argparse.ArgumentParser(
@@ -25,7 +24,7 @@ user_parser = subparsers.add_parser('users', help='manage mythic users')
 # user modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
-action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic')
+# action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic')
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
 
 # TODO implement the rest of these after getting basic POC out
@@ -41,6 +40,7 @@ async def main():
 
     # Authenticates to mythic if server, port, user, and password are specified
     if args.auth_user != None and args.auth_password != None and args.mythic_server != None and args.mythic_port != None:
+        import utils.auth
         auth_user = str(args.auth_user[0]).strip()
         auth_password = str(args.auth_password[0]).strip()
         mythic_host = str(args.mythic_server[0]).strip()
@@ -54,7 +54,13 @@ async def main():
         else:
             print("Unknown error in mythic authentication flow. Exiting!")
             sys.exit(1)
-
+    
+    # Create new users
+    if args.create == True:
+        import utils.users
+        users = args.users
+        for i in users:
+            await utils.users.create_user(mythic_instance=mythic_session, username=i)
 
 if __name__ == '__main__':
      asyncio.run(main())
