@@ -52,6 +52,3 @@ async def main():
         # Dump creds to file
         with open("creds.txt", "a") as creds:
             creds.write(created_user + "\n")
-
-asyncio.run(main())
-sys.exit()
