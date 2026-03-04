@@ -10,7 +10,6 @@ def generate_password():
     password = "".join(secrets.choice(valid_chars) for i in range(16))
     return password
 
-
 # Creates a new operator account and returns the credentials to dump to disk later
 async def create_user(mythic_instance: mythic, username: str):
     password = generate_password()
@@ -19,24 +18,3 @@ async def create_user(mythic_instance: mythic, username: str):
     print(results)
     print("Creds: " + credentials)
     return credentials
-
-async def main():
-    # Read the usernames for the accounts that are to be created
-    with open("users.txt", "r") as users:
-        user_list = users.readlines()
-    
-    # Authenticate to Mythic
-    mythic_session = await mythic_login_with_user_creds(username=login_username, password=login_password, server_host=login_server_host, server_port=login_server_port)
-    print(mythic_session)
-
-    # Create a user account
-    for i in user_list:
-        # Strips the trailing newline which prevented successful user logins and enables password dump to work correctly
-        i = i.strip()
-
-        # Actually creates the user
-        created_user = await create_user(mythic_instance=mythic_session, username=i)
-
-        # Dump creds to file
-        with open("creds.txt", "a") as creds:
-            creds.write(created_user + "\n")
