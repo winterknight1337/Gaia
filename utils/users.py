@@ -3,7 +3,7 @@
 from mythic import mythic
 from dotenv import load_dotenv
 from utils.auth import *
-import asyncio, os, sys, secrets, string
+import os, secrets, string
 
 # Load the environmnet file .env
 load_dotenv()
