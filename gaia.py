@@ -12,25 +12,31 @@ global_parser.add_argument('-aU', '--auth-user', nargs=1, metavar='', help='myth
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable SSL verification checks')
 
 # 'Core' modules
-subparsers = global_parser.add_subparsers(title='modules', help='')
+subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
 # auth_parser = subparsers.add_parser('auth', help='authenticate to mythic')
 # c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
-# operation_parser = subparsers.add_parser('operation', help='manage mythic operations')
+operation_parser = subparsers.add_parser('operation', help='manage mythic operations')
 # payload_parser = subparsers.add_parser('payloads', help='manage payloads')
 user_parser = subparsers.add_parser('users', help='manage mythic users')
 
 # user modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
-# action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic')
+# action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
-
 # TODO implement the rest of these after getting basic POC out
 # user_parser.add_argument('-oF', '--output-file', metavar='path/to/output', help='dumps newly created credentials to disk')
 # user_parser.add_argument('-oS', '--output-stdout', metavar='', help='sends newly created creds to stdout')
 # user_parser.add_argument('-uL', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
+
+# Operation Administration
+# operation_parser.add_argument('-o', '--operation', required=True, nargs='+', metavar='', help='specify operations to manage')
+# operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
+# operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
+# operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
+
 
 args = global_parser.parse_args()
 
@@ -56,11 +62,12 @@ async def main():
             sys.exit(1)
     
     # Create new users
-    if args.create == True:
+    if args.subcommand == "users":
         import utils.users
-        users = args.users
-        for i in users:
-            await utils.users.create_user(mythic_instance=mythic_session, username=i)
+        if args.create == True:
+            users = args.users
+            for i in users:
+                await utils.users.create_user(mythic_instance=mythic_session, username=i)
 
 if __name__ == '__main__':
      asyncio.run(main())
