@@ -4,7 +4,8 @@ import argparse, sys, asyncio
 global_parser = argparse.ArgumentParser(
     prog='gaia.py',
     description='Lightweight helper tool to deploy and manage mythic c2 installs.')
-# Going to be using this janky method until 
+
+# Going to be using this janky method until I get auth working properly.
 global_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
 global_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
 global_parser.add_argument('-aP', '--auth-password', nargs=1, metavar='', help='password for mythic user account')
@@ -61,9 +62,11 @@ async def main():
             print("Unknown error in mythic authentication flow. Exiting!")
             sys.exit(1)
     
-    # Create new users
+    # Manages users
     if args.subcommand == "users":
         import utils.users
+        
+        # Create new users
         if args.create == True:
             users = args.users
             for i in users:
@@ -73,13 +76,13 @@ async def main():
     if args.subcommand == "operation":
         import utils.operations
 
-        # user creation
+        # Creates new operation
         if args.create == True:
             operation = args.operation
             for i in operation:
                 await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=i)
 
-        # user assignment to operation
+        # Assign users to operations
         if args.assign == True:
             operation = args.operation
             users = args.users
