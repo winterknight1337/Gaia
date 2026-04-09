@@ -5,16 +5,9 @@ global_parser = argparse.ArgumentParser(
     prog='gaia.py',
     description='Lightweight helper tool to deploy and manage mythic c2 installs.')
 
-# Going to be using this janky method until I get auth working properly.
-global_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
-global_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
-global_parser.add_argument('-aP', '--auth-password', nargs=1, metavar='', help='password for mythic user account')
-global_parser.add_argument('-aU', '--auth-user', nargs=1, metavar='', help='mythic user account to authenticate as')
-global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable SSL verification checks')
-
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
-# auth_parser = subparsers.add_parser('auth', help='authenticate to mythic')
+auth_parser = subparsers.add_parser('auth', help='authenticate to mythic')
 # c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
@@ -22,11 +15,21 @@ operation_parser = subparsers.add_parser('operation', help='manage mythic operat
 # payload_parser = subparsers.add_parser('payloads', help='manage payloads')
 user_parser = subparsers.add_parser('users', help='manage mythic users')
 
-# user modules
+# Auth modules
+auth_parser.add_argument('-a', '--api', action='store_true', help='Authenticates to mythic with a given account and creates an api key')
+auth_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
+auth_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
+auth_parser.add_argument('-aP', '--auth-password', nargs=1, metavar='', help='password for mythic user account')
+auth_parser.add_argument('-aU', '--auth-user', nargs=1, metavar='', help='mythic user account to authenticate as')
+auth_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
+
+# User modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
+
 # action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
+
 # TODO implement the rest of these after getting basic POC out
 # user_parser.add_argument('-oF', '--output-file', metavar='path/to/output', help='dumps newly created credentials to disk')
 # user_parser.add_argument('-oS', '--output-stdout', metavar='', help='sends newly created creds to stdout')
@@ -43,24 +46,31 @@ args = global_parser.parse_args()
 
 async def main():
     global_parser.print_help()
-    user_parser.print_help()
+    auth_parser.print_help()
 
-    # Authenticates to mythic if server, port, user, and password are specified
-    if args.auth_user != None and args.auth_password != None and args.mythic_server != None and args.mythic_port != None:
+    if args.subcommand == "auth":
         import utils.auth
-        auth_user = str(args.auth_user[0]).strip()
-        auth_password = str(args.auth_password[0]).strip()
-        mythic_host = str(args.mythic_server[0]).strip()
-        mythic_port = int(args.mythic_port[0])
+        
+        # Authenticates to mythic if server, port, user, and password are specified
+        if args.auth_user != None and args.auth_password != None and args.mythic_server != None and args.mythic_port != None:
+            auth_user = str(args.auth_user[0]).strip()
+            auth_password = str(args.auth_password[0]).strip()
+            mythic_host = str(args.mythic_server[0]).strip()
+            mythic_port = int(args.mythic_port[0])
 
-        if args.no_ssl == False:
-            mythic_session = await utils.auth.mythic_login_with_user_creds(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
+            if args.no_ssl == False:
+                mythic_session = await utils.auth.mythic_login_with_user_creds(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
 
-        elif args.no_ssl == True:
-            mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
-        else:
-            print("Unknown error in mythic authentication flow. Exiting!")
-            sys.exit(1)
+            elif args.no_ssl == True:
+                mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
+            else:
+                print("Unknown error in mythic authentication flow. Exiting!")
+                sys.exit(1)
+
+        if args.api == True:
+            # Create an API key for the current user
+            api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
+
     
     # Manages users
     if args.subcommand == "users":

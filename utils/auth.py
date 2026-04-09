@@ -43,3 +43,8 @@ async def mythic_login_with_api_no_ssl(api_token: str, server_host: str, server_
         ssl=False
     )
     return mythic_instance
+
+async def mythic_get_api_token(mythic_instance:mythic):
+    api_token = await mythic.create_apitoken(mythic=mythic_instance)
+    print(api_token)
+    return api_token
