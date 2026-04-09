@@ -104,6 +104,7 @@ async def main():
 
                 with open(".env", "w") as file:
                     file.writelines(data)
+        sys.exit(0)
     
     # Manages users
     if args.subcommand == "users":
@@ -114,6 +115,8 @@ async def main():
             users = args.users
             for i in users:
                 await utils.users.create_user(mythic_instance=mythic_session, username=i)
+
+        sys.exit(0)
 
     # Process operations
     if args.subcommand == "operation":
@@ -132,6 +135,8 @@ async def main():
             for i in operation:
                 for j in users:
                     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=i, username=j)
+
+        sys.exit(0)
 
 
 if __name__ == '__main__':
