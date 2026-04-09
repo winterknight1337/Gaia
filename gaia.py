@@ -1,4 +1,8 @@
-import argparse, sys, asyncio
+import argparse, sys, os, asyncio, dotenv, shutil
+
+# Load environment variables first
+if os.path.isfile(".env"):
+    dotenv.load_dotenv()
 
 # Root options that are available across the whole application
 global_parser = argparse.ArgumentParser(
@@ -46,7 +50,6 @@ args = global_parser.parse_args()
 
 async def main():
     global_parser.print_help()
-    auth_parser.print_help()
 
     if args.subcommand == "auth":
         import utils.auth
@@ -71,6 +74,36 @@ async def main():
             # Create an API key for the current user
             api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
+            # Dumps API key and mythic connection information into .env
+            if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
+                import utils.env
+
+                shutil.copy(".env-template", ".env")
+
+                with open(".env", "r") as file:
+                    data = file.readlines()
+                
+                for i in range(len(data)):
+                    if "MYTHIC_LOGIN_USERNAME" in data[i]:
+                        data[i] = utils.env.populate_dotenv_var_string(data[i], auth_user)
+                    
+                    elif "MYTHIC_LOGIN_PASSWORD" in data[i]:
+                        data[i] = utils.env.populate_dotenv_var_string(data[i], auth_password)
+
+                    elif "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
+                        data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
+
+                    elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
+                        data[i] = utils.env.populate_dotenv_var_int(data[i], mythic_port)
+
+                    elif "MYTHIC_API_KEY" in data[i]:
+                        data[i] = utils.env.populate_dotenv_var_string(data[i], api_token)
+
+                    else:
+                        pass
+
+                with open(".env", "w") as file:
+                    file.writelines(data)
     
     # Manages users
     if args.subcommand == "users":
