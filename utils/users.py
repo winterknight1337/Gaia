@@ -13,6 +13,6 @@ def generate_password():
 # Creates a new operator account and returns the credentials to dump to disk later
 async def create_user(mythic_instance: mythic, username: str):
     password = generate_password()
-    results = await mythic.create_operator(mythic=mythic_instance, username=username, password=password)
+    await mythic.create_operator(mythic=mythic_instance, username=username, password=password)
     credentials = username + ":" + password
     return credentials
