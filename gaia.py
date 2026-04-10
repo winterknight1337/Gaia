@@ -2,7 +2,9 @@ import argparse, sys, os, asyncio, dotenv, shutil
 
 # Load environment variables first
 if os.path.isfile(".env"):
-    dotenv.load_dotenv()
+    config = dotenv.dotenv_values(".env")
+
+#################################################################### CLI PARSING ####################################################################
 
 # Root options that are available across the whole application
 global_parser = argparse.ArgumentParser(
@@ -48,6 +50,9 @@ operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='prov
 
 args = global_parser.parse_args()
 
+##################################################################  END CLI PARSING ##################################################################
+
+
 async def main():
     global_parser.print_help()
 
@@ -66,9 +71,9 @@ async def main():
 
             elif args.no_ssl == True:
                 mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
-            else:
-                print("Unknown error in mythic authentication flow. Exiting!")
-                sys.exit(1)
+        else:
+            print("Unknown error in mythic authentication flow. Exiting!")
+            sys.exit(1)
 
         if args.api == True:
             # Create an API key for the current user
