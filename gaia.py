@@ -33,7 +33,6 @@ auth_parser.add_argument('-aU', '--auth-user', required=True, nargs=1, metavar='
 # User modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
-
 # action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
 
