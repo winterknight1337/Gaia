@@ -55,8 +55,9 @@ args = global_parser.parse_args()
 
 
 async def main():
+    import utils.auth
     if args.subcommand == "auth":
-        import utils.auth, utils.env
+        import utils.env
         
         # Authenticates to mythic if server, port, user, and password are specified
         auth_user = str(args.auth_user[0]).strip()
@@ -106,11 +107,17 @@ async def main():
             file.writelines(data)
         sys.exit(0)
     
+    # Authenticates to mythic with API key if auth is not specified
+    api_key = config["MYTHIC_API_KEY"]
+    mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
+    mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
+    mythic_session = await utils.auth.mythic_login_with_api(api_token=api_key, server_host=mythic_host, server_port=mythic_port)
+
     # Manages users
     if args.subcommand == "users":
         import utils.users
         
-        # Create new users
+        # Create new users before toggling them as active
         if args.create == True:
             users = args.users
             for i in users:
