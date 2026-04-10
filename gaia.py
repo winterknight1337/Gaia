@@ -25,8 +25,8 @@ user_parser = subparsers.add_parser('users', help='manage mythic users')
 auth_parser.add_argument('-a', '--api', action='store_true', help='Authenticates to mythic with a given account and creates an api key')
 auth_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
 auth_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
-auth_parser.add_argument('-aP', '--auth-password', nargs=1, metavar='', help='password for mythic user account')
-auth_parser.add_argument('-aU', '--auth-user', nargs=1, metavar='', help='mythic user account to authenticate as')
+auth_parser.add_argument('-aP', '--auth-password', required=True, nargs=1, metavar='', help='password for mythic user account')
+auth_parser.add_argument('-aU', '--auth-user', required=True, nargs=1, metavar='', help='mythic user account to authenticate as')
 auth_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
 
 # User modules
@@ -54,61 +54,56 @@ args = global_parser.parse_args()
 
 
 async def main():
-    global_parser.print_help()
-
     if args.subcommand == "auth":
         import utils.auth
         
         # Authenticates to mythic if server, port, user, and password are specified
-        if args.auth_user != None and args.auth_password != None and args.mythic_server != None and args.mythic_port != None:
-            auth_user = str(args.auth_user[0]).strip()
-            auth_password = str(args.auth_password[0]).strip()
-            mythic_host = str(args.mythic_server[0]).strip()
-            mythic_port = int(args.mythic_port[0])
+        auth_user = str(args.auth_user[0]).strip()
+        auth_password = str(args.auth_password[0]).strip()
+        mythic_host = str(args.mythic_server[0]).strip()
+        mythic_port = int(args.mythic_port[0])
 
-            if args.no_ssl == False:
-                mythic_session = await utils.auth.mythic_login_with_user_creds(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
+        if args.no_ssl == False:
+            mythic_session = await utils.auth.mythic_login_with_user_creds(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
+        elif args.no_ssl == True:
+            mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
+        else:
+            print("Unknown error in SSL processing during mythic authentication flow. Exiting!")
+            sys.exit(1)
 
-            elif args.no_ssl == True:
-                mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
-            else:
-                print("Unknown error in SSL processing during mythic authentication flow. Exiting!")
-                sys.exit(1)
+        # Create an API key for the current user
+        api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
-        if args.api == True:
-            # Create an API key for the current user
-            api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
+        # Dumps API key and mythic connection information into .env
+        if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
+            import utils.env
 
-            # Dumps API key and mythic connection information into .env
-            if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
-                import utils.env
+            shutil.copy(".env-template", ".env")
 
-                shutil.copy(".env-template", ".env")
-
-                with open(".env", "r") as file:
-                    data = file.readlines()
+            with open(".env", "r") as file:
+                data = file.readlines()
+            
+            for i in range(len(data)):
+                if "MYTHIC_LOGIN_USERNAME" in data[i]:
+                    data[i] = utils.env.populate_dotenv_var_string(data[i], auth_user)
                 
-                for i in range(len(data)):
-                    if "MYTHIC_LOGIN_USERNAME" in data[i]:
-                        data[i] = utils.env.populate_dotenv_var_string(data[i], auth_user)
-                    
-                    elif "MYTHIC_LOGIN_PASSWORD" in data[i]:
-                        data[i] = utils.env.populate_dotenv_var_string(data[i], auth_password)
+                elif "MYTHIC_LOGIN_PASSWORD" in data[i]:
+                    data[i] = utils.env.populate_dotenv_var_string(data[i], auth_password)
 
-                    elif "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
-                        data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
+                elif "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
+                    data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
 
-                    elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
-                        data[i] = utils.env.populate_dotenv_var_int(data[i], mythic_port)
+                elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
+                    data[i] = utils.env.populate_dotenv_var_int(data[i], mythic_port)
 
-                    elif "MYTHIC_API_KEY" in data[i]:
-                        data[i] = utils.env.populate_dotenv_var_string(data[i], api_token)
+                elif "MYTHIC_API_KEY" in data[i]:
+                    data[i] = utils.env.populate_dotenv_var_string(data[i], api_token)
 
-                    else:
-                        pass
+                else:
+                    pass
 
-                with open(".env", "w") as file:
-                    file.writelines(data)
+            with open(".env", "w") as file:
+                file.writelines(data)
         sys.exit(0)
     
     # Manages users
