@@ -42,10 +42,13 @@ user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide o
 # user_parser.add_argument('-uL', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
 
 # Operation Administration
-operation_parser.add_argument('-o', '--operation', required=True, nargs='+', metavar='', help='specify operations to manage')
+operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specify operation to manage')
 operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
-operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
 operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
+
+action_operation_parser = operation_parser.add_mutually_exclusive_group()
+action_operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
+action_operation_parser.add_argument('-r', '--remove', action='store_true', help='removes users from an operations')
 
 
 args = global_parser.parse_args()
