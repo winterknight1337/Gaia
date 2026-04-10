@@ -120,7 +120,7 @@ async def main():
         operations = await utils.operations.get_operations(mythic_instance=mythic_session)
         default_operation = operations[0]
         
-        # Create new users before assigning them to default operation
+        # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
         if args.create == True:
             users = args.users
             for i in users:
