@@ -84,8 +84,8 @@ async def main():
                 data = file.readlines()
         
         # Loads .env to prep for population
-        elif os.path.isfile(".env"):
-            with open("env", "r") as file:
+        elif config != None:
+            with open(".env", "r") as file:
                 data = file.readlines()
 
         # Populates updated values for .env
