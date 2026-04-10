@@ -13,7 +13,7 @@ global_parser = argparse.ArgumentParser(
 
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
-auth_parser = subparsers.add_parser('auth', help='authenticate to mythic')
+auth_parser = subparsers.add_parser('auth', help='authenticate to mythic and dump api key to .env')
 # c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
@@ -56,7 +56,7 @@ args = global_parser.parse_args()
 
 async def main():
     if args.subcommand == "auth":
-        import utils.auth
+        import utils.auth, utils.env
         
         # Authenticates to mythic if server, port, user, and password are specified
         auth_user = str(args.auth_user[0]).strip()
@@ -77,29 +77,33 @@ async def main():
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
         # Dumps API key and mythic connection information into .env
+        # Copies .env-template to .env before population
         if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
-            import utils.env
-
             shutil.copy(".env-template", ".env")
-
             with open(".env", "r") as file:
                 data = file.readlines()
-            
-            for i in range(len(data)):
-                if "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
-                    data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
+        
+        # Loads .env to prep for population
+        elif os.path.isfile(".env"):
+            with open("env", "r") as file:
+                data = file.readlines()
 
-                elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
-                    data[i] = utils.env.populate_dotenv_var_int(data[i], mythic_port)
+        # Populates updated values for .env
+        for i in range(len(data)):
+            if "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
+                data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
 
-                elif "MYTHIC_API_KEY" in data[i]:
-                    data[i] = utils.env.populate_dotenv_var_string(data[i], api_token)
+            elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
+                data[i] = utils.env.populate_dotenv_var_int(data[i], mythic_port)
 
-                else:
-                    pass
+            elif "MYTHIC_API_KEY" in data[i]:
+                data[i] = utils.env.populate_dotenv_var_string(data[i], api_token)
 
-            with open(".env", "w") as file:
-                file.writelines(data)
+            else:
+                pass
+
+        with open(".env", "w") as file:
+            file.writelines(data)
         sys.exit(0)
     
     # Manages users
