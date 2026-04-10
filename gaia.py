@@ -71,9 +71,9 @@ async def main():
 
             elif args.no_ssl == True:
                 mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
-        else:
-            print("Unknown error in mythic authentication flow. Exiting!")
-            sys.exit(1)
+            else:
+                print("Unknown error in SSL processing during mythic authentication flow. Exiting!")
+                sys.exit(1)
 
         if args.api == True:
             # Create an API key for the current user
