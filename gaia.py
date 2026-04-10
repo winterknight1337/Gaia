@@ -64,7 +64,7 @@ async def main():
         mythic_host = str(args.mythic_server[0]).strip()
         mythic_port = int(args.mythic_port[0])
 
-        # Auth according to SSL specification
+        # Auth according to SSL input
         if args.no_ssl == False:
             mythic_session = await utils.auth.mythic_login_with_user_creds(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
         elif args.no_ssl == True:
