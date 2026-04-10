@@ -21,13 +21,14 @@ operation_parser = subparsers.add_parser('operation', help='manage mythic operat
 # payload_parser = subparsers.add_parser('payloads', help='manage payloads')
 user_parser = subparsers.add_parser('users', help='manage mythic users')
 
+# Global modules
+global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
+
 # Auth modules
-auth_parser.add_argument('-a', '--api', action='store_true', help='Authenticates to mythic with a given account and creates an api key')
 auth_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
 auth_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
 auth_parser.add_argument('-aP', '--auth-password', required=True, nargs=1, metavar='', help='password for mythic user account')
 auth_parser.add_argument('-aU', '--auth-user', required=True, nargs=1, metavar='', help='mythic user account to authenticate as')
-auth_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
 
 # User modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
@@ -63,6 +64,7 @@ async def main():
         mythic_host = str(args.mythic_server[0]).strip()
         mythic_port = int(args.mythic_port[0])
 
+        # Auth according to SSL specification
         if args.no_ssl == False:
             mythic_session = await utils.auth.mythic_login_with_user_creds(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
         elif args.no_ssl == True:
