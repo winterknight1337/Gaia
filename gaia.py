@@ -84,13 +84,7 @@ async def main():
                 data = file.readlines()
             
             for i in range(len(data)):
-                if "MYTHIC_LOGIN_USERNAME" in data[i]:
-                    data[i] = utils.env.populate_dotenv_var_string(data[i], auth_user)
-                
-                elif "MYTHIC_LOGIN_PASSWORD" in data[i]:
-                    data[i] = utils.env.populate_dotenv_var_string(data[i], auth_password)
-
-                elif "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
+                if "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
                     data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
 
                 elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
