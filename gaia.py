@@ -114,13 +114,18 @@ async def main():
 
     # Manages users
     if args.subcommand == "users":
-        import utils.users
+        import utils.users, utils.operations
+
+        # Get current operations to prepare to assign a default for a new user
+        operations = await utils.operations.get_operations(mythic_instance=mythic_session)
+        default_operation = operations[0]
         
-        # Create new users before toggling them as active
+        # Create new users before assigning them to default operation
         if args.create == True:
             users = args.users
             for i in users:
                 await utils.users.create_user(mythic_instance=mythic_session, username=i)
+                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=default_operation["name"], username=i)
 
         sys.exit(0)
 
