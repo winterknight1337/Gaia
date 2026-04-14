@@ -51,6 +51,9 @@ action_operation_parser.add_argument('-a', '--assign', action='store_true', help
 action_operation_parser.add_argument('-r', '--remove', action='store_true', help='removes users from an operations')
 
 # Payload Modules
+payload_parser.add_argument('--apollo', action='store_true', help='build apollo payloads')
+payload_parser.add_argument('--athena', action='store_true', help='build athena payloads')
+payload_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
 
 args = global_parser.parse_args()
 
