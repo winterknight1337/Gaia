@@ -80,33 +80,10 @@ async def main():
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
         # Dumps API key and mythic connection information into .env
-        # Copies .env-template to .env before population if .env does not currently exist
-        if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
-            shutil.copy(".env-template", ".env")
-            with open(".env", "r") as file:
-                data = file.readlines()
-        
-        # Loads .env to prep for population
-        elif config != None:
-            with open(".env", "r") as file:
-                data = file.readlines()
+        utils.env.modify_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
+        utils.env.modify_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
+        utils.env.modify_env("MYTHIC_API_KEY", api_token)
 
-        # Populates updated values for .env
-        for i in range(len(data)):
-            if "MYTHIC_LOGIN_SERVER_HOST" in data[i]:
-                data[i] = utils.env.populate_dotenv_var_string(data[i], mythic_host)
-
-            elif "MYTHIC_LOGIN_SERVER_PORT" in data[i]:
-                data[i] = utils.env.populate_dotenv_var_int(data[i], mythic_port)
-
-            elif "MYTHIC_API_KEY" in data[i]:
-                data[i] = utils.env.populate_dotenv_var_string(data[i], api_token)
-
-            else:
-                pass
-
-        with open(".env", "w") as file:
-            file.writelines(data)
         sys.exit(0)
     
     # Authenticates to mythic with API key if auth is not specified
@@ -142,7 +119,7 @@ async def main():
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
-            utils.env.modify_env("MYTHIC_OPERATION_NAME", operation, ".env-template", )
+            utils.env.modify_env("MYTHIC_OPERATION_NAME", operation)
 
         # Assign users to operations
         if args.assign == True:
