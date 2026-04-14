@@ -14,7 +14,7 @@ global_parser = argparse.ArgumentParser(
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
 auth_parser = subparsers.add_parser('auth', help='authenticate to mythic and dump api key to .env')
-# c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
+c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
 operation_parser = subparsers.add_parser('operation', help='manage mythic operations')
@@ -41,7 +41,7 @@ user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide o
 # user_parser.add_argument('-oS', '--output-stdout', metavar='', help='sends newly created creds to stdout')
 # user_parser.add_argument('-uL', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
 
-# Operation Administration
+# Operation modules
 operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specify operation to manage')
 operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
 operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
@@ -50,6 +50,7 @@ action_operation_parser = operation_parser.add_mutually_exclusive_group()
 action_operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
 action_operation_parser.add_argument('-r', '--remove', action='store_true', help='removes users from an operations')
 
+# C2 Profile modules
 
 args = global_parser.parse_args()
 
