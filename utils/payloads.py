@@ -1,23 +1,4 @@
-#!/usr/bin/python3
-
 from mythic import mythic
-from dotenv import load_dotenv
-from utils.auth import *
-import asyncio, os, sys
-
-# Load the environment file .env
-load_dotenv()
-
-# Mythic login creds
-login_username = os.getenv("MYTHIC_LOGIN_USERNAME")
-login_password = os.getenv("MYTHIC_LOGIN_PASSWORD")
-login_server_host = os.getenv("MYTHIC_LOGIN_SERVER_HOST")
-login_server_port = os.getenv("MYTHIC_LOGIN_SERVER_PORT")
-
-# HTTP C2 Profile information
-http_callback_url = os.getenv("MYTHIC_HTTP_CALLBACK_URL")
-http_callback_port = os.getenv("MYTHIC_HTTP_CALLBACK_PORT")
-http_callback_killdate = os.getenv("MYTHIC_HTTP_CALLBACK_KILLDATE")
 
 # Creates chonky apollo payloads based on what's passed to this function. 
 # Parameter names and values are taken directly from the payload builder in the web UI
@@ -205,56 +186,3 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
         return_on_complete=False
     )
     return payload_response
-
-
-async def main():
-    # Authenticate to Mythic
-    mythic_session = await mythic_login_with_user_creds(username=login_username, password=login_password, server_host=login_server_host, server_port=login_server_port)
-    print(mythic_session)
-
-    # Create Apollo Executable
-    payload_creation = await create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name="scoringengine.exe", payload_description="Windows x64 PE")
-    print(payload_creation)
-
-    # Create Apollo Service Executable
-    payload_creation = await create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name="scoringsvc.exe", payload_description="Windows x64 Service EXE")
-    print(payload_creation)
-
-    # Create Apollo Shellcode
-    payload_creation = await create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name="apollo.bin", payload_description="Windows x64 raw shellcode")
-    print(payload_creation)
-
-    # Create Poseidon Executable for Linux x64
-    payload_creation = await create_poseidon_payload(mythic_instance=mythic_session, os="Linux", arch="AMD_x64", payload_name="scoringengine", static_linking=True, payload_description="Linux AMD64 ELF")
-    print(payload_creation)
-
-    # Create Poseidon Executable for Linux ARM
-    payload_creation = await create_poseidon_payload(mythic_instance=mythic_session, os="Linux", arch="ARM_x64", payload_name="scoringengine", static_linking=True, payload_description="Linux ARM64 ELF")
-    print(payload_creation)
-
-    # Create Poseidon Executable for MacOS ARM (MacOS doesn't like statically compiled bins)
-    payload_creation = await create_poseidon_payload(mythic_instance=mythic_session, os="macOS", arch="ARM_x64", payload_name="scoringengine_macos", static_linking=False, payload_description="macOS ARM64")
-    print(payload_creation)
-
-    # Create Athena Windows Executable x64
-    payload_creation = await build_athena_payload(mythic_instance=mythic_session, os="Windows", arch="x64", output_type="binary", payload_name="scoringengine.exe", payload_description="Windows x64 PE")
-    print(payload_creation)
-
-    # Create Athena Windows Service Executable x64
-    payload_creation = await build_athena_payload(mythic_instance=mythic_session, os="Windows", arch="x64", output_type="windows service", payload_name="scoringsvc.exe", payload_description="Windows x64 Service EXE")
-    print(payload_creation)
-
-    # Create Athena Linux bin x64
-    payload_creation = await build_athena_payload(mythic_instance=mythic_session, os="Linux", arch="x64", output_type="binary", payload_name="scoringengine", payload_description="Linux AMD64 ELF")
-    print(payload_creation)
-
-    # Create Athena Linux bin arm64
-    payload_creation = await build_athena_payload(mythic_instance=mythic_session, os="Linux", arch="arm64", output_type="binary", payload_name="scoringengine", payload_description="Linux ARM64")
-    print(payload_creation)
-
-    # Create Athena MacOS bin arm64
-    payload_creation = await build_athena_payload(mythic_instance=mythic_session, os="Linux", arch="arm64", output_type="binary", payload_name="scoringengine", payload_description="macOS ARM64")
-    print(payload_creation)
-
-asyncio.run(main())
-sys.exit()
