@@ -80,7 +80,7 @@ async def main():
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
         # Dumps API key and mythic connection information into .env
-        # Copies .env-template to .env before population
+        # Copies .env-template to .env before population if .env does not currently exist
         if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
             shutil.copy(".env-template", ".env")
             with open(".env", "r") as file:
@@ -134,13 +134,15 @@ async def main():
 
     # Process operations
     if args.subcommand == "operation":
-        import utils.operations
+        import utils.operations, utils.env
 
         # Creates new operation
         if args.create == True:
-            operation = args.operation
-            for i in operation:
-                await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=i)
+            operation = str(args.operation[0]).strip()
+            await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
+
+            # Modify env to include new operation
+            utils.env.modify_env("MYTHIC_OPERATION_NAME", operation, ".env-template", )
 
         # Assign users to operations
         if args.assign == True:
