@@ -2,7 +2,7 @@ from mythic import mythic
 
 # Creates chonky apollo payloads based on what's passed to this function. 
 # Parameter names and values are taken directly from the payload builder in the web UI
-async def create_apollo_payload(mythic_instance: mythic, output_type: str, payload_name: str, payload_description: str):
+async def create_apollo_payload(mythic_instance: mythic, output_type: str, payload_name: str, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
         mythic=mythic_instance,
         payload_type_name="apollo",
@@ -15,8 +15,8 @@ async def create_apollo_payload(mythic_instance: mythic, output_type: str, paylo
             "c2_profile_parameters": {
                 "callback_host": str(http_callback_url),
                 "callback_port": str(http_callback_port),
-                "callback_interval": "2",
-                "callback_jitter": "70",
+                "callback_interval": "3",
+                "callback_jitter": "33",
                 "killdate": str(http_callback_killdate),
                },
             },
@@ -50,7 +50,7 @@ async def create_apollo_payload(mythic_instance: mythic, output_type: str, paylo
 
 # Creates chonky poseidon payloads based on what's passed to this function. 
 # Parameter names and values are taken directly from the payload builder in the web UI
-async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, payload_name: str, static_linking: bool, payload_description: str):
+async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, payload_name: str, static_linking: bool, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
         mythic=mythic_instance,
         payload_type_name="poseidon",
@@ -63,8 +63,8 @@ async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, p
             "c2_profile_parameters": {
                 "callback_host": str(http_callback_url),
                 "callback_port": str(http_callback_port),
-                "callback_interval": "2",
-                "callback_jitter": "70",
+                "callback_interval": "3",
+                "callback_jitter": "33",
                 "killdate": str(http_callback_killdate),
                },
             },
@@ -117,7 +117,7 @@ async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, p
     return payload_response
 
 
-async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, output_type: str, payload_name: str, payload_description: str):
+async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, output_type: str, payload_name: str, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
         mythic=mythic_instance,
         payload_type_name="athena",
@@ -130,8 +130,8 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
             "c2_profile_parameters": {
                 "callback_host": str(http_callback_url),
                 "callback_port": str(http_callback_port),
-                "callback_interval": "2",
-                "callback_jitter": "70",
+                "callback_interval": "3",
+                "callback_jitter": "33",
                 "killdate": str(http_callback_killdate),
                },
             },
