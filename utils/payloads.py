@@ -1,6 +1,6 @@
 from mythic import mythic
 
-# Creates chonky apollo payloads based on what's passed to this function. 
+# Creates chonky apollo payloads
 # Parameter names and values are taken directly from the payload builder in the web UI
 async def create_apollo_payload(mythic_instance: mythic, output_type: str, payload_name: str, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
@@ -48,7 +48,7 @@ async def create_apollo_payload(mythic_instance: mythic, output_type: str, paylo
     )
     return payload_response
 
-# Creates chonky poseidon payloads based on what's passed to this function. 
+# Creates chonky poseidon payloads
 # Parameter names and values are taken directly from the payload builder in the web UI
 async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, payload_name: str, static_linking: bool, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
@@ -116,7 +116,8 @@ async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, p
     )
     return payload_response
 
-
+# Creates chonky athena payloads
+# Parameter names and values are taken directly from the payload builder in the web UI
 async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, output_type: str, payload_name: str, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
         mythic=mythic_instance,
