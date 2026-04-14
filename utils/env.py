@@ -9,17 +9,17 @@ def populate_dotenv_var_int(env_line:str, env_var:int):
     return env_line
 
 # Creates new .env file if it doesnt exist and adds new values to .env file
-def modify_env(env_key, env_value, base_env=None):
+def modify_env(env_key, env_value):
     import os, shutil
 
     # Copies .env-template to .env before population if .env does not currently exist
-    if os.path.isfile(base_env) == True and os.path.isfile(".env") == False:
-        shutil.copy(base_env, ".env")
+    if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
+        shutil.copy(".env-template", ".env")
         with open(".env", "r") as file:
             data = file.readlines()
     
     # Loads .env to prep for population
-    elif base_env != None:
+    elif ".env-template" != None:
         with open(".env", "r") as file:
             data = file.readlines()
 
