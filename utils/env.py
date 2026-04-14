@@ -26,6 +26,7 @@ def modify_env(env_key, env_value, base_env=None):
     for i in range(len(data)):
         if env_key in data[i]:
             data[i] = populate_dotenv_var_string(data[i], env_value)
+            break
             
         else:
             pass
