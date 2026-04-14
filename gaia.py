@@ -17,7 +17,7 @@ auth_parser = subparsers.add_parser('auth', help='authenticate to mythic and dum
 # c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
-operation_parser = subparsers.add_parser('operation', help='manage mythic operations')
+operation_parser = subparsers.add_parser('operations', help='manage mythic operations')
 payload_parser = subparsers.add_parser('payloads', help='manage payloads')
 user_parser = subparsers.add_parser('users', help='manage mythic users')
 
@@ -51,9 +51,14 @@ action_operation_parser.add_argument('-a', '--assign', action='store_true', help
 action_operation_parser.add_argument('-r', '--remove', action='store_true', help='removes users from an operations')
 
 # Payload Modules
-payload_parser.add_argument('--apollo', action='store_true', help='build apollo payloads')
-payload_parser.add_argument('--athena', action='store_true', help='build athena payloads')
-payload_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
+agent_parser = payload_parser.add_mutually_exclusive_group(required=True)
+agent_parser.add_argument('--apollo', action='store_true', help='build apollo payloads')
+agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
+agent_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
+payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads')
+payload_parser.add_argument('-cU', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
+payload_parser.add_argument('-cP', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
+payload_parser.add_argument('-cK', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in mm-dd-yyyy format. Defaults to 1 year.')
 
 args = global_parser.parse_args()
 
@@ -135,7 +140,38 @@ async def main():
 
         sys.exit(0)
 
+    # TODO Figure out logic to pull from .env if it exists before overwriting it with CLI options
+    if args.subcommand == "payloads":
+        import utils.payloads, utils.env
+
+        callback_url = args.callback_url[0].strip()
+        callback_port = args.callback_port[0].strip()
+        callback_killdate = args.callback_killdate[0].strip()
+
+        # Update .env with callback information
+        utils.env.modify_env("MYTHIC_HTTP_CALLBACK_URL", callback_url)
+        utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
+        utils.env.modify_env("MYTHIC_HTTP_CALLBACK_KILLDATE", callback_killdate)
+
+        # Process apollo payloads
+        if args.apollo == True:
+
+            payload_name_base = args.name[0].strip()
+            # Generate normal executable
+            payload_name_exe = payload_name_base + ".exe"
+            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+            # Generate shellcode
+            payload_name_bin = payload_name_base + ".bin"
+            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+            # Generate service executable
+            payload_name_svc = payload_name_base + "Svc.exe"
+            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+        sys.exit(0)
 
 if __name__ == '__main__':
      asyncio.run(main())
+
 sys.exit(0)
