@@ -1,7 +1,4 @@
-#!/usr/bin./python3
-
 from mythic import mythic
-from utils.auth import *
 
 async def get_operations(mythic_instance:mythic):
     operations = await mythic.get_operations(mythic=mythic_instance)
