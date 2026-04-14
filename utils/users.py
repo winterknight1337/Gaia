@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from mythic import mythic
-from utils.auth import *
 import secrets, string
 
 # Generates a password with the secrets module
