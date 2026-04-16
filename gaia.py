@@ -225,6 +225,7 @@ async def main():
 
             sys.exit(0)
 
+        # process poseidon payloads
         if args.poseidon == True:
             payload_name = args.name[0].strip()
 
@@ -251,7 +252,7 @@ async def main():
                 print("specify os when creating poseidon payloads")
                 sys.exit(0)
 
-
+        # Process athena payloads
         if args.athena == True:
             payload_os = args.os
 
