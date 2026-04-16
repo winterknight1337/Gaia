@@ -112,7 +112,7 @@ async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, p
             }
         ],
         include_all_commands=True,
-        return_on_complete=False
+        return_on_complete=True
     )
     return payload_response
 
@@ -184,6 +184,6 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
             },
         ],
         include_all_commands=True,
-        return_on_complete=False
+        return_on_complete=True
     )
     return payload_response
