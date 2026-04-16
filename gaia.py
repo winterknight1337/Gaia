@@ -187,14 +187,8 @@ async def main():
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
 
     # Callback Killdate
-        # Does the same as the previous logic, except checking the callback killdate instead
-        if not args.callback_killdate:
-            if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
-                print("Ensure MYTHIC_HTTP_CALLBACK_KILLDATE is populated either by CLI or in .env")
-                sys.exit(1)
-
-            # If --callback-killdate is not populated, and MYTHIC_HTTP_CALLBACK_KILLDATE is, use MYTHIC_HTTP_CALLBACK_KILLDATE
-            elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
+        # If --callback-killdate is not populated, and MYTHIC_HTTP_CALLBACK_KILLDATE is, use MYTHIC_HTTP_CALLBACK_KILLDATE
+        if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
                 callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
         
         # If --callback-killdate is populated, always use that
