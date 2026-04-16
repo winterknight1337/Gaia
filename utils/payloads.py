@@ -44,11 +44,11 @@ async def create_apollo_payload(mythic_instance: mythic, output_type: str, paylo
             }
         ],
         include_all_commands=True,
-        return_on_complete=False
+        return_on_complete=True # Needed for Apollo or else I think it overwrites a current compilation with whatever the next one is
     )
     return payload_response
 
-# Creates chonky poseidon payloads
+# Creates poseidon payloads
 # Parameter names and values are taken directly from the payload builder in the web UI
 async def create_poseidon_payload(mythic_instance: mythic, os: str, arch: str, payload_name: str, static_linking: bool, payload_description: str, http_callback_url: str, http_callback_port: int, http_callback_killdate: str):
     payload_response = await mythic.create_payload(
