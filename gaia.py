@@ -22,6 +22,7 @@ user_parser = subparsers.add_parser('users', help='manage mythic users')
 
 # Global modules
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
+global_parser.add_argument('--update-env', action='store_true', help='overwrite .env file with cli args')
 
 # Auth modules
 auth_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
@@ -145,14 +146,65 @@ async def main():
     if args.subcommand == "payloads":
         import utils.payloads, utils.env
 
-        callback_url = args.callback_url[0].strip()
-        callback_port = args.callback_port[0].strip()
-        callback_killdate = args.callback_killdate[0].strip()
+        # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
+        # Checks if either --callback-url or MYTHIC_HTTP_CALLBACK_URL_BASE are populated, exits if both are false
+        if not args.callback_url:
+            if config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
+                print("Ensure MYTHIC_HTTP_CALLBACK_URL_BASE is populated either by CLI or in .env")
+                sys.exit(1)
 
-        # Update .env with callback information
-        utils.env.modify_env("MYTHIC_HTTP_CALLBACK_URL", callback_url)
-        utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
-        utils.env.modify_env("MYTHIC_HTTP_CALLBACK_KILLDATE", callback_killdate)
+            # If --callback-url is not populated, and MYTHIC_HTTP_CALLBACK_URL_BASE is, use MYTHIC_HTTP_CALLBACK_URL_BASE
+            elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '':
+                callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
+
+        # If --callback-url is populated, always use that
+        if args.callback_url.len() != 0:
+            callback_url = args.callback_url[0].strip()
+
+            # if --update-env is specified, update env
+            #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
+            if args.update_env == True:
+                utils.env.modify_env("MYTHIC_HTTP_CALLBACK_URL", callback_url)
+
+        # Callback Port
+        # Does the same as the previous logic, except checking the callback port instead
+        if not args.callback_port:
+            if config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
+                print("Ensure MYTHIC_HTTP_CALLBACK_PORT is populated either by CLI or in .env")
+                sys.exit(1)
+
+            # If --callback-port is not populated, and MYTHIC_HTTP_CALLBACK_PORT is, use MYTHIC_HTTP_CALLBACK_PORT
+            elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '':
+                callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
+
+        # If --callback-port is populated, always use that
+        if args.callback_url.len() != 0:
+            callback_port = args.callback_port[0].strip()
+
+            # if --update-env is specified, update env
+            #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
+            if args.update_env == True:
+                utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
+
+        # Callback Killdate
+        # Does the same as the previous logic, except checking the callback killdate instead
+        if not args.callback_killdate:
+            if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
+                print("Ensure MYTHIC_HTTP_CALLBACK_KILLDATE is populated either by CLI or in .env")
+                sys.exit(1)
+
+            # If --callback-killdate is not populated, and MYTHIC_HTTP_CALLBACK_KILLDATE is, use MYTHIC_HTTP_CALLBACK_KILLDATE
+            elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
+                callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
+        
+        # If --callback-killdate is populated, always use that
+        if args.callback_url.len() != 0:
+            callback_killdate = args.callback_killdate[0].strip()
+
+            # if --update-env is specified, update env
+            #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
+            if args.update_env == True:
+                utils.env.modify_env("MYTHIC_HTTP_CALLBACK_KILLDATE", callback_killdate)
 
         # Process apollo payloads
         if args.apollo == True:
