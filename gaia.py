@@ -9,7 +9,7 @@ if os.path.isfile(".env"):
 # Root options that are available across the whole application
 global_parser = argparse.ArgumentParser(
     prog='gaia.py',
-    description='Lightweight helper tool to deploy and manage mythic c2 installs.')
+    description='Lightweight helper tool to deploy and manage mythic c2 installs')
 
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
@@ -59,6 +59,7 @@ payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='',
 payload_parser.add_argument('-cU', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-cP', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
 payload_parser.add_argument('-cK', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in mm-dd-yyyy format. Defaults to 1 year.')
+payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon payloads')
 
 args = global_parser.parse_args()
 
@@ -168,6 +169,34 @@ async def main():
             # Generate service executable
             payload_name_svc = payload_name_base + "Svc.exe"
             await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+            sys.exit(0)
+
+        if args.poseidon == True:
+            payload_name = args.name[0].strip()
+
+            if args.os == "linux":
+                
+                # Translates to value poseidon builder expects
+                payload_os = "Linux"
+
+                # Generate linux x64 static elf
+                await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="AMD_x64", payload_name=payload_name, static_linking="True", payload_description="Linux x64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+                # Generate linux arm64 static elf
+                await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="True", payload_description="Linux arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+            elif args.os == "macos":
+
+                # Translates to value poseidon builder expects
+                payload_os = "macOS"
+
+                # Generate macos arm64 static elf. macOS does not like static bins for some reason.
+                await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="False", payload_description="macOS arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+    
+            else:
+                print("specify os when creating poseidon payloads")
+                sys.exit(0)
 
         sys.exit(0)
 
