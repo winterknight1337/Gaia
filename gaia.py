@@ -14,7 +14,6 @@ global_parser = argparse.ArgumentParser(
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
 auth_parser = subparsers.add_parser('auth', help='authenticate to mythic and dump api key to .env')
-# c2_profile_parser = subparsers.add_parser('c2-profiles', help='manage mythic c2 profiles')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
 # install_parser = subparsers.add_parser('install', help='manage mythic installation')
 operation_parser = subparsers.add_parser('operations', help='manage mythic operations')
