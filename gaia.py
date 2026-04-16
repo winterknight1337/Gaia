@@ -146,7 +146,7 @@ async def main():
     if args.subcommand == "payloads":
         import utils.payloads, utils.env
 
-        # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
+    # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
         # Checks if either --callback-url or MYTHIC_HTTP_CALLBACK_URL_BASE are populated, exits if both are false
         if not args.callback_url:
             if config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
@@ -166,7 +166,7 @@ async def main():
             if args.update_env == True:
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_URL", callback_url)
 
-        # Callback Port
+    # Callback Port
         # Does the same as the previous logic, except checking the callback port instead
         if not args.callback_port:
             if config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
@@ -186,7 +186,7 @@ async def main():
             if args.update_env == True:
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
 
-        # Callback Killdate
+    # Callback Killdate
         # Does the same as the previous logic, except checking the callback killdate instead
         if not args.callback_killdate:
             if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
