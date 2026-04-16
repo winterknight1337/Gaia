@@ -158,12 +158,12 @@ async def main():
                 callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
 
         # If --callback-url is populated, always use that
-        if args.callback_url.len() != 0:
+        if args.callback_url != None:
             callback_url = args.callback_url[0].strip()
 
             # if --update-env is specified, update env
             #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True:
+            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_URL", callback_url)
 
     # Callback Port
@@ -178,12 +178,12 @@ async def main():
                 callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
 
         # If --callback-port is populated, always use that
-        if args.callback_url.len() != 0:
+        if args.callback_url != None:
             callback_port = args.callback_port[0].strip()
 
             # if --update-env is specified, update env
             #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True:
+            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
 
     # Callback Killdate
@@ -198,17 +198,16 @@ async def main():
                 callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
         
         # If --callback-killdate is populated, always use that
-        if args.callback_url.len() != 0:
+        if args.callback_url != None:
             callback_killdate = args.callback_killdate[0].strip()
 
             # if --update-env is specified, update env
             #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True:
+            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] = '':
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_KILLDATE", callback_killdate)
 
         # Process apollo payloads
         if args.apollo == True:
-
             payload_name_base = args.name[0].strip()
 
             # Generate normal executable
@@ -241,7 +240,6 @@ async def main():
                 await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="True", payload_description="Linux arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
 
             elif args.os == "macos":
-
                 # Translates to value poseidon builder expects
                 payload_os = "macOS"
 
