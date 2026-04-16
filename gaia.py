@@ -203,7 +203,7 @@ async def main():
 
             # if --update-env is specified, update env
             #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] = '':
+            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_KILLDATE", callback_killdate)
 
         # Process apollo payloads
@@ -213,14 +213,17 @@ async def main():
             # Generate normal executable
             payload_name_exe = payload_name_base + ".exe"
             await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 .NET Framework Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+            print("Apollo portable executable built")
 
             # Generate shellcode
             payload_name_bin = payload_name_base + ".bin"
             await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+            print("Apollo shellcode built")
 
             # Generate service executable
             payload_name_svc = payload_name_base + "Svc.exe"
             await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+            print("Apollo service executable built")
 
             sys.exit(0)
 
@@ -235,9 +238,11 @@ async def main():
 
                 # Generate linux x64 static elf
                 await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="AMD_x64", payload_name=payload_name, static_linking="True", payload_description="Linux x64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Poseidon linux x64 elf built")
 
                 # Generate linux arm64 static elf
                 await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="True", payload_description="Linux arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Poseidon linux arm64 elf built")
 
             elif args.os == "macos":
                 # Translates to value poseidon builder expects
@@ -245,6 +250,7 @@ async def main():
 
                 # Generate macos arm64 static elf. macOS does not like static bins for some reason.
                 await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="False", payload_description="macOS arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Poseidon macos x64 elf built")
     
             else:
                 print("specify os when creating poseidon payloads")
@@ -260,21 +266,26 @@ async def main():
                 # Generate windows x64 .net portable executable
                 payload_name_exe = payload_name_base + ".exe"
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_exe, payload_description="Windows x64 .NET Portable Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Athena windows x64 portable executable built")
 
                 # Generate windows x64 .net service executable
                 payload_name_svc = payload_name_base + "Svc.exe"
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="windows service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Service Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Athena windows x64 service executable built")
             
             elif args.os == "linux":
                 # Generate linux x64 .net elf
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_base, payload_description="Linux x64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Athena linux x64 elf built")
 
                 # Generate linux arm64 .net elf
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="Linux arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Athena linux arm64 elf built")
 
             elif args.os == "macos":
                 # Generate macOS arm64 .net elf
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="macOS arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Athena macos arm64 elf built")
 
             else:
                 print("specify os when creating athena payloads")
