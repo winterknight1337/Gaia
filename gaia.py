@@ -158,13 +158,14 @@ async def main():
         if args.apollo == True:
 
             payload_name_base = args.name[0].strip()
+
             # Generate normal executable
             payload_name_exe = payload_name_base + ".exe"
-            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 .NET Framework Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
 
             # Generate shellcode
             payload_name_bin = payload_name_base + ".bin"
-            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
 
             # Generate service executable
             payload_name_svc = payload_name_base + "Svc.exe"
@@ -196,6 +197,36 @@ async def main():
     
             else:
                 print("specify os when creating poseidon payloads")
+                sys.exit(0)
+
+
+        if args.athena == True:
+            payload_os = args.os
+
+            if args.os == "windows":
+                payload_name_base = args.name[0].strip()
+
+                # Generate windows x64 .net portable executable
+                payload_name_exe = payload_name_base + ".exe"
+                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_exe, payload_description="Windows x64 .NET Portable Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+                # Generate windows x64 .net service executable
+                payload_name_svc = payload_name_base + "Svc.exe"
+                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="windows service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Service Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+            
+            elif args.os == "linux":
+                # Generate linux x64 .net elf
+                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_base, payload_description="Linux x64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+                # Generate linux arm64 .net elf
+                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="Linux arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+            elif args.os == "macos":
+                # Generate macOS arm64 .net elf
+                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="macOS arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+
+            else:
+                print("specify os when creating athena payloads")
                 sys.exit(0)
 
         sys.exit(0)
