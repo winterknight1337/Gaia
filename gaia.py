@@ -113,8 +113,9 @@ async def main():
         if args.create == True:
             users = args.users
             for i in users:
-                await utils.users.create_user(mythic_instance=mythic_session, username=i)
+                creds = await utils.users.create_user(mythic_instance=mythic_session, username=i)
                 await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=default_operation["name"], username=i)
+                print(creds)
 
         sys.exit(0)
 
