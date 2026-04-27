@@ -62,7 +62,7 @@ payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'],
 # Install Parser
 install_parser.add_argument('-u', '--update-system', action='store_true', help='update system with apt before installing mythic')
 install_parser.add_argument('-d', '--install-docker', action='store_true', help='install docker on target host before installing mythic')
-# install_parser.add_argument('-h', '--host', required= True, nargs=1, metavar='', help='host to install mythic on')
+install_parser.add_argument('-s', '--server', required= True, nargs=1, metavar='', help='server to install mythic on')
 
 
 args = global_parser.parse_args()
@@ -113,9 +113,11 @@ async def main():
         users_stdin = args.users
         stdout = args.output_stdout
 
+        # Ready user list as input
         if args.user_input:
             user_list_in = args.user_input.strip()
 
+        # Ready user credentials list for output
         if args.user_output:
             user_list_out = args.user_output.strip()
             cred_list = []
@@ -145,6 +147,7 @@ async def main():
                     user_creds = user_creds + '\n'
                     cred_list.append(user_creds)
 
+            # Dump creds to file
             if cred_list != None:
                 with open(user_list_out, 'w') as file:
                     file.writelines(cred_list)
@@ -174,7 +177,6 @@ async def main():
 
         sys.exit(0)
 
-    # TODO Figure out logic to pull from .env if it exists before overwriting it with CLI options
     if args.subcommand == "payloads":
         import utils.payloads, utils.env
 
