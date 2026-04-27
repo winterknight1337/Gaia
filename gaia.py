@@ -36,7 +36,6 @@ action_user_parser.add_argument('-c', '--create', action='store_true', help='cre
 # action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
 
-# TODO implement the rest of these after getting basic POC out
 # user_parser.add_argument('-oF', '--output-file', metavar='path/to/output', help='dumps newly created credentials to disk')
 # user_parser.add_argument('-oS', '--output-stdout', metavar='', help='sends newly created creds to stdout')
 # user_parser.add_argument('-uL', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
@@ -64,6 +63,7 @@ payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'],
 # Install Parser
 install_parser.add_argument('-u', '--update-system', action='store_true', help='update system with apt before installing mythic')
 install_parser.add_argument('-d', '--install-docker', action='store_true', help='install docker on target host before installing mythic')
+install_parser.add_argument('-h', '--host', required= True, nargs=1, metavar='', help='host to install mythic on')
 
 
 args = global_parser.parse_args()
@@ -302,6 +302,13 @@ async def main():
                 sys.exit(0)
 
         sys.exit(0)
+
+    if args.subcommand == "install":
+        
+
+        if args.host == True:
+            host = args.host[0].strip()
+
 
 if __name__ == '__main__':
      asyncio.run(main())
