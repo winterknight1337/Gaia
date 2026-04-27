@@ -15,7 +15,7 @@ global_parser = argparse.ArgumentParser(
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
 auth_parser = subparsers.add_parser('auth', help='authenticate to mythic and dump api key to .env')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
-# install_parser = subparsers.add_parser('install', help='manage mythic installation')
+install_parser = subparsers.add_parser('install', help='manage mythic installation')
 operation_parser = subparsers.add_parser('operations', help='manage mythic operations')
 payload_parser = subparsers.add_parser('payloads', help='manage payloads')
 user_parser = subparsers.add_parser('users', help='manage mythic users')
@@ -60,6 +60,11 @@ payload_parser.add_argument('-cU', '--callback-url', nargs=1, metavar='', help='
 payload_parser.add_argument('-cP', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
 payload_parser.add_argument('-cK', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in mm-dd-yyyy format. Defaults to 1 year.')
 payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon payloads')
+
+# Install Parser
+install_parser.add_argument('-u', '--update-system', action='store_true', help='update system with apt before installing mythic')
+install_parser.add_argument('-d', '--install-docker', action='store_true', help='install docker on target host before installing mythic')
+
 
 args = global_parser.parse_args()
 
@@ -186,7 +191,7 @@ async def main():
             if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
                 utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
 
-    # Callback Killdate
+    # Callback Killdate. Killdate is not mandatory so it skips first check. Defaults to 1 year.
         # If --callback-killdate is not populated, and MYTHIC_HTTP_CALLBACK_KILLDATE is, use MYTHIC_HTTP_CALLBACK_KILLDATE
         if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
                 callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
