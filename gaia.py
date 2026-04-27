@@ -35,10 +35,9 @@ action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
 # action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
-
-# user_parser.add_argument('-oF', '--output-file', metavar='path/to/output', help='dumps newly created credentials to disk')
-# user_parser.add_argument('-oS', '--output-stdout', metavar='', help='sends newly created creds to stdout')
-# user_parser.add_argument('-uL', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
+user_parser.add_argument('-i', '--user-input', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
+user_parser.add_argument('-o', '--user-output', nargs='?', metavar='path/to/output', help='dumps newly created credentials to disk')
+user_parser.add_argument('-s', '--output-stdout', action='store_true', help='sends newly created creds to stdout')
 
 # Operation modules
 operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specify operation to manage')
@@ -63,7 +62,7 @@ payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'],
 # Install Parser
 install_parser.add_argument('-u', '--update-system', action='store_true', help='update system with apt before installing mythic')
 install_parser.add_argument('-d', '--install-docker', action='store_true', help='install docker on target host before installing mythic')
-install_parser.add_argument('-h', '--host', required= True, nargs=1, metavar='', help='host to install mythic on')
+# install_parser.add_argument('-h', '--host', required= True, nargs=1, metavar='', help='host to install mythic on')
 
 
 args = global_parser.parse_args()
@@ -111,17 +110,45 @@ async def main():
     if args.subcommand == "users":
         import utils.users, utils.operations
 
+        users_stdin = args.users
+        stdout = args.output_stdout
+
+        if args.user_input:
+            user_list_in = args.user_input.strip()
+
+        if args.user_output:
+            user_list_out = args.user_output.strip()
+            cred_list = []
+        else:
+            cred_list = None
+
+        # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+        users = utils.users.prepare_users(users_stdin=users_stdin, user_file_in=user_list_in)
+
         # Get current operations to prepare to assign a default for a new user
         operations = await utils.operations.get_operations(mythic_instance=mythic_session)
         default_operation = operations[0]
         
         # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
         if args.create == True:
-            users = args.users
+            
             for i in users:
-                creds = await utils.users.create_user(mythic_instance=mythic_session, username=i)
+                user_creds = await utils.users.create_user(mythic_instance=mythic_session, username=i)
                 await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=default_operation["name"], username=i)
-                print(creds)
+                
+                # Print creds if user specifies to
+                if stdout == True:
+                    print(user_creds)
+
+                # Append creds to a list to prepare to dump to file if user specifies to
+                if cred_list != None:
+                    user_creds = user_creds + '\n'
+                    cred_list.append(user_creds)
+
+            if cred_list != None:
+                with open(user_list_out, 'w') as file:
+                    file.writelines(cred_list)
+                
 
         sys.exit(0)
 
