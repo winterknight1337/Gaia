@@ -5,10 +5,10 @@ if [ "$EUID" -ne 0 ]
   then echo "[-] Please run as root";
   exit;
 fi
-echo "****Preparing to install Mythic! Standby!****"
+echo "****Preparing to install Mythic! Standby!****";
 
 # Download, build, and Install Mythic components
-echo "Pulling Mythic Repo"
+echo "Pulling Mythic Repo";
 cd /opt/;
 
 git clone https://github.com/its-a-feature/Mythic.git --depth 1;
@@ -39,13 +39,13 @@ echo "Installing Forge!";
 $PWD/mythic-cli install github https://github.com/MythicAgents/forge.git;
 
 echo "Installing Webhooks!";
-$PWD/mythic-cli install github https://github.com/MythicC2Profiles/basic_webhook.git
+$PWD/mythic-cli install github https://github.com/MythicC2Profiles/basic_webhook.git;
 
-echo "Installing Registry Browser!"
-$PWD/mythic-cli install github https://github.com/MythicC2Profiles/registry_browser.git
+echo "Installing Registry Browser!";
+$PWD/mythic-cli install github https://github.com/MythicC2Profiles/registry_browser.git;
 
-echo "Installing LDAP Browser!"
-$PWD/mythic-cli install github https://github.com/MythicC2Profiles/ldap_browser.git
+echo "Installing LDAP Browser!";
+$PWD/mythic-cli install github https://github.com/MythicC2Profiles/ldap_browser.git;
 
 echo "Mythic webserver hosted and ready via HTTPS on port 7443!";
 admin_passwd=$(grep "MYTHIC_ADMIN_PASSWORD" /opt/Mythic/.env | cut -d '"' -f 2)
