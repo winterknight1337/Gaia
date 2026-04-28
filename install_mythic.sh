@@ -26,15 +26,12 @@ OS=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2);
 
 if [ $OS == "debian" ] 
     then $PWD/install_docker_debian.sh;
-    rm install_docker_debian.sh;
     
 elif [ $OS == "kali" ]
     then $PWD/install_docker_kali.sh;
-    rm install_docker_kali.sh;
 
 elif [ $OS == "ubuntu" ]
     then $PWD/install_docker_ubuntu.sh;
-    rm install_docker_ubuntu.sh;
 
 else
     echo "[-] Please run on debian, kali, or ubuntu.";
