@@ -4,7 +4,7 @@ if [ "$EUID" -ne 0 ]
   then echo "[-] Please run as root";
   exit;
 fi
-echo "****Preparing to install Mythic Standby!****"
+echo "****Preparing to install Mythic! Standby!****"
 
 echo "Performing apt update and upgrade!"
 apt update && apt upgrade -y;
