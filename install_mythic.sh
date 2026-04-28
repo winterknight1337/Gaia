@@ -1,42 +1,18 @@
 #!/usr/bin/bash
 
+# Root check
 if [ "$EUID" -ne 0 ]
   then echo "[-] Please run as root";
   exit;
 fi
 echo "****Preparing to install Mythic! Standby!****"
 
-echo "Performing apt update and upgrade!"
-apt update && apt upgrade -y;
-
-echo "Installing prerequisites!";
-apt install git vim make -y;
-
-# Download and build Mythic
-# Consider implementing detection for number of CPUs and RAM
-# Make echos from this script more noticable
+# Download, build, and Install Mythic components
 echo "Pulling Mythic Repo"
 cd /opt/;
+
 git clone https://github.com/its-a-feature/Mythic.git --depth 1;
 cd Mythic;
-
-echo "Installing docker";
-
-OS=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2);
-
-if [ $OS == "debian" ] 
-    then $PWD/install_docker_debian.sh;
-    
-elif [ $OS == "kali" ]
-    then $PWD/install_docker_kali.sh;
-
-elif [ $OS == "ubuntu" ]
-    then $PWD/install_docker_ubuntu.sh;
-
-else
-    echo "[-] Please run on debian, kali, or ubuntu.";
-    exit -1;
-fi
 
 echo "Building mythic-cli binary";
 make;
