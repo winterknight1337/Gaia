@@ -61,7 +61,8 @@ payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'],
 
 # Install Parser
 install_parser.add_argument('-u', '--update-system', action='store_true', help='update system with apt before installing mythic')
-install_parser.add_argument('-d', '--install-docker', action='store_true', help='install docker on target host before installing mythic')
+install_parser.add_argument('-p', '--install-dependencies', action='store_true', help='install dependencies on target host before installing mythic')
+install_parser.add_argument('-m', '--install-mythic', action='store_true', help='install mythic on the target.')
 install_parser.add_argument('-s', '--server', required= True, nargs=1, metavar='', help='server to install mythic on')
 
 
