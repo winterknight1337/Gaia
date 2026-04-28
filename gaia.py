@@ -334,9 +334,8 @@ async def main():
 
     if args.subcommand == "install":
         
-
-        if args.host == True:
-            host = args.host[0].strip()
+        if args.server == True:
+            server = args.host[0].strip()
 
 
 if __name__ == '__main__':
