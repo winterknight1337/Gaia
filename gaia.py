@@ -84,6 +84,57 @@ async def main():
         global_parser.print_help()
         sys.exit(1)
 
+    if args.subcommand == "install":
+        import paramiko, utils.install
+
+        # Initialize SSH
+        ssh = paramiko.SSHClient()
+        ssh.load_system_host_keys()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Get connection information
+        server = args.server[0].strip()
+        user = args.user[0].strip()
+
+        if args.port == True:
+            port = args.port[0].strip()
+        else:
+            port = 22
+
+        if args.password != None:
+            password = args.password[0].strip()
+
+        if args.stderr == True:
+            display_stderr = True
+        else:
+            display_stderr = False
+        
+        ssh.connect(hostname=server, port=port, username=user, password=password,)
+        
+        # Update system if requested
+        if args.update_system == True:
+            print("Updating remote system")
+            (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y", get_pty=True)
+            utils.install.print_terminal_output(stdout)
+
+            if display_stderr == True:
+                # Print errors so user is aware if there are any
+                utils.install.print_terminal_output(stderr)
+
+
+        # Install dependencies if requested
+        if args.install_deps == True:
+            print("Installing Dependencies")
+            utils.install.copy_and_execute_script(ssh=ssh, script="install_deps.sh", err=display_stderr)
+
+        # Install Mythic and it's dependencies if true
+        if args.install_mythic == True:
+            print("Installing Mythic. This will take a while, so go get some coffee")
+            utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
+
+        ssh.close()
+        sys.exit(0)
+
     import utils.auth
     if args.subcommand == "auth":
         import utils.env
@@ -349,57 +400,6 @@ async def main():
                 print("specify os when creating athena payloads")
                 sys.exit(0)
 
-        sys.exit(0)
-
-    if args.subcommand == "install":
-        import paramiko, pprint, utils.install
-
-        # Initialize SSH
-        ssh = paramiko.SSHClient()
-        ssh.load_system_host_keys()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        # Get connection information
-        server = args.server[0].strip()
-        user = args.user[0].strip()
-
-        if args.port == True:
-            port = args.port[0].strip()
-        else:
-            port = 22
-
-        if args.password != None:
-            password = args.password[0].strip()
-
-        if args.stderr == True:
-            display_stderr = True
-        else:
-            display_stderr = False
-        
-        ssh.connect(hostname=server, port=port, username=user, password=password,)
-        
-        # Update system if requested
-        if args.update_system == True:
-            print("Updating remote system")
-            (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y", get_pty=True)
-            utils.install.print_terminal_output(stdout)
-
-            if display_stderr == True:
-                # Print errors so user is aware if there are any
-                utils.install.print_terminal_output(stderr)
-
-
-        # Install dependencies if requested
-        if args.install_deps == True:
-            print("Installing Dependencies")
-            utils.install.copy_and_execute_script(ssh=ssh, script="install_deps.sh", err=display_stderr)
-
-        # Install Mythic and it's dependencies if true
-        if args.install_mythic == True:
-            print("Installing Mythic. This will take a while, so go get some coffee")
-            utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
-
-        ssh.close()
         sys.exit(0)
 
 
