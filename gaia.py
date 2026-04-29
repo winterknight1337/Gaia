@@ -3,6 +3,8 @@ import argparse, sys, os, asyncio, dotenv
 # Load environment variables first
 if os.path.isfile(".env"):
     config = dotenv.dotenv_values(".env")
+else:
+    config = None
 
 #################################################################### CLI PARSING ####################################################################
 
@@ -107,6 +109,11 @@ async def main():
         sys.exit(0)
     
     # Authenticates to mythic with API key if auth is not specified
+    if config == None:
+        print("No Mythic API Key detected in .env. Have you authenticated to Mythic?")
+        auth_parser.print_help()
+        sys.exit(1)
+
     api_key = config["MYTHIC_API_KEY"]
     mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
     mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
