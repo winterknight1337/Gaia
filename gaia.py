@@ -140,10 +140,10 @@ async def main():
         import utils.env
         
         # Authenticates to mythic if server, port, user, and password are specified
-        auth_user = str(args.auth_user[0]).strip()
-        auth_password = str(args.auth_password[0]).strip()
-        mythic_host = str(args.mythic_server[0]).strip()
-        mythic_port = int(args.mythic_port[0])
+        auth_user = str(args.username[0]).strip()
+        auth_password = str(args.password[0]).strip()
+        mythic_host = str(args.server[0]).strip()
+        mythic_port = int(args.port[0])
 
         # Auth according to SSL input
         if args.no_ssl == False:
