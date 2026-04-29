@@ -79,6 +79,7 @@ args = global_parser.parse_args()
 
 
 async def main():
+    # If gaia runs on its own without args, print help
     if args.subcommand == None:
         global_parser.print_help()
         sys.exit(1)
@@ -112,12 +113,13 @@ async def main():
 
         sys.exit(0)
     
-    # Authenticates to mythic with API key if auth is not specified
+    # Check if config has been changed, if not then env has not been loaded.
     if config == None:
         print("No mythtic api key detected in .env. have you authenticated to mythic?")
         auth_parser.print_help()
         sys.exit(1)
 
+    # Authenticates to mythic with API key if auth is not specified
     api_key = config["MYTHIC_API_KEY"]
     mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
     mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
