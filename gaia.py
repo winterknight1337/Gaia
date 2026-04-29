@@ -1,4 +1,4 @@
-import argparse, sys, os, asyncio, dotenv, shutil
+import argparse, sys, os, asyncio, dotenv
 
 # Load environment variables first
 if os.path.isfile(".env"):
@@ -60,10 +60,15 @@ payload_parser.add_argument('-cK', '--callback-killdate', nargs=1, metavar='', h
 payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon payloads')
 
 # Install Parser
-install_parser.add_argument('-u', '--update-system', action='store_true', help='update system with apt before installing mythic')
-install_parser.add_argument('-p', '--install-dependencies', action='store_true', help='install dependencies on target host before installing mythic')
-install_parser.add_argument('-m', '--install-mythic', action='store_true', help='install mythic on the target.')
-install_parser.add_argument('-s', '--server', required= True, nargs=1, metavar='', help='server to install mythic on')
+install_parser.add_argument('-U', '--update-system', action='store_true', help='update system with apt before installing mythic')
+install_parser.add_argument('-D', '--install-deps', action='store_true', help='install dependencies on target host before installing mythic')
+install_parser.add_argument('-M', '--install-mythic', action='store_true', help='install mythic on the target.')
+install_parser.add_argument('-s', '--server', required=True, nargs=1, metavar='', help='server to install mythic on')
+install_parser.add_argument('-p', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
+install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
+install_parser.add_argument('-pw', '--password', nargs=1, metavar='', help='supply password or ssh passphrase for authentication')
+# install_parser.add_argument('-i', '--identity_file', action='store_true', metavar='', help='provide ssh key for server')
+install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
 
 args = global_parser.parse_args()
@@ -334,9 +339,55 @@ async def main():
         sys.exit(0)
 
     if args.subcommand == "install":
+        import paramiko, pprint, utils.install
+
+        # Initialize SSH
+        ssh = paramiko.SSHClient()
+        ssh.load_system_host_keys()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
-        if args.server == True:
-            server = args.host[0].strip()
+        # Get connection information
+        server = args.server[0].strip()
+        user = args.user[0].strip()
+
+        if args.port == True:
+            port = args.port[0].strip()
+        else:
+            port = 22
+
+        if args.password != None:
+            password = args.password[0].strip()
+
+        if args.stderr == True:
+            display_stderr = True
+        else:
+            display_stderr = False
+        
+        ssh.connect(hostname=server, port=port, username=user, password=password,)
+        
+        # Update system if requested
+        if args.update_system == True:
+            print("Updating remote system")
+            (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y", get_pty=True)
+            utils.install.print_terminal_output(stdout)
+
+            if display_stderr == True:
+                # Print errors so user is aware if there are any
+                utils.install.print_terminal_output(stderr)
+
+
+        # Install dependencies if requested
+        if args.install_deps == True:
+            print("Installing Dependencies")
+            utils.install.copy_and_execute_script(ssh=ssh, script="install_deps.sh", err=display_stderr)
+
+        # Install Mythic and it's dependencies if true
+        if args.install_mythic == True:
+            print("Installing Mythic. This will take a while, so go get some coffee")
+            utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
+
+        ssh.close()
+        sys.exit(0)
 
 
 if __name__ == '__main__':
