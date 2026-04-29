@@ -79,6 +79,10 @@ args = global_parser.parse_args()
 
 
 async def main():
+    if args.subcommand == None:
+        global_parser.print_help()
+        sys.exit(1)
+
     import utils.auth
     if args.subcommand == "auth":
         import utils.env
