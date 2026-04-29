@@ -110,7 +110,7 @@ async def main():
     
     # Authenticates to mythic with API key if auth is not specified
     if config == None:
-        print("No Mythic API Key detected in .env. Have you authenticated to Mythic?")
+        print("No mythtic api key detected in .env. have you authenticated to mythic?")
         auth_parser.print_help()
         sys.exit(1)
 
