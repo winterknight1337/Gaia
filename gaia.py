@@ -25,24 +25,24 @@ global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable 
 global_parser.add_argument('--update-env', action='store_true', help='overwrite .env file with cli args')
 
 # Auth modules
-auth_parser.add_argument('-s', '--mythic-server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
-auth_parser.add_argument('-p', '--mythic-port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server. Defaults to 7443.")
-auth_parser.add_argument('-aP', '--auth-password', required=True, nargs=1, metavar='', help='password for mythic user account')
-auth_parser.add_argument('-aU', '--auth-user', required=True, nargs=1, metavar='', help='mythic user account to authenticate as')
+auth_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
+auth_parser.add_argument('-P', '--port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server")
+auth_parser.add_argument('-p', '--password', required=True, nargs=1, metavar='', help='password for mythic user account')
+auth_parser.add_argument('-u', '--username', required=True, nargs=1, metavar='', help='mythic user account to authenticate as')
 
 # User modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
 # action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
 user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
-user_parser.add_argument('-i', '--user-input', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
+user_parser.add_argument('-l', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
 user_parser.add_argument('-o', '--user-output', nargs='?', metavar='path/to/output', help='dumps newly created credentials to disk')
-user_parser.add_argument('-s', '--output-stdout', action='store_true', help='sends newly created creds to stdout')
+user_parser.add_argument('-s', '--stdout', action='store_true', help='sends newly created creds to stdout')
 
 # Operation modules
 operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specify operation to manage')
-operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
 operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
+operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
 
 action_operation_parser = operation_parser.add_mutually_exclusive_group()
 action_operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
@@ -54,19 +54,19 @@ agent_parser.add_argument('--apollo', action='store_true', help='build apollo pa
 agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
 agent_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
 payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads')
-payload_parser.add_argument('-cU', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
-payload_parser.add_argument('-cP', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
-payload_parser.add_argument('-cK', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in mm-dd-yyyy format. Defaults to 1 year.')
+payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
+payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
+payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in mm-dd-yyyy format. Defaults to 1 year.')
 payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon payloads')
 
 # Install Parser
 install_parser.add_argument('-U', '--update-system', action='store_true', help='update system with apt before installing mythic')
 install_parser.add_argument('-D', '--install-deps', action='store_true', help='install dependencies on target host before installing mythic')
 install_parser.add_argument('-M', '--install-mythic', action='store_true', help='install mythic on the target.')
-install_parser.add_argument('-s', '--server', required=True, nargs=1, metavar='', help='server to install mythic on')
-install_parser.add_argument('-p', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
+install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='server to install mythic on')
+install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-install_parser.add_argument('-pw', '--password', nargs=1, metavar='', help='supply password or ssh passphrase for authentication')
+install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply password or ssh passphrase for authentication')
 # install_parser.add_argument('-i', '--identity_file', action='store_true', metavar='', help='provide ssh key for server')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
@@ -117,7 +117,7 @@ async def main():
         import utils.users, utils.operations
 
         users_stdin = args.users
-        stdout = args.output_stdout
+        stdout = args.stdout
 
         # Ready user list as input
         if args.user_input:
