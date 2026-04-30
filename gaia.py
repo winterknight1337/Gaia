@@ -58,7 +58,7 @@ agent_parser.add_argument('--poseidon', action='store_true', help='build poseido
 payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads')
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
-payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in mm-dd-yyyy format. Defaults to 1 year.')
+payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dddd format. Defaults to 1 year')
 payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon payloads')
 
 # Install Parser
@@ -248,7 +248,7 @@ async def main():
         sys.exit(0)
 
     if args.subcommand == "payloads":
-        import utils.payloads, utils.env
+        import utils.payloads, utils.env, datetime
 
     # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
         # Checks if either --callback-url or MYTHIC_HTTP_CALLBACK_URL_BASE are populated, exits if both are false
@@ -295,9 +295,12 @@ async def main():
         if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
                 callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
         
-        # If --callback-killdate is populated, always use that
-        if args.callback_url != None:
+        # If --callback-killdate is populated, always use that, else default to a year
+        if args.callback_killdate != None:
             callback_killdate = args.callback_killdate[0].strip()
+        else:
+            callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
+            callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
 
             # if --update-env is specified, update env
             #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
