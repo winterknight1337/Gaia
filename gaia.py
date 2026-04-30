@@ -226,7 +226,7 @@ async def main():
         sys.exit(0)
 
     # Process operations
-    if args.subcommand == "operation":
+    if args.subcommand == "operations":
         import utils.operations, utils.env
 
         # Creates new operation
