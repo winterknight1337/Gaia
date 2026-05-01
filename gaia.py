@@ -183,7 +183,7 @@ async def main():
         users_stdin = args.users
         stdout = args.stdout
 
-        # Ready user list as input
+        # Ready user list as input and prepares for merge later
         if args.user_list:
             user_list_in = args.user_list.strip()
         else:
