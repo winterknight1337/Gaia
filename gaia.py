@@ -252,62 +252,58 @@ async def main():
     if args.subcommand == "payloads":
         import utils.payloads, utils.env, datetime
 
-    # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
-        # Checks if either --callback-url or MYTHIC_HTTP_CALLBACK_URL_BASE are populated, exits if both are false
-        if not args.callback_url:
-            if config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
-                print("Ensure MYTHIC_HTTP_CALLBACK_URL_BASE is populated either by CLI or in .env")
-                sys.exit(1)
-
-            # If --callback-url is not populated, and MYTHIC_HTTP_CALLBACK_URL_BASE is, use MYTHIC_HTTP_CALLBACK_URL_BASE
-            elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '':
-                callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
-
-        # If --callback-url is populated, always use that
-        if args.callback_url != None:
+        # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
+        # Use specified callback url if one is supplied
+        if args.callback_url:
             callback_url = args.callback_url[0].strip()
-
-            # if --update-env is specified, update env
-            #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
-                utils.env.modify_env("MYTHIC_HTTP_CALLBACK_URL", callback_url)
-
-    # Callback Port
-        # Does the same as the previous logic, except checking the callback port instead
-        if not args.callback_port:
-            if config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
-                print("Ensure MYTHIC_HTTP_CALLBACK_PORT is populated either by CLI or in .env")
-                sys.exit(1)
-
-            # If --callback-port is not populated, and MYTHIC_HTTP_CALLBACK_PORT is, use MYTHIC_HTTP_CALLBACK_PORT
-            elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '':
-                callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
-
-        # If --callback-port is populated, always use that
-        if args.callback_url != None:
-            callback_port = args.callback_port[0].strip()
-
-            # if --update-env is specified, update env
-            #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
-                utils.env.modify_env("MYTHIC_HTTP_CALLBACK_PORT", callback_port)
-
-    # Callback Killdate. Killdate is not mandatory so it skips first check. Defaults to 1 year.
-        # If --callback-killdate is not populated, and MYTHIC_HTTP_CALLBACK_KILLDATE is, use MYTHIC_HTTP_CALLBACK_KILLDATE
-        if config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
-                callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
         
-        # If --callback-killdate is populated, always use that, else default to a year
-        if args.callback_killdate != None:
+        # Otherwise use the value saved in env
+        elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '' or config != None:
+            callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
+        else:
+            print("Ensure that a callback url is specified in either .env or passed via cli")
+            payload_parser.print_help()
+            sys.exit(1)
+
+        # Update env file if requested or required
+        if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
+            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
+
+        # Callback Ports
+        # Use specified callback port if one is supplied
+        if args.callback_port:
+            callback_port = args.callback_port[0].strip()
+        
+        # Otherwise use the value saved in env
+        elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '' or config != None:
+            callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
+
+        else:
+            print("Ensure that a callback port is specified in either .env or passed via cli")
+            payload_parser.print_help()
+            sys.exit(1)
+
+        # Update env file if requested or required
+        if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
+            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
+
+        # Callback Killdate
+        # Use specified callback killdate if one is supplied
+        if args.callback_killdate:
             callback_killdate = args.callback_killdate[0].strip()
+        
+        # Otherwise use the value saved in env
+        elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '' or config != None:
+            callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
+        
+        # Otherwise use the default of a year
         else:
             callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
             callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
 
-            # if --update-env is specified, update env
-            #TODO Fix populate_dotenv_var_string to a more robust way to handle the env file
-            if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
-                utils.env.modify_env("MYTHIC_HTTP_CALLBACK_KILLDATE", callback_killdate)
+        # Update env file if requested or required
+        if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
+            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
 
         # Process apollo payloads
         if args.apollo == True:
@@ -340,7 +336,6 @@ async def main():
 
 
             if args.os == "linux":
-
                 # Generate linux x64 static elf
                 print("Poseidon linux x64 elf building")
                 await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="AMD_x64", payload_name=payload_name, static_linking="True", payload_description="Linux x64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
