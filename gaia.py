@@ -157,10 +157,10 @@ async def main():
         # Create an API key for the current user
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
-        if args.update_env == True or config["MYTHIC_API_KEY"] == '' or config == None:
+        if args.update_env == True or config == None or config["MYTHIC_API_KEY"] == '':
             # Dumps API key and mythic connection information into .env
             utils.env.update_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
-            utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", mythic_port)
+            utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
             utils.env.update_env("MYTHIC_API_KEY", api_token)
 
         sys.exit(0)
@@ -238,7 +238,7 @@ async def main():
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
-            if args.update_env == True or config["MYTHIC_OPERATION_NAME"] == '' or config == None:
+            if args.update_env == True or config["MYTHIC_OPERATION_NAME"] == '':
                 utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
 
         # Assign users to operations
