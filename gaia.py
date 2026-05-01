@@ -238,7 +238,8 @@ async def main():
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
-            utils.env.modify_env("MYTHIC_OPERATION_NAME", operation)
+            if args.update_env == True or config["MYTHIC_OPERATION_NAME"] == '' or config == None:
+                utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
 
         # Assign users to operations
         if args.assign == True:
