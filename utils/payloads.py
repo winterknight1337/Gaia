@@ -159,12 +159,12 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
                 "value": False
             },
             {
-                "name": "output-type",
-                "value": output_type
-            },
-            {
                 "name": "obfuscate",
                 "value": False
+            },
+            {
+                "name": "output-type",
+                "value": output_type
             },
             {
                 "name": "self-contained",

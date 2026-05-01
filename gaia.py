@@ -53,7 +53,7 @@ action_operation_parser.add_argument('-r', '--remove', action='store_true', help
 # Payload Modules
 agent_parser = payload_parser.add_mutually_exclusive_group(required=True)
 agent_parser.add_argument('--apollo', action='store_true', help='build apollo payloads')
-# agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
+agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
 agent_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
 payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads')
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
@@ -336,11 +336,10 @@ async def main():
         # process poseidon payloads
         if args.poseidon == True:
             payload_name = args.name[0].strip()
+            payload_os = args.os.capitalize()
+
 
             if args.os == "linux":
-                
-                # Translates to value poseidon builder expects
-                payload_os = "Linux"
 
                 # Generate linux x64 static elf
                 print("Poseidon linux x64 elf building")
@@ -367,7 +366,7 @@ async def main():
 
         # Process athena payloads
         if args.athena == True:
-            payload_os = args.os
+            payload_os = args.os.capitalize()
 
             if args.os == "windows":
                 payload_name_base = args.name[0].strip()
@@ -385,6 +384,8 @@ async def main():
                 print("Athena windows x64 service executable built")
             
             elif args.os == "linux":
+                payload_name_base = args.name[0].strip()
+
                 # Generate linux x64 .net elf
                 print("Athena linux x64 elf building")
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_base, payload_description="Linux x64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
@@ -396,6 +397,10 @@ async def main():
                 print("Athena linux arm64 elf built")
 
             elif args.os == "macos":
+                # Translates to value athena builder expects
+                payload_os = "macOS"
+                payload_name_base = args.name[0].strip()
+
                 # Generate macOS arm64 .net elf
                 print("Athena macos arm64 elf building")
                 await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="macOS arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
