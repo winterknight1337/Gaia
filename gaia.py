@@ -53,13 +53,13 @@ action_operation_parser.add_argument('-r', '--remove', action='store_true', help
 # Payload Modules
 agent_parser = payload_parser.add_mutually_exclusive_group(required=True)
 agent_parser.add_argument('--apollo', action='store_true', help='build apollo payloads')
-agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
+# agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
 agent_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
 payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads')
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
 payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dddd format. Defaults to 1 year')
-payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon payloads')
+payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for poseidon payloads')
 
 # Install Parser
 install_parser.add_argument('-U', '--update-system', action='store_true', help='update system with apt before installing mythic')
@@ -184,8 +184,10 @@ async def main():
         stdout = args.stdout
 
         # Ready user list as input
-        if args.user_input:
-            user_list_in = args.user_input.strip()
+        if args.user_list:
+            user_list_in = args.user_list.strip()
+        else:
+            user_list_in = []
 
         # Ready user credentials list for output
         if args.user_output:
