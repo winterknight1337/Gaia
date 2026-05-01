@@ -157,10 +157,11 @@ async def main():
         # Create an API key for the current user
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
-        # Dumps API key and mythic connection information into .env
-        utils.env.modify_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
-        utils.env.modify_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
-        utils.env.modify_env("MYTHIC_API_KEY", api_token)
+        if args.update_env == True or config["MYTHIC_API_KEY"] == '' or config == None:
+            # Dumps API key and mythic connection information into .env
+            utils.env.update_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
+            utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", mythic_port)
+            utils.env.update_env("MYTHIC_API_KEY", api_token)
 
         sys.exit(0)
     
