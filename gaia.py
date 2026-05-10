@@ -59,7 +59,7 @@ payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='',
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
 payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dd format. Defaults to 1 year')
-payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify which operating system to generate athena and poseidon payloads for')
+payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon')
 
 # Install Parser
 install_parser.add_argument('-U', '--update-system', action='store_true', help='update system with apt before installing mythic')
