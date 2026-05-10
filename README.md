@@ -26,7 +26,7 @@ It supports the following capabilities:
     python3 -m venv .venv
     source .venv/bin/activate
     ```
-    
+
 3. Install required packages
     ```bash
     pip3 install -r requirements.txt
@@ -39,35 +39,42 @@ python3 gaia.py install -S <remote_host> -p <port> -u <username> -p <password> -
 ```
 Feel free to get some coffee, it will be a little while until everything is completed.
 
+
 To authenticate to Mythic once it's installed
 ```bash
 python3 gaia.py auth -S <mythic_host> -P <mythic_interface_port> -u mythic_admin -p '<random_gen_password>
 ```
+
 
 To create new users for Mythic passing users with stdin and new creds with stdout
 ```bash
 python3 gaia.py users -i winterknight, test, test2 -s -c
 ```
 
+
 To create new users for Mythic passing users in with a file and new creds to a file
 ```bash
 python3 gaia.py users -l /path/to/file -o /path/to/file -c
 ```
+
 
 To create a new operation in Mythic and assign a mythic user to it
 ```bash
 python3 gaia.py operations -o <operation_name> -c -u winterknight -a
 ```
 
+
 To create new Apollo payloads
 ```bash
 python3 gaia.py payloads --apollo -n apollo -U https://192.168.1.1 -P 443 -K 2026-05-10
 ```
 
+
 To create new Poseidon payloads
 ```bash
 python3 gaia.py payloads --poseidon -n poseidon -U https://192.168.1.1 -P 443 -K 2026-05-10 -o linux
 ```
+
 
 To create new Athena payloads
 ```bash
