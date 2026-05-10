@@ -11,39 +11,39 @@ else:
 # Root options that are available across the whole application
 global_parser = argparse.ArgumentParser(
     prog='gaia.py',
-    description='Lightweight helper tool to deploy and manage mythic c2 installs')
+    description='Lightweight tool to help install and manage mythic c2 for lab environments')
 
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
-auth_parser = subparsers.add_parser('auth', help='authenticate to mythic and dump api key to .env')
+auth_parser = subparsers.add_parser('auth', help='authenticates to mythic and dumps api key to .env')
 # dns_parser = subparsers.add_parser('dns', help='manage dns records')
-install_parser = subparsers.add_parser('install', help='manage mythic installation')
-operation_parser = subparsers.add_parser('operations', help='manage mythic operations')
-payload_parser = subparsers.add_parser('payloads', help='manage payloads')
-user_parser = subparsers.add_parser('users', help='manage mythic users')
+install_parser = subparsers.add_parser('install', help='manages mythic installation components')
+operation_parser = subparsers.add_parser('operations', help='manages mythic operations')
+payload_parser = subparsers.add_parser('payloads', help='creates payloads')
+user_parser = subparsers.add_parser('users', help='creates mythic users')
 
 # Global modules
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
-global_parser.add_argument('--update-env', action='store_true', help='overwrite .env file with cli args')
+global_parser.add_argument('--update-env', action='store_true', help='overwrite .env file contents with specified cli args')
 
 # Auth modules
-auth_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help="fqdn or ip address for mythic server")
-auth_parser.add_argument('-P', '--port', required=True, nargs=1, metavar='', help="port for admin interface on mythic server")
-auth_parser.add_argument('-p', '--password', required=True, nargs=1, metavar='', help='password for mythic user account')
-auth_parser.add_argument('-u', '--username', required=True, nargs=1, metavar='', help='mythic user account to authenticate as')
+auth_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help="hostname, fqdn, or ip address for mythic server")
+auth_parser.add_argument('-P', '--port', required=True, nargs=1, metavar='', help="port for web interface on mythic server")
+auth_parser.add_argument('-p', '--password', required=True, nargs=1, metavar='', help='password for specified mythic user account')
+auth_parser.add_argument('-u', '--username', required=True, nargs=1, metavar='', help='username for mythic authentication')
 
 # User modules
 action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
+user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='specify one or more user account to process')
+user_parser.add_argument('-l', '--user-list', nargs='?', metavar="path/to/user_list", help='pass user list via file')
+user_parser.add_argument('-o', '--user-output', nargs='?', metavar='path/to/output', help='dumps newly created credentials to specified file')
 action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
 # action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
-user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide one or more user account to process')
-user_parser.add_argument('-l', '--user-list', nargs='?', metavar="path/to/user_list", help='provide a path to a list of users')
-user_parser.add_argument('-o', '--user-output', nargs='?', metavar='path/to/output', help='dumps newly created credentials to disk')
-user_parser.add_argument('-s', '--stdout', action='store_true', help='sends newly created creds to stdout')
+user_parser.add_argument('-s', '--stdout', action='store_true', help='echos newly created creds to stdout')
 
 # Operation modules
-operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specify operation to manage')
-operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='provide user accounts to process')
+operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specifies operation to manage')
+operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='specify one or more user account to process')
 operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
 
 action_operation_parser = operation_parser.add_mutually_exclusive_group()
@@ -52,23 +52,23 @@ action_operation_parser.add_argument('-r', '--remove', action='store_true', help
 
 # Payload Modules
 agent_parser = payload_parser.add_mutually_exclusive_group(required=True)
-agent_parser.add_argument('--apollo', action='store_true', help='build apollo payloads')
-agent_parser.add_argument('--athena', action='store_true', help='build athena payloads')
-agent_parser.add_argument('--poseidon', action='store_true', help='build poseidon payloads')
-payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads')
+agent_parser.add_argument('--apollo', action='store_true', help='builds apollo payloads')
+agent_parser.add_argument('--athena', action='store_true', help='builds athena payloads')
+agent_parser.add_argument('--poseidon', action='store_true', help='builds poseidon payloads')
+payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads before extensions are added')
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
-payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dddd format. Defaults to 1 year')
-payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for poseidon payloads')
+payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dd format. Defaults to 1 year')
+payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify which operating system to generate athena and poseidon payloads for')
 
 # Install Parser
 install_parser.add_argument('-U', '--update-system', action='store_true', help='update system with apt before installing mythic')
 install_parser.add_argument('-D', '--install-deps', action='store_true', help='install dependencies on target host before installing mythic')
 install_parser.add_argument('-M', '--install-mythic', action='store_true', help='install mythic on the target.')
-install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='server to install mythic on')
+install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to install mythic on')
 install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply password or ssh passphrase for authentication')
+install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
 # install_parser.add_argument('-i', '--identity_file', action='store_true', metavar='', help='provide ssh key for server')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
