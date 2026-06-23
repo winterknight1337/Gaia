@@ -90,7 +90,7 @@ async def main():
         # Initialize SSH
         ssh = paramiko.SSHClient()
         ssh.load_system_host_keys()
-        ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         # Get connection information
         server = args.server[0].strip()
