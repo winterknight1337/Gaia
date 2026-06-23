@@ -19,7 +19,7 @@ It supports the following capabilities:
 # Prerequisites
 1. Debian, Kali, or Ubuntu server configured to allow either:
     - SSH into `root` account
-    - SSH into account configured to allow `sudo` without a password
+    - SSH account configured to allow `sudo` without a password
 
 2. Create Python venv
     ```bash
