@@ -68,7 +68,7 @@ install_parser.add_argument('-M', '--install-mythic', action='store_true', help=
 install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to install mythic on')
 install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
+install_parser.add_argument('-p', '--password', required=True, nargs=1, metavar='', help='supply user password for authentication')
 # install_parser.add_argument('-i', '--identity_file', action='store_true', metavar='', help='provide ssh key for server')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
