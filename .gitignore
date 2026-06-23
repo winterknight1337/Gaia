@@ -213,4 +213,4 @@ pyvenv.cfg
 
 # User account related files
 users.txt
-creds.txt
+*creds.txt
