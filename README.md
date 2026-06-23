@@ -40,7 +40,7 @@ python3 gaia.py install -S <remote_host> -p <port> -u <username> -p <password> -
 
 Use Gaia to install Mythic on a remote system over over SSH using an SSH key. If both password and SSH key are supplied the SSH key takes precedent.
 ```bash
-python3 gaia.py install -S <remote_host> -p <port> -u <username> -i <path/to/ssh_key> -install-deps -install-mythic
+python3 gaia.py install -S <remote_host> -p <port> -u <username> -i <path/to/ssh_key> --install-deps --install-mythic
 ```
 Feel free to get some coffee, it will be a little while until everything is completed. 
 > Note that this command will add the remote host's SSH fingerprint to your `known_hosts` file.
