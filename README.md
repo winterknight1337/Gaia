@@ -33,9 +33,14 @@ It supports the following capabilities:
     ```
 
 # Usage Instructions
-To use Gaia to isntall Mythic on a remote system over ssh
+Use Gaia to install Mythic on a remote system over over SSH using a password.
 ```bash
 python3 gaia.py install -S <remote_host> -p <port> -u <username> -p <password> -D -M
+```
+
+Use Gaia to install Mythic on a remote system over over SSH using an SSH key. If both password and SSH key are supplied the SSH key takes precedent.
+```bash
+python3 gaia.py install -S <remote_host> -p <port> -u <username> -i <path/to/ssh_key> -D -M
 ```
 Feel free to get some coffee, it will be a little while until everything is completed.
 
