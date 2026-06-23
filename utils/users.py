@@ -16,7 +16,6 @@ async def create_user(mythic_instance: mythic, username: str):
 
 def prepare_users(users_stdin: str, user_file_in: str):
     # Load user list from file, set list to empty if not passed
-    # TODO Figure out why this errored out with CLI user creation
     if user_file_in != []:
         with open(user_file_in, 'r') as file:
             user_list = file.readlines()
