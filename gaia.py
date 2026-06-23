@@ -68,8 +68,8 @@ install_parser.add_argument('-M', '--install-mythic', action='store_true', help=
 install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to install mythic on')
 install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-install_parser.add_argument('-p', '--password', required=True, nargs=1, metavar='', help='supply user password for authentication')
-# install_parser.add_argument('-i', '--identity_file', action='store_true', metavar='', help='provide ssh key for server')
+install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
+install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide ssh key for server')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
 
@@ -87,6 +87,10 @@ async def main():
     if args.subcommand == "install":
         import paramiko, utils.install
 
+        if args.password == None and args.identity_file == None:
+            print("Specify either -i or -p.")
+            sys.exit(1)
+
         # Initialize SSH
         ssh = paramiko.SSHClient()
         ssh.load_system_host_keys()
@@ -96,20 +100,32 @@ async def main():
         server = args.server[0].strip()
         user = args.user[0].strip()
 
+        # Determine if we show stderr on streamed terminal output
+        if args.stderr == True:
+            display_stderr = True
+        else:
+            display_stderr = False
+
+        # SSH port
         if args.port == True:
             port = args.port[0].strip()
         else:
             port = 22
 
+        # Ready SSH key
+        if args.identity_file != None:
+            ssh_key = args.identity_file.strip()
+        else:
+            ssh_key = None
+
+        # Ready password
         if args.password != None:
             password = args.password[0].strip()
-
-        if args.stderr == True:
-            display_stderr = True
         else:
-            display_stderr = False
-        
-        ssh.connect(hostname=server, port=port, username=user, password=password,)
+            password = None
+            
+        # Paramiko attempts SSH key auth first, then password as a fallback
+        ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password)
         
         # Update system if requested
         if args.update_system == True:
