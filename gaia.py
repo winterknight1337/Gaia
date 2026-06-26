@@ -16,7 +16,7 @@ global_parser = argparse.ArgumentParser(
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
 auth_parser = subparsers.add_parser('auth', help='authenticates to mythic and dumps api key to .env')
-# dns_parser = subparsers.add_parser('dns', help='manage dns records')
+dns_parser = subparsers.add_parser('dns', help='manage dns records')
 install_parser = subparsers.add_parser('install', help='manages mythic installation components')
 operation_parser = subparsers.add_parser('operations', help='manages mythic operations')
 payload_parser = subparsers.add_parser('payloads', help='creates payloads')
@@ -71,6 +71,18 @@ install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', 
 install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
 install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
+
+# DNS Parser
+dns_parser.add_argument('-a', metavar='', help='set an a record')
+dns_parser.add_argument('-d', '--domain', metavar='', help='associate a record with a given domain or subdomain')
+dns_parser.add_argument('-k', '--api-key', metavar='', help='use the associated api key')
+dns_service = dns_parser.add_mutually_exclusive_group(required=True)
+dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cloudflare for domain management')
+#dns_service.add_argument('-N', '--namecheap', action='store_true', help='use namecheap for domain management')
+#dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
+#dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
+#dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
+
 
 
 args = global_parser.parse_args()
@@ -191,6 +203,14 @@ async def main():
             utils.env.update_env("MYTHIC_API_KEY", api_token)
 
         sys.exit(0)
+
+    if args.subcommand == "dns":
+        import utils.dns
+
+        if args.cloudflare == True:
+            domains = utils.dns.cloudflare_get_dns_zones(config)
+
+            sys.exit(0)
     
     # Check if config has been changed, if not then env has not been loaded.
     if config == None:
