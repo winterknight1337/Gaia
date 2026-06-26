@@ -82,6 +82,7 @@ dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cl
 #dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
 #dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
 #dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
+#dns_service.add_argument('-G', '--gandi', action='store_true', help='use gandi for domain management')
 
 
 
