@@ -62,14 +62,14 @@ payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', he
 payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon')
 
 # Install Parser
-install_parser.add_argument('-U', '--update-system', action='store_true', help='update system with apt before installing mythic')
+install_parser.add_argument('-U', '--install-updates', action='store_true', help='update system with apt before installing mythic')
 install_parser.add_argument('-D', '--install-deps', action='store_true', help='install dependencies on target host before installing mythic')
 install_parser.add_argument('-M', '--install-mythic', action='store_true', help='install mythic on the target.')
 install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to install mythic on')
 install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
 install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
-install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide ssh key for server')
+install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
 
@@ -128,7 +128,7 @@ async def main():
         ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password)
         
         # Update system if requested
-        if args.update_system == True:
+        if args.install_updates == True:
             print("Updating remote system")
             (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y", get_pty=True)
             utils.install.print_terminal_output(stdout)
