@@ -5,11 +5,3 @@ def update_env(env_key: str, env_value: str):
     
     dotenv_file = dotenv.find_dotenv()
     dotenv.set_key(dotenv_path=dotenv_file, key_to_set=env_key, value_to_set=env_value)
-
-def get_dns_api_token(env: str, key_name: str, token=None):
-    if env[key_name] != None:
-        api_token = env[key_name]
-    else:
-        api_token = token
-
-    return api_token

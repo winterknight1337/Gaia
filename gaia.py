@@ -206,10 +206,16 @@ async def main():
         sys.exit(0)
 
     if args.subcommand == "dns":
-        import utils.dns
 
         if args.cloudflare == True:
-            domains = utils.dns.cloudflare_get_dns_zones(config)
+            import utils.dns.cf
+            api_token = config["CLOUDFLARE_API_TOKEN"]
+
+            if api_token == None:
+                api_token = args.api_key
+
+            domains = utils.dns.cf.get_domains(api_token)
+            print(domains)
 
             sys.exit(0)
     
