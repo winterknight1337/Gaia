@@ -79,8 +79,9 @@ dns_record.add_argument('--cname', action='store_true', help='set a cname record
 dns_record.add_argument('--aaaa', action='store_true', help='set a aaaa record')
 dns_parser.add_argument('-d', '--domain', required=True, metavar='', help='associate a record with a given domain or subdomain')
 dns_parser.add_argument('-v', '--value', required=True, metavar='', help='assign a value to the domain record')
-dns_parser.add_argument('-k', '--api-key', metavar='', help='use the associated api key')
 dns_parser.add_argument('-z', '--zone', required=True, metavar='', help='dns zone to change')
+dns_parser.add_argument('--delete', action='store_true', help='delete a dns record')
+dns_parser.add_argument('-k', '--api-key', metavar='', help='use the associated api key')
 dns_service = dns_parser.add_mutually_exclusive_group(required=True)
 dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cloudflare for domain management')
 #dns_service.add_argument('-N', '--namecheap', action='store_true', help='use namecheap for domain management')
@@ -214,7 +215,7 @@ async def main():
         domain_edit = args.zone
         target_domain = args.domain
         target_value = args.value
-
+        delete = args.delete
 
         # Check if the new domain record type has been set
         if args.a == None:
@@ -263,13 +264,21 @@ async def main():
             # Compare records with the intended incoming record, skip creation if it exists
             if records["result"] != []:
                 for i in records["result"]:
-                    if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value:
+                    if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete != True:
                         print("Requested domain record exists in this DNS zone. Exiting!")
                         sys.exit(1)
-                    elif i["name"] == target_domain:
+
+                    elif i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == True:
+                        record_id = i["id"]
+                        utils.dns.cf.delete_domain_record(api_token=api_token, zone_id=domain_id, dns_record_id=record_id)
+                        print("Successfully deleted specified domain record.")
+                        sys.exit(1)
+                    
+                    elif i["name"] == target_domain and delete != True:
                         print("Domain name conflicts with existing record. Please delete existing record before proceeding.")
                         sys.exit(1)
-                    else:
+                    
+                    elif delete != True:
                         record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=target_domain, record_type=record_type, record_target=target_value)
                         print(record_create)
             else:
