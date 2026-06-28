@@ -16,7 +16,7 @@ global_parser = argparse.ArgumentParser(
 # 'Core' modules
 subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
 auth_parser = subparsers.add_parser('auth', help='authenticates to mythic and dumps api key to .env')
-# dns_parser = subparsers.add_parser('dns', help='manage dns records')
+dns_parser = subparsers.add_parser('dns', help='manage dns records')
 install_parser = subparsers.add_parser('install', help='manages mythic installation components')
 operation_parser = subparsers.add_parser('operations', help='manages mythic operations')
 payload_parser = subparsers.add_parser('payloads', help='creates payloads')
@@ -71,6 +71,25 @@ install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', 
 install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
 install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
+
+# DNS Parser
+dns_record = dns_parser.add_mutually_exclusive_group(required=True)
+dns_record.add_argument('--a', action='store_true', help='set an a record')
+dns_record.add_argument('--cname', action='store_true', help='set a cname record')
+dns_record.add_argument('--aaaa', action='store_true', help='set a aaaa record')
+dns_parser.add_argument('-d', '--domain', required=True, metavar='', help='associate a record with a given domain or subdomain')
+dns_parser.add_argument('-v', '--value', required=True, metavar='', help='assign a value to the domain record')
+dns_parser.add_argument('-z', '--zone', required=True, metavar='', help='dns zone to change')
+dns_parser.add_argument('--delete', action='store_true', help='delete a dns record')
+dns_parser.add_argument('-k', '--api-key', metavar='', help='use the associated api key')
+dns_service = dns_parser.add_mutually_exclusive_group(required=True)
+dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cloudflare for domain management')
+#dns_service.add_argument('-N', '--namecheap', action='store_true', help='use namecheap for domain management')
+#dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
+#dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
+#dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
+#dns_service.add_argument('-G', '--gandi', action='store_true', help='use gandi for domain management')
+
 
 
 args = global_parser.parse_args()
@@ -191,10 +210,86 @@ async def main():
             utils.env.update_env("MYTHIC_API_KEY", api_token)
 
         sys.exit(0)
+
+    if args.subcommand == "dns":
+        domain_edit = args.zone
+        target_domain = args.domain
+        target_value = args.value
+        delete = args.delete
+
+        # Check if the new domain record type has been set
+        if args.a == None:
+            print("Please specify a domain record type. Exititing!")
+            sys.exit(1)
+        else:
+            a_record = args.a
+            aaaa_record = args.aaaa
+            cname_record = args.cname
+
+        # Set record type to be passed to the function
+        if a_record == True:
+            record_type = "A"
+        elif cname_record == True:
+            record_type = "CNAME"
+        elif aaaa_record == True:
+            record_type = "AAAA"
+
+
+        if args.cloudflare == True:
+            # Validate that we have the CF API key
+            import utils.dns.cf
+            api_token = config["CLOUDFLARE_API_TOKEN"]
+
+            if api_token == None:
+                api_token = args.api_key
+
+            # Get the domains listed in the account
+            domains = utils.dns.cf.get_domains(api_token=api_token)
+            
+            # Check that our specified domain returns from this account
+            for i in domains["result"]:
+                if i["name"] == domain_edit:
+                    domain_id = i["id"]
+                    break
+                else:
+                    domain_id = None
+                
+            if domain_id == None:
+                print("Please specify a domain ")
+                sys.exit(1)
+
+            # Get the current dns records
+            records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
+            
+            # Compare records with the intended incoming record, skip creation if it exists
+            if records["result"] != []:
+                for i in records["result"]:
+                    if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete != True:
+                        print("Requested domain record exists in this DNS zone. Exiting!")
+                        sys.exit(1)
+
+                    elif i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == True:
+                        record_id = i["id"]
+                        utils.dns.cf.delete_domain_record(api_token=api_token, zone_id=domain_id, dns_record_id=record_id)
+                        print("Successfully deleted specified domain record.")
+                        sys.exit(1)
+                    
+                    elif i["name"] == target_domain and delete != True:
+                        print("Domain name conflicts with existing record. Please delete existing record before proceeding.")
+                        sys.exit(1)
+                    
+                    elif delete != True:
+                        record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=target_domain, record_type=record_type, record_target=target_value)
+                        print(record_create)
+            else:
+                record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=target_domain, record_type=record_type, record_target=target_value)
+                print(record_create)
+
+            sys.exit(0)
     
     # Check if config has been changed, if not then env has not been loaded.
     if config == None:
-        print("No mythtic api key detected in .env. have you authenticated to mythic?")
+        print("No mythic api key detected in .env. have you authenticated to mythic?")
         auth_parser.print_help()
         sys.exit(1)
 
