@@ -48,13 +48,13 @@ Feel free to get some coffee, it will be a little while until everything is comp
 
 To authenticate to Mythic once it's installed
 ```bash
-python3 gaia.py auth -S <mythic_host> -P <mythic_interface_port> -u mythic_admin -p '<random_gen_password>
+python3 gaia.py auth -S <mythic_host> -P <mythic_interface_port> -u mythic_admin -p '<random_gen_password>'
 ```
 
 
 To create new users for Mythic passing users with stdin and new creds with stdout
 ```bash
-python3 gaia.py users -i winterknight, test, test2 -s -c
+python3 gaia.py users -u winterknight test test2 -s -c
 ```
 
 
