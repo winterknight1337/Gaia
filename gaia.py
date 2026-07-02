@@ -1,4 +1,4 @@
-import argparse, sys, os, asyncio, dotenv
+import argparse, sys, os, asyncio, dotenv, getpass
 
 # Load environment variables first
 if os.path.isfile(".env"):
@@ -68,7 +68,7 @@ install_parser.add_argument('-M', '--install-mythic', action='store_true', help=
 install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to install mythic on')
 install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-install_parser.add_argument('-p', '--password', nargs=1, metavar='', help='supply user password for authentication')
+install_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
 install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
@@ -88,9 +88,6 @@ dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cl
 #dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
 #dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
 #dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
-#dns_service.add_argument('-G', '--gandi', action='store_true', help='use gandi for domain management')
-
-
 
 args = global_parser.parse_args()
 
@@ -105,10 +102,6 @@ async def main():
 
     if args.subcommand == "install":
         import paramiko, utils.install
-
-        if args.password == None and args.identity_file == None:
-            print("Specify either -i or -p.")
-            sys.exit(1)
 
         # Initialize SSH
         ssh = paramiko.SSHClient()
@@ -131,20 +124,20 @@ async def main():
         else:
             port = 22
 
-        # Ready SSH key
+        # Ready SSH key if one is specified
         if args.identity_file != None:
             ssh_key = args.identity_file.strip()
         else:
             ssh_key = None
 
-        # Ready password
-        if args.password != None:
-            password = args.password[0].strip()
+        # Ready password or ssh passphrase
+        if args.password == True:
+            password = getpass.getpass()
         else:
             password = None
             
         # Paramiko attempts SSH key auth first, then password as a fallback
-        ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password)
+        ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
         
         # Update system if requested
         if args.install_updates == True:
@@ -219,7 +212,7 @@ async def main():
 
         # Check if the new domain record type has been set
         if args.a == None:
-            print("Please specify a domain record type. Exititing!")
+            print("Please specify a domain record type. Exiting!")
             sys.exit(1)
         else:
             a_record = args.a
@@ -255,13 +248,13 @@ async def main():
                     domain_id = None
                 
             if domain_id == None:
-                print("Please specify a domain ")
+                print("Please specify a valid domain. Exiting!")
                 sys.exit(1)
 
             # Get the current dns records
             records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
             
-            # Compare records with the intended incoming record, skip creation if it exists
+            # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
             if records["result"] != []:
                 for i in records["result"]:
                     if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete != True:
@@ -286,7 +279,7 @@ async def main():
                 print(record_create)
 
             sys.exit(0)
-    
+
     # Check if config has been changed, if not then env has not been loaded.
     if config == None:
         print("No mythic api key detected in .env. have you authenticated to mythic?")
