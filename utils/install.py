@@ -32,3 +32,14 @@ def copy_and_execute_script(ssh, script: str, err: bool):
 def print_terminal_output(channel):
     for line in iter(channel.readline, ""):
         print(line, end="")
+
+def convert_line_endings(script: str):
+    # Get the base directory for the project and add install_deps.
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    local_path = os.path.join(base_dir, f"{script}")
+
+    with open(local_path, "r") as file:
+        contents = file.read()
+    
+    with open(local_path, "w", newline="\n") as file:
+        file.write(contents)

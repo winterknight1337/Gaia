@@ -153,11 +153,13 @@ async def main():
         # Install dependencies if requested
         if args.install_deps == True:
             print("Installing Dependencies")
+            utils.install.convert_line_endings("install_deps.sh")
             utils.install.copy_and_execute_script(ssh=ssh, script="install_deps.sh", err=display_stderr)
 
         # Install Mythic and it's dependencies if true
         if args.install_mythic == True:
             print("Installing Mythic. This will take a while, so go get some coffee")
+            utils.install.convert_line_endings("install_mythic.sh")
             utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
 
             # Get mythic admin password
