@@ -45,6 +45,7 @@ user_parser.add_argument('-s', '--stdout', action='store_true', help='echos newl
 operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specifies operation to manage')
 operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='specify one or more user account to process')
 operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
+operation_parser.add_argument('-l', '--list', action='store_true', help='lists operations in mythic')
 
 action_operation_parser = operation_parser.add_mutually_exclusive_group()
 action_operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
@@ -356,6 +357,11 @@ async def main():
     # Process operations
     if args.subcommand == "operations":
         import utils.operations, utils.env
+
+        if args.list == True:
+            operations = await utils.operations.get_operations(mythic_instance=mythic_session)
+            for i in operations:
+                print(i)
 
         # Creates new operation
         if args.create == True:
