@@ -158,8 +158,8 @@ async def main():
 
         # Install Mythic and it's dependencies if true
         if args.install_mythic == True:
-            print("Installing Mythic. This will take a while, so go get some coffee")
-            utils.install.convert_line_endings("install_mythic.sh")
+            print("Installing Mythic. This will take a while, so go get some coffee.")
+            utils.install.convert_line_endings("install_deps.sh")
             utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
 
             # Get mythic admin password
@@ -168,10 +168,12 @@ async def main():
             mythic_admin_password = mythic_admin_password[0].split('"')
             mythic_admin_password = mythic_admin_password[1]
 
-            print("Dumping mythic creds to local disk.")
+            print("Dumping mythic creds to local disk!")
             with open("mythic_admin_creds.txt", "w") as file:
                 mythic_admin_creds = "mythic_admin:" + mythic_admin_password
                 file.write(mythic_admin_creds)
+
+            print("If the password for `mythic_admin` is lost, run `grep \"MYTHIC_ADMIN_PASSWORD\" /opt/Mythic/.env | cut -d \'\"\' -f 2` on the server mythic is installed on.")
 
         ssh.close()
         sys.exit(0)
