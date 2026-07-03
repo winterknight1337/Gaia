@@ -341,7 +341,7 @@ async def main():
 
             # Dump creds to file
             if cred_list != None:
-                with open(user_list_out, 'w') as file:
+                with open(user_list_out, 'aw') as file:
                     file.writelines(cred_list)
                 
 
