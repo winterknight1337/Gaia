@@ -6,7 +6,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 echo "Updating apt sources!";
-apt update
+apt update;
 
 echo "Installing prerequisites!";
 apt install git vim make -y;
