@@ -86,7 +86,7 @@ dns_parser.add_argument('-k', '--api-key', metavar='', help='use the associated 
 dns_service = dns_parser.add_mutually_exclusive_group(required=True)
 dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cloudflare for domain management')
 #dns_service.add_argument('-N', '--namecheap', action='store_true', help='use namecheap for domain management')
-#dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
+dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
 #dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
 #dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
 
@@ -268,7 +268,7 @@ async def main():
             # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
             if records["result"] != []:
                 for i in records["result"]:
-                    if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete != True:
+                    if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == False:
                         print("Requested domain record exists in this DNS zone. Exiting!")
                         sys.exit(1)
 
@@ -278,7 +278,7 @@ async def main():
                         print("Successfully deleted specified domain record.")
                         sys.exit(1)
                     
-                    elif i["name"] == target_domain and delete != True:
+                    elif i["name"] == target_domain and delete == False:
                         print("Domain name conflicts with existing record. Please delete existing record before proceeding.")
                         sys.exit(1)
                     
@@ -289,6 +289,56 @@ async def main():
                 record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=target_domain, record_type=record_type, record_target=target_value)
                 print(record_create)
 
+            sys.exit(0)
+
+
+        if args.porkbun == True:
+            import utils.dns.porkbun
+            api_pk1 = config["PORKBUN_API_KEY"]
+            api_sk1 = config["PORKBUN_SECRET_KEY"]
+
+            if api_pk1 == None or api_sk1 == None:
+                print("Please specify your porkbun keys in .env")
+                sys.exit(1)
+
+            # Get the domains listed in the account
+            domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+
+            # Check that our specified domain returns from this account
+            for i in domains["domains"]:
+                if i["domain"] == domain_edit:
+                    target_domain = i["domain"]
+                    break
+                else:
+                    target_domain = None
+                
+            if target_domain == None:
+                print("Please specify a valid domain. Exiting!")
+                sys.exit(1)
+
+            # Get the current dns records
+            records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=target_domain)
+
+            # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
+            for i in records["records"]:
+                if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == False:
+                    print("Requested domain record exists in this DNS zone. Exiting!")
+                    sys.exit(1)
+
+                elif i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == True:
+                    record_id = i["id"]
+                    utils.dns.porkbun.delete_domain_record_by_id(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_id=record_id)
+                    print("Successfully deleted specified domain record.")
+                    sys.exit(0)
+
+            # Catch Porkbun quirk of wanting an empty string for a root domain object
+            if len(target_domain.split(".")) == 2:
+                target_record = ""
+            else:
+                target_record = target_domain
+
+            record_create = utils.dns.porkbun.create_domain_record(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_name=target_record, record_type=record_type, record_target=target_value)
+            print(record_create)
             sys.exit(0)
 
     # Check if config has been changed, if not then env has not been loaded.
