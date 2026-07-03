@@ -28,8 +28,8 @@ global_parser.add_argument('--update-env', action='store_true', help='overwrite 
 
 # Auth modules
 auth_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help="hostname, fqdn, or ip address for mythic server")
-auth_parser.add_argument('-P', '--port', required=True, nargs=1, metavar='', help="port for web interface on mythic server")
-auth_parser.add_argument('-p', '--password', required=True, nargs=1, metavar='', help='password for specified mythic user account')
+auth_parser.add_argument('-P', '--port', nargs=1, metavar='', help="port for web interface on mythic server")
+auth_parser.add_argument('-p', '--password', required=True, action="store_true", help='password for specified mythic user account')
 auth_parser.add_argument('-u', '--username', required=True, nargs=1, metavar='', help='username for mythic authentication')
 
 # User modules
@@ -184,9 +184,15 @@ async def main():
         
         # Authenticates to mythic if server, port, user, and password are specified
         auth_user = str(args.username[0]).strip()
-        auth_password = str(args.password[0]).strip()
         mythic_host = str(args.server[0]).strip()
-        mythic_port = int(args.port[0])
+
+        if args.port != None:
+            mythic_port = int(args.port[0])
+        else:
+            mythic_port = 7443
+
+        if args.password == True:
+            auth_password = getpass.getpass()
 
         # Auth according to SSL input
         if args.no_ssl == False:
