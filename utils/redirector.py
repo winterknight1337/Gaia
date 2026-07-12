@@ -30,7 +30,7 @@ def create_aws_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_ru
 def create_aws_security_group(ec2_session: boto3.Session.client, dry_run:bool=False):
     response = ec2_session.create_security_group(
         Description="Created by Gaia",
-        GroupName="Webservers-test",
+        GroupName="Webservers",
         TagSpecifications=[
             {
                 "ResourceType": "security-group",
@@ -111,6 +111,16 @@ def launch_ec2(ec2_session: boto3.Session.client, os: str, ec2_size: str, key_na
             },
         ],
         DryRun=dry_run
+    )
+
+    return response
+
+def get_aws_network_interface_public_ip(ec2_session: boto3.Session.client, interface_id: str, dry_run:bool=False):
+    response = ec2_session.describe_network_interfaces(
+        NetworkInterfaceIds = [
+            interface_id,
+        ],
+        DryRun = dry_run
     )
 
     return response

@@ -1,4 +1,4 @@
-import argparse, sys, os, asyncio, dotenv, getpass
+import argparse, sys, os, asyncio, dotenv, getpass, time
 
 # Load environment variables first
 if os.path.isfile(".env"):
@@ -352,15 +352,18 @@ async def main():
 
     if args.subcommand == "redirector":
         if args.aws == True:
-            import boto3, utils.redirector
+            import boto3, utils.redirector, paramiko, utils.install
 
             if args.create == True:       
 
                 # Specify OS for redirector EC2
                 if args.os == "ubuntu":
                     ec2_os = "ubuntu"
+                    ec2_user = "ubuntu"
+
                 elif args.os == "debian":
                     ec2_os = "debian"
+                    ec2_user = "admin"
 
                 # Define EC2 size
                 if args.size == "micro":
@@ -373,24 +376,63 @@ async def main():
                     ec2_size == "t3.medium"
 
                 # Connect to EC2 Service
+                print("Connecting to AWS.")
                 aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
                 ec2_client = aws_session.client("ec2")
 
                 # Create EC2 key pair
+                print("Creating gaia-redir keypair for EC2.")
                 aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
-                aws_key_name_local = f"{aws_key_name}.pem"
+                home_dir = os.path.expanduser("~")
+                ssh_dir = f"{home_dir}/.ssh/"
+                aws_key_name_local_path = f"{ssh_dir}/{aws_key_name}.pem"
 
                 # Creates security group
+                print("Creating EC2 Security Group.")
                 aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
 
                 # allows http, https, and ssh inbound
+                print("Allowing SSH, HTTP, and HTTPS into EC2 Instance.")
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
 
+                # Build EC2
+                print("Launching EC2.")
                 instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
                 instance_id = instance["Instances"][0]["InstanceId"]
+                interface_id = instance["Instances"][0]["NetworkInterfaces"][0]["NetworkInterfaceId"]
+
+                print("Sleeping for 20 seconds to allow EC2 to provision VM.")
+                time.sleep(20)
                 
+                # Query for public IP address
+                print("Grabbing instance's public IP.")
+                interface_info = utils.redirector.get_aws_network_interface_public_ip(ec2_session=ec2_client, interface_id=interface_id)
+                instance_public_ip = interface_info["NetworkInterfaces"][0]["Association"]["PublicIp"]
+
+                # Initialize SSH
+                ssh = paramiko.SSHClient()
+                ssh.load_system_host_keys()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+                print("Connecting to EC2 instance over SSH")
+                ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
+                print("Updating EC2 before rebooting.")
+                (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y && sudo reboot")
+                utils.install.print_terminal_output(stdout)
+                ssh.close()
+
+                print("Sleep for 20 more seconds to allow the VM to reboot and load new kernel")
+                time.sleep(20)
+
+                print("Reconnect to EC2 before installing apache2")
+                ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
+
+                # Install and perform initial configuration of apache from the shell script
+                print("Installing and configuring Apache2")
+                utils.install.convert_line_endings("install_apache.sh")
+                utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=display_stderr)
 
         sys.exit(0)
     
