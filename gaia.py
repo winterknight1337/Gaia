@@ -21,6 +21,7 @@ install_parser = subparsers.add_parser('install', help='manages mythic installat
 operation_parser = subparsers.add_parser('operations', help='manages mythic operations')
 payload_parser = subparsers.add_parser('payloads', help='creates payloads')
 user_parser = subparsers.add_parser('users', help='creates mythic users')
+redirector_parser = subparsers.add_parser('redirector', help='create redirectors in cloud services')
 
 # Global modules
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
@@ -60,7 +61,7 @@ payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='',
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
 payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dd format. Defaults to 1 year')
-payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], metavar='', help='specify operating system for athena and poseidon')
+payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], help='specify operating system for athena and poseidon')
 
 # Install Parser
 install_parser.add_argument('-U', '--install-updates', action='store_true', help='update system with apt before installing mythic')
@@ -89,6 +90,14 @@ dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cl
 dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
 #dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
 #dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
+
+# Redirector parser
+redirector_parser.add_argument("-a", "--aws", action="store_true", help='manage redirectors in aws')
+redirector_parser.add_argument("-c", "--create", action="store_true", help='create a new redirector')
+redirector_parser.add_argument("-d", "--delete", action="store_true", help='destroy a redirector')
+redirector_parser.add_argument('-s', '--size', choices=['micro', 'small', 'medium'], help='set the size of the VM to be used for the redirector')
+redirector_parser.add_argument('-o', '--os', choices=['ubuntu', 'debian'], help='specify the os used for the redirector')
+
 
 args = global_parser.parse_args()
 
@@ -432,6 +441,7 @@ async def main():
 
         sys.exit(0)
 
+    # Create payloads
     if args.subcommand == "payloads":
         import utils.payloads, utils.env, datetime
 
@@ -590,6 +600,31 @@ async def main():
 
         sys.exit(0)
 
+    if args.subcommand == "redirector":
+        if args.aws == True:
+            import boto3, utils.redirector
+
+            if args.create == True:             
+
+                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
+                ec2_client = aws_session.client("ec2")
+
+                aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
+                aws_key_name_local = f"{aws_key_name}.pem"
+
+                # Creates security group
+                aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
+
+                # allows http, https, and ssh inbound
+                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
+                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
+                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
+
+                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os="ubuntu", ec2_size="t3.small", key_name=aws_key_name, security_group_id=aws_security_group_id)
+                instance_id = instance["Instances"][0]["InstanceId"]
+                
+
+        sys.exit(0)
 
 if __name__ == '__main__':
      asyncio.run(main())
