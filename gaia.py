@@ -354,6 +354,11 @@ async def main():
         if args.aws == True:
             import boto3, utils.redirector, paramiko, utils.install
 
+            # Connect to EC2 Service
+            print("Connecting to AWS.")
+            aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
+            ec2_client = aws_session.client("ec2")
+
             if args.create == True:       
 
                 # Specify OS for redirector EC2
@@ -374,11 +379,6 @@ async def main():
 
                 elif args.size == "medium":
                     ec2_size == "t3.medium"
-
-                # Connect to EC2 Service
-                print("Connecting to AWS.")
-                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
-                ec2_client = aws_session.client("ec2")
 
                 # Create EC2 key pair
                 print("Creating gaia-redir keypair for EC2.")
@@ -433,6 +433,64 @@ async def main():
                 print("Installing and configuring Apache2")
                 utils.install.convert_line_endings("install_apache.sh")
                 utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=display_stderr)
+
+            if args.delete == True:
+                instance_ids = []
+                ssh_key_ids = []
+                security_group_ids = []
+
+                # Query for EC2s with gaia tags on them
+                print("Getting Gaia EC2s from AWS")
+                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+                
+                # Collect instnace IDs and append them to a list to pass to deletion function later
+                for i in ec2_info["Reservations"]:
+                    for j in i["Instances"]:
+                        instance_ids.append(j["InstanceId"])
+
+                # Query for ssh keys with gaia tags on them
+                print("Getting Gaia SSH keys from AWS.")
+                keypair_info = utils.redirector.get_gaia_key_pairs(ec2_session=ec2_client)
+                for i in keypair_info["KeyPairs"]:
+                    ssh_key_ids.append(i["KeyPairId"])
+
+                # Query for security groups with gaia tags on them
+                print("Getting Gaia Security Groups from AWS.")
+                security_group_info = utils.redirector.get_gaia_security_groups(ec2_session=ec2_client)
+                for i in security_group_info["SecurityGroups"]:
+                    security_group_ids.append(i["GroupId"])
+
+                # Terminate Gaia instances
+                print("Terminating Gaia related EC2 instances.")
+                terminate = utils.redirector.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
+                print("Sleep for 20 seconds to allow EC2 instances to terminate.")
+                time.sleep(20)
+
+                # Delete Gaia SSH Keys
+                print("Deleting Gaia SSH Keys within EC2.")
+                for i in ssh_key_ids:
+                    key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
+                    if key_delete["Return"] == False:
+                        print("Key delete failed, trying agian after 10 seconds.")
+                        time.wait(10)
+                        key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
+                        if key_delete["Return"] == False:
+                            print("Key deletion failed again, retry later.")
+                            continue
+
+                # Delete Gaia Security groups
+                print("Deleting Gaia Security Groups.")
+                for i in security_group_ids:
+                    group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
+                    if group_delete["Return"] == False:
+                        print("Security Group delete failed, trying agian after 10 seconds.")
+                        time.wait(10)
+                        group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
+                        if group_delete["Return"] == False:
+                            print("Security Group deletion failed again, retry later.")
+                            continue
+
+                print("Gaia cleanup complete! Exiting!")
 
         sys.exit(0)
     

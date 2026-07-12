@@ -124,3 +124,72 @@ def get_aws_network_interface_public_ip(ec2_session: boto3.Session.client, inter
     )
 
     return response
+
+def get_gaia_ec2s(ec2_session: boto3.Session.client, dry_run:bool=False):
+    response = ec2_session.describe_instances(
+        Filters = [
+            {
+                "Name" : "tag:createdBy",
+                "Values": [
+                    "gaia",
+                ]
+            },
+        ],
+        DryRun = dry_run
+    )
+    MaxResults = 1000
+
+    return response
+
+def get_gaia_key_pairs(ec2_session: boto3.Session.client, dry_run:bool=False):
+    response = ec2_session.describe_key_pairs(
+       Filters = [
+            {
+                "Name" : "tag:createdBy",
+                "Values": [
+                    "gaia",
+                ]
+            },
+        ],
+        DryRun = dry_run
+    )
+
+    return response
+
+def get_gaia_security_groups(ec2_session: boto3.Session.client, dry_run:bool=False):
+    response = ec2_session.describe_security_groups(
+        Filters = [
+            {
+                "Name" : "tag:createdBy",
+                "Values": [
+                    "gaia",
+                ]
+            },
+        ],
+        DryRun = dry_run
+    )
+
+    return response
+
+def terminate_gaia_instances(ec2_session: boto3.Session.client, instance_ids:list, dry_run:bool=False):
+    response = ec2_session.terminate_instances(
+        InstanceIds=instance_ids,
+        DryRun = dry_run)
+
+    return response
+
+def delete_gaia_ssh_keys(ec2_session: boto3.Session.client, key_pair_id:str, dry_run:bool=False):
+    response = ec2_session.delete_key_pair(
+        KeyPairId = key_pair_id,
+        DryRun = dry_run
+    )
+
+    return response
+
+def delete_gaia_security_groups(ec2_session: boto3.Session.client, group_id:str, dry_run:bool=False):
+    response = ec2_session.delete_security_group(
+        GroupId = group_id,
+        DryRun = dry_run
+    )
+
+    return response
