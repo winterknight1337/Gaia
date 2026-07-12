@@ -350,6 +350,50 @@ async def main():
             print(record_create)
             sys.exit(0)
 
+    if args.subcommand == "redirector":
+        if args.aws == True:
+            import boto3, utils.redirector
+
+            if args.create == True:       
+
+                # Specify OS for redirector EC2
+                if args.os == "ubuntu":
+                    ec2_os = "ubuntu"
+                elif args.os == "debian":
+                    ec2_os = "debian"
+
+                # Define EC2 size
+                if args.size == "micro":
+                    ec2_size = "t3.micro"
+
+                elif args.size == "small":
+                    ec2_size = "t3.small"
+
+                elif args.size == "medium":
+                    ec2_size == "t3.medium"
+
+                # Connect to EC2 Service
+                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
+                ec2_client = aws_session.client("ec2")
+
+                # Create EC2 key pair
+                aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
+                aws_key_name_local = f"{aws_key_name}.pem"
+
+                # Creates security group
+                aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
+
+                # allows http, https, and ssh inbound
+                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
+                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
+                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
+
+                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
+                instance_id = instance["Instances"][0]["InstanceId"]
+                
+
+        sys.exit(0)
+    
     # Check if config has been changed, if not then env has not been loaded.
     if config == None:
         print("No mythic api key detected in .env. have you authenticated to mythic?")
@@ -597,48 +641,6 @@ async def main():
             else:
                 print("specify os when creating athena payloads")
                 sys.exit(0)
-
-        sys.exit(0)
-
-    if args.subcommand == "redirector":
-        if args.aws == True:
-            import boto3, utils.redirector
-
-            if args.create == True:       
-
-                # Specify OS for redirector EC2
-                if args.os == "ubuntu":
-                    ec2_os = "ubuntu"
-                elif args.os == "debian":
-                    ec2_os = "debian"
-
-                # Define EC2 size
-                if args.size == "micro":
-                    ec2_size = "t3.micro"
-
-                elif args.size == "small":
-                    ec2_size = "t3.small"
-
-                elif args.size == "medium":
-                    ec2_size == "t3.medium"
-
-                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
-                ec2_client = aws_session.client("ec2")
-
-                aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
-                aws_key_name_local = f"{aws_key_name}.pem"
-
-                # Creates security group
-                aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
-
-                # allows http, https, and ssh inbound
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
-
-                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
-                instance_id = instance["Instances"][0]["InstanceId"]
-                
 
         sys.exit(0)
 
