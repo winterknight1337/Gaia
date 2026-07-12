@@ -604,7 +604,23 @@ async def main():
         if args.aws == True:
             import boto3, utils.redirector
 
-            if args.create == True:             
+            if args.create == True:       
+
+                # Specify OS for redirector EC2
+                if args.os == "ubuntu":
+                    ec2_os = "ubuntu"
+                elif args.os == "debian":
+                    ec2_os = "debian"
+
+                # Define EC2 size
+                if args.size == "micro":
+                    ec2_size = "t3.micro"
+
+                elif args.size == "small":
+                    ec2_size = "t3.small"
+
+                elif args.size == "medium":
+                    ec2_size == "t3.medium"
 
                 aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
                 ec2_client = aws_session.client("ec2")
@@ -620,7 +636,7 @@ async def main():
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
 
-                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os="ubuntu", ec2_size="t3.small", key_name=aws_key_name, security_group_id=aws_security_group_id)
+                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
                 instance_id = instance["Instances"][0]["InstanceId"]
                 
 
