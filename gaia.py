@@ -478,6 +478,10 @@ async def main():
                             print("Key deletion failed again, retry later.")
                             continue
 
+                # Delete local copy of ssh key
+                print("Deleting local copy of SSH key for Gaia")
+                utils.redirector.delete_local_gaia_ssh_key("gaia-redir")
+
                 # Delete Gaia Security groups
                 print("Deleting Gaia Security Groups.")
                 for i in security_group_ids:
