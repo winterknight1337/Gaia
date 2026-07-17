@@ -103,7 +103,6 @@ redirector_parser.add_argument('-o', '--os', choices=['ubuntu', 'debian'], help=
 
 # Certbot Parser
 certbot_parser.add_argument('-d', '--domain', required=True, nargs=1, metavar='', help="specify the fully qualified domain to enable https on")
-certbot_parser.add_argument('-E', '--email', required=True, nargs=1, metavar='', help="specify the email to be used by certbot")
 certbot_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to configure certbot on')
 certbot_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
 certbot_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
@@ -536,8 +535,8 @@ async def main():
     if args.subcommand == "certbot":
         import paramiko, utils.install
 
-        certbot_domain = args.domain
-        certbot_email = args.email
+        # Get domain to activate certbot on
+        certbot_domain = args.domain[0].strip()
 
          # Initialize SSH
         ssh = paramiko.SSHClient()
@@ -569,8 +568,9 @@ async def main():
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
-        (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain} -m {certbot_email}")
+        (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain}")
         utils.install.print_terminal_output(stdout)
+        
 
         sys.exit(0)
     
