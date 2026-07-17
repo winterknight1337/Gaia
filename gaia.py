@@ -22,6 +22,7 @@ operation_parser = subparsers.add_parser('operations', help='manages mythic oper
 payload_parser = subparsers.add_parser('payloads', help='creates payloads')
 user_parser = subparsers.add_parser('users', help='creates mythic users')
 redirector_parser = subparsers.add_parser('redirector', help='create redirectors in cloud services')
+certbot_parser = subparsers.add_parser('certbot', help='configure certbot on redirector')
 
 # Global modules
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
@@ -98,6 +99,9 @@ redirector_parser.add_argument("-d", "--delete", action="store_true", help='dest
 redirector_parser.add_argument('-s', '--size', choices=['micro', 'small', 'medium'], help='set the size of the VM to be used for the redirector')
 redirector_parser.add_argument('-o', '--os', choices=['ubuntu', 'debian'], help='specify the os used for the redirector')
 
+# Certbot Parser
+certbot_parser.add_argument('-d', '--domain', required=True, nargs=1, metavar='', help="specify the domain to enable https on")
+certbot_parser.add_argument('-e', '--email', required=True, nargs=1, metavar='', help="specify the email to be used by certbot")
 
 args = global_parser.parse_args()
 
@@ -152,7 +156,7 @@ async def main():
         # Update system if requested
         if args.install_updates == True:
             print("Updating remote system")
-            (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y", get_pty=True)
+            (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y")
             utils.install.print_terminal_output(stdout)
 
             if display_stderr == True:
@@ -173,7 +177,7 @@ async def main():
             utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
 
             # Get mythic admin password
-            stdin, stdout, stderr = ssh.exec_command("grep 'MYTHIC_ADMIN_PASSWORD' /opt/Mythic/.env", get_pty=True)
+            stdin, stdout, stderr = ssh.exec_command("grep 'MYTHIC_ADMIN_PASSWORD' /opt/Mythic/.env")
             mythic_admin_password = stdout.readlines()
             mythic_admin_password = mythic_admin_password[0].split('"')
             mythic_admin_password = mythic_admin_password[1]
@@ -189,6 +193,7 @@ async def main():
         sys.exit(0)
 
     import utils.auth
+    # Handles authentication to Mythic
     if args.subcommand == "auth":
         import utils.env
         
@@ -224,6 +229,7 @@ async def main():
 
         sys.exit(0)
 
+    # Handles DNS management
     if args.subcommand == "dns":
         domain_edit = args.zone
         target_domain = args.domain
@@ -350,9 +356,10 @@ async def main():
             print(record_create)
             sys.exit(0)
 
+    # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
         if args.aws == True:
-            import boto3, utils.redirector, paramiko, utils.install
+            import boto3, utils.redirector, paramiko, utils.install, utils.env
 
             # Connect to EC2 Service
             print("Connecting to AWS.")
@@ -403,8 +410,8 @@ async def main():
                 instance_id = instance["Instances"][0]["InstanceId"]
                 interface_id = instance["Instances"][0]["NetworkInterfaces"][0]["NetworkInterfaceId"]
 
-                print("Sleeping for 20 seconds to allow EC2 to provision VM.")
-                time.sleep(20)
+                print("Sleeping for 60 seconds to allow EC2 to provision VM.")
+                time.sleep(60)
                 
                 # Query for public IP address
                 print("Grabbing instance's public IP.")
@@ -423,8 +430,12 @@ async def main():
                 utils.install.print_terminal_output(stdout)
                 ssh.close()
 
-                print("Sleep for 20 more seconds to allow the VM to reboot and load new kernel")
-                time.sleep(20)
+                print("Sleep for 60 more seconds to allow the VM to reboot and load new kernel")
+                time.sleep(60)
+
+                # Save the public IP for the redirector
+                if args.update_env == True or config == None or config["REDIRECTOR_PUBLIC_IP"] == '':
+                    utils.env.update_env("REDIRECTOR_PUBLIC_IP", instance_public_ip)
 
                 print("Reconnect to EC2 before installing apache2")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
@@ -432,7 +443,7 @@ async def main():
                 # Install and perform initial configuration of apache from the shell script
                 print("Installing and configuring Apache2")
                 utils.install.convert_line_endings("install_apache.sh")
-                utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=display_stderr)
+                utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
 
             if args.delete == True:
                 instance_ids = []
@@ -463,16 +474,16 @@ async def main():
                 # Terminate Gaia instances
                 print("Terminating Gaia related EC2 instances.")
                 terminate = utils.redirector.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
-                print("Sleep for 20 seconds to allow EC2 instances to terminate.")
-                time.sleep(20)
+                print("Sleep for 2 minutes to allow EC2 instances to terminate.")
+                time.sleep(120)
 
                 # Delete Gaia SSH Keys
                 print("Deleting Gaia SSH Keys within EC2.")
                 for i in ssh_key_ids:
                     key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
                     if key_delete["Return"] == False:
-                        print("Key delete failed, trying agian after 10 seconds.")
-                        time.wait(10)
+                        print("Key delete failed, trying agian after 30 seconds.")
+                        time.wait(30)
                         key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
                         if key_delete["Return"] == False:
                             print("Key deletion failed again, retry later.")
@@ -487,8 +498,8 @@ async def main():
                 for i in security_group_ids:
                     group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
                     if group_delete["Return"] == False:
-                        print("Security Group delete failed, trying agian after 10 seconds.")
-                        time.wait(10)
+                        print("Security Group delete failed, trying agian after 30 seconds.")
+                        time.wait(30)
                         group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
                         if group_delete["Return"] == False:
                             print("Security Group deletion failed again, retry later.")
