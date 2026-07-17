@@ -100,8 +100,13 @@ redirector_parser.add_argument('-s', '--size', choices=['micro', 'small', 'mediu
 redirector_parser.add_argument('-o', '--os', choices=['ubuntu', 'debian'], help='specify the os used for the redirector')
 
 # Certbot Parser
-certbot_parser.add_argument('-d', '--domain', required=True, nargs=1, metavar='', help="specify the domain to enable https on")
-certbot_parser.add_argument('-e', '--email', required=True, nargs=1, metavar='', help="specify the email to be used by certbot")
+certbot_parser.add_argument('-d', '--domain', required=True, nargs=1, metavar='', help="specify the fully qualified domain to enable https on")
+certbot_parser.add_argument('-E', '--email', required=True, nargs=1, metavar='', help="specify the email to be used by certbot")
+certbot_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to configure certbot on')
+certbot_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
+certbot_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
+certbot_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
+certbot_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from redirector')
 
 args = global_parser.parse_args()
 
@@ -152,6 +157,7 @@ async def main():
             
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
+
         
         # Update system if requested
         if args.install_updates == True:
@@ -506,6 +512,48 @@ async def main():
                             continue
 
                 print("Gaia cleanup complete! Exiting!")
+
+        sys.exit(0)
+    
+    # Handles configuration of certbot
+    if args.subcommand == "certbot":
+        import paramiko, utils.install
+
+        certbot_domain = args.domain
+        certbot_email = args.email
+
+         # Initialize SSH
+        ssh = paramiko.SSHClient()
+        ssh.load_system_host_keys()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Get connection information
+        server = args.server[0].strip()
+        user = args.user[0].strip()
+
+        # Determine if we show stderr on streamed terminal output
+        if args.stderr == True:
+            display_stderr = True
+        else:
+            display_stderr = False
+
+        # Ready SSH key if one is specified
+        if args.identity_file != None:
+            ssh_key = args.identity_file.strip()
+        else:
+            ssh_key = None
+
+        # Ready password or ssh passphrase
+        if args.password == True:
+            password = getpass.getpass()
+        else:
+            password = None
+            
+        # Paramiko attempts SSH key auth first, then password as a fallback
+        ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
+
+        (stdin, stdout, stderr) = ssh.exec_command(f"certbot run -n --apache --agree-tos -d {certbot_domain} -m {certbot_email}")
+        utils.install.print_terminal_output(stdout)
 
         sys.exit(0)
     
