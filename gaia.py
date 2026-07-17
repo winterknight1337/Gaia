@@ -23,6 +23,7 @@ payload_parser = subparsers.add_parser('payloads', help='creates payloads')
 user_parser = subparsers.add_parser('users', help='creates mythic users')
 redirector_parser = subparsers.add_parser('redirector', help='create redirectors in cloud services')
 certbot_parser = subparsers.add_parser('certbot', help='configure certbot on redirector')
+connect_parser = subparsers.add_parser('connect', help='connect mythic to redirector server')
 
 # Global modules
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
@@ -54,15 +55,16 @@ action_operation_parser.add_argument('-a', '--assign', action='store_true', help
 action_operation_parser.add_argument('-r', '--remove', action='store_true', help='removes users from an operations')
 
 # Payload Modules
-agent_parser = payload_parser.add_mutually_exclusive_group(required=True)
+agent_parser = payload_parser.add_mutually_exclusive_group()
 agent_parser.add_argument('--apollo', action='store_true', help='builds apollo payloads')
 agent_parser.add_argument('--athena', action='store_true', help='builds athena payloads')
 agent_parser.add_argument('--poseidon', action='store_true', help='builds poseidon payloads')
-payload_parser.add_argument('-n', '--name', nargs=1,  required=True, metavar='', help='base name of generated payloads before extensions are added')
+payload_parser.add_argument('-n', '--name', nargs=1, metavar='', help='base name of generated payloads before extensions are added')
 payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
 payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
 payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dd format. Defaults to 1 year')
 payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], help='specify operating system for athena and poseidon')
+payload_parser.add_argument('-g', '--get', action='store_true', help='get active mythic payloads')
 
 # Install Parser
 install_parser.add_argument('-U', '--install-updates', action='store_true', help='update system with apt before installing mythic')
@@ -72,7 +74,7 @@ install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar=''
 install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
 install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
 install_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
-install_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
+install_parser.add_argument('-i', '--identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
 install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
 # DNS Parser
@@ -105,8 +107,23 @@ certbot_parser.add_argument('-E', '--email', required=True, nargs=1, metavar='',
 certbot_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to configure certbot on')
 certbot_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
 certbot_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
-certbot_parser.add_argument('-i', '--identity_file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
+certbot_parser.add_argument('-i', '--identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
 certbot_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from redirector')
+
+# Connector Parser
+# connect_parser.add_argument()
+connect_parser.add_argument('-mS', '--mythic-server', required=True, nargs=1, metavar='', help='mythic server ip or hostname')
+connect_parser.add_argument('-mP', '--mythic-ssh-port', nargs=1, metavar='', help='port to connect to mythic server over ssh')
+connect_parser.add_argument('-mu', '--mythic-ssh-user', required=True, nargs=1, metavar='', help='user to connect to mythic server over ssh')
+connect_parser.add_argument('-mp', '--mythic-ssh-password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
+connect_parser.add_argument('-mi', '--mythic-ssh-identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
+connect_parser.add_argument('-rS', '--redirector-ssh', required=True, nargs=1, metavar='', help='redirector server fully qualified domian name')
+connect_parser.add_argument('-rP', '--redirector-ssh-port', nargs=1, metavar='', help='port to connect to redirector over ssh')
+connect_parser.add_argument('-ru', '--redirector-ssh-user', required=True, nargs=1, metavar='', help='user to connect to redirector over ssh')
+connect_parser.add_argument('-rp', '--redirector-ssh-password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
+connect_parser.add_argument('-ri', '--redirector-ssh-identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
+connect_parser.add_argument('-u', '--payload-uuid', metavar="", help='payload uuid to generate payload rules from')
+connect_parser.add_argument('-r', '--redirect-target', metavar="", help='website to redirect non c2 traffic to')
 
 args = global_parser.parse_args()
 
@@ -552,7 +569,7 @@ async def main():
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
-        (stdin, stdout, stderr) = ssh.exec_command(f"certbot run -n --apache --agree-tos -d {certbot_domain} -m {certbot_email}")
+        (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain} -m {certbot_email}")
         utils.install.print_terminal_output(stdout)
 
         sys.exit(0)
@@ -805,7 +822,60 @@ async def main():
                 print("specify os when creating athena payloads")
                 sys.exit(0)
 
+        if args.get == True:
+            payload_info = await utils.payloads.get_payloads(mythic_instance=mythic_session)
+            for i in payload_info:
+                if i["deleted"] == False:
+                    payload_uuid = i["uuid"]
+                    payload_type = i["payloadtype"]["name"]
+                    payload_file_name = i["filemetum"]["filename_utf8"]
+                    payload_description = i["description"]
+                    payload_display = {
+                        "payload_uuid" : payload_uuid,
+                        "payload_type" : payload_type,
+                        "payload_file_name" : payload_file_name,
+                        "payload_description" : payload_description
+                        }
+                    print(payload_display)
+            
+
         sys.exit(0)
+
+    if args.subcommand == "connect":
+        import paramiko, utils.redirector, utils.payloads
+
+        payload_uuid = args.payload_uuid
+        mythic_server = args.mythic_server
+        mythic_ssh_port = args.mythic_ssh_port
+        mythic_server_user = args.mythic_ssh_user
+        mythic_ssh_password = args.mythic_ssh_password
+        mythic_ssh_key = args.mythic_ssh_key_identify_file
+        
+        redirector_server = args.redirector_ssh
+        redirector_ssh_port = args.redirector_ssh_port
+        redirector_server_user = args.redirector_ssh_user
+        redirector_ssh_password = args.redirector_ssh_password
+        redirector_ssh_key = args.redirector_ssh_key_identify_file
+        redirect_target = args.redirect_target
+
+
+        # Query for mod_rewrite rules
+        redirector_rules_line = await utils.redirector.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
+
+        # Modify mod_rewrite rules so they work as expected
+        redirector_rules = redirector_rules_line["redirect_rules"]["output"].split("\n")
+        for i in redirector_rules:
+            if "http://C2_SERVER_HERE:80" in i:
+                i = i.replace("http://C2_SERVER_HERE:80", f"https://{mythic_server}:443")
+            elif "redirect/?" in i:
+                i = i.replace("redirect/?", f"{redirect_target}")
+
+        # Upload mod_rewrite rules to the redirector and reboot apache
+
+        # Create the SSH tunnel to the redirector
+
+        sys.exit(0)
+
 
 if __name__ == '__main__':
      asyncio.run(main())

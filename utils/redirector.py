@@ -1,4 +1,5 @@
 import boto3, os
+from mythic import mythic
 
 def create_aws_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_run:bool=False):
     # Create the keypair "gaia" in AWS
@@ -203,3 +204,21 @@ def delete_local_gaia_ssh_key(key_name:str):
         os.remove(ssh_file)
     else:
         print("SSH Keyfile already removed, skipping.")
+
+async def generate_redirector_rules(mythic_instance: mythic, payload_uuid: str):
+    redir_rules = await mythic.execute_custom_query(
+        mythic=mythic_instance,
+        query = """
+        query generateRedirectRulesMutation($uuid: String!) {
+            redirect_rules(uuid: $uuid) {
+                status
+                error
+                output
+                __typename
+            }
+        }
+        """,
+        variables={"uuid" : payload_uuid}
+    )
+
+    return redir_rules

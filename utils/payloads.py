@@ -191,3 +191,8 @@ async def build_athena_payload(mythic_instance: mythic, os: str, arch: str, outp
         return_on_complete=True
     )
     return payload_response
+
+async def get_payloads(mythic_instance: mythic):
+    payload_info = await mythic.get_all_payloads(mythic=mythic_instance)
+    
+    return payload_info
