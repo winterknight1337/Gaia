@@ -15,7 +15,7 @@ systemctl restart apache2;
 
 # Certbot install
 apt install python3 python3-dev python3-venv libaugeas-dev gcc -y;
-python3 -m venv /opt/certbot
-/opt/certbot/bin/pip install --upgrade pip
-/opt/certbot/bin/pip install certbot certbot-apache
-ln -s /opt/certbot/bin/certbot /usr/local/bin/certbot
+python3 -m venv /opt/certbot;
+/opt/certbot/bin/pip install --upgrade pip;
+/opt/certbot/bin/pip install certbot certbot-apache;
+ln -s /opt/certbot/bin/certbot /usr/local/bin/certbot;

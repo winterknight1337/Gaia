@@ -1,4 +1,4 @@
-import pprint, os
+import os
 
 def copy_and_execute_script(ssh, script: str, err: bool):
     # Open SFTP Channel to copy script
