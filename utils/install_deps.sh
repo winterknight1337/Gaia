@@ -9,7 +9,7 @@ echo "Updating apt sources!";
 apt update;
 
 echo "Installing prerequisites!";
-apt install git vim make -y;
+apt install git vim make autossh -y;
 
 echo "Installing Docker!";
 

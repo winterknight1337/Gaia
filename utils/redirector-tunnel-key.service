@@ -1,0 +1,12 @@
+[Unit]
+Description=Mythic redirector tunnel via autossh created by Gaia
+After=network.target
+
+[Service]
+User=
+ExecStart=/usr/bin/autossh -M 0 -o 'ServerAliveInterval 30' -o 'ServerAliveCountMax 3' -N -f -R 8443:localhost:80 -i /home/example/.ssh/gaia-redir.pem user@example.com
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

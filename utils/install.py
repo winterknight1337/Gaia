@@ -1,6 +1,6 @@
 import os
 
-def copy_and_execute_script(ssh, script: str, err: bool):
+def copy_and_execute_script(ssh, script: str, err: bool=False):
     # Open SFTP Channel to copy script
     sftp = ssh.open_sftp()
 
@@ -43,3 +43,31 @@ def convert_line_endings(script: str):
     
     with open(local_path, "w", newline="\n") as file:
         file.write(contents)
+
+def copy_file(ssh, file: str, err: bool = False):
+    # Open SFTP Channel to copy script
+    sftp = ssh.open_sftp()
+
+    # Get the base directory for the project and add install_deps.
+    # Required since paramiko's implementation of SFTP is not shell aware
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    local_path = os.path.join(base_dir, f"../{file}")
+
+    # Get the home directory and place the script in it before closing
+    (stdin, stdout, stderr) = ssh.exec_command('echo $HOME')
+    home_dir = stdout.read().decode().strip()
+    sftp.put(localpath=local_path, remotepath=f"{home_dir}/{file}")
+    sftp.close()
+
+def copy_gaia_ssh_key(ssh, err: bool = False):
+    # Open SFTP Channel to copy script
+    sftp = ssh.open_sftp()
+
+    home_dir = os.path.expanduser("~")
+    ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
+
+    # Get the home directory and place the script in it before closing
+    (stdin, stdout, stderr) = ssh.exec_command('echo $HOME')
+    home_dir = stdout.read().decode().strip()
+    sftp.put(localpath=ssh_key, remotepath=f"{home_dir}/.ssh/gaia-redir.pem")
+    sftp.close()
