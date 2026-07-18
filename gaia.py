@@ -27,7 +27,6 @@ connect_parser = subparsers.add_parser('connect', help='connect mythic to redire
 
 # Global modules
 global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
-global_parser.add_argument('--update-env', action='store_true', help='overwrite .env file contents with specified cli args')
 
 # Auth modules
 auth_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help="hostname, fqdn, or ip address for mythic server")
@@ -241,11 +240,10 @@ async def main():
         # Create an API key for the current user
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
-        if args.update_env == True or config == None or config["MYTHIC_API_KEY"] == '':
-            # Dumps API key and mythic connection information into .env
-            utils.env.update_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
-            utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
-            utils.env.update_env("MYTHIC_API_KEY", api_token)
+        # Dumps API key and mythic connection information into .env
+        utils.env.update_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
+        utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
+        utils.env.update_env("MYTHIC_API_KEY", api_token)
 
         sys.exit(0)
 
@@ -277,10 +275,14 @@ async def main():
         if args.cloudflare == True:
             # Validate that we have the CF API key
             import utils.dns.cf
-            api_token = config["CLOUDFLARE_API_TOKEN"]
 
-            if api_token == None:
-                api_token = args.api_key
+            if args.api_key == None:
+                api_token = config["CLOUDFLARE_API_TOKEN"]
+                if api_token != None:
+                    utils.env.update_env(env_key="CLOUDFLARE_API_TOKEN", env_value=api_token)
+                else:
+                    print("Specify a Cloudflare API Key. Exiting!")
+                    sys.exit(1)
 
             # Get the domains listed in the account
             domains = utils.dns.cf.get_domains(api_token=api_token)
@@ -329,6 +331,7 @@ async def main():
 
         if args.porkbun == True:
             import utils.dns.porkbun
+
             api_pk1 = config["PORKBUN_API_KEY"]
             api_sk1 = config["PORKBUN_SECRET_KEY"]
 
@@ -454,8 +457,7 @@ async def main():
                 time.sleep(60)
 
                 # Save the public IP for the redirector
-                if args.update_env == True or config == None or config["REDIRECTOR_PUBLIC_IP"] == '':
-                    utils.env.update_env("REDIRECTOR_PUBLIC_IP", instance_public_ip)
+                utils.env.update_env("REDIRECTOR_PUBLIC_IP", instance_public_ip)
 
                 print("Reconnect to EC2 before installing apache2")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
@@ -650,8 +652,7 @@ async def main():
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
-            if args.update_env == True or config["MYTHIC_OPERATION_NAME"] == '':
-                utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
+            utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
 
         # Assign users to operations
         if args.assign == True:
@@ -681,8 +682,7 @@ async def main():
             sys.exit(1)
 
         # Update env file if requested or required
-        if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] == '':
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
+        utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
 
         # Callback Ports
         # Use specified callback port if one is supplied
@@ -699,8 +699,7 @@ async def main():
             sys.exit(1)
 
         # Update env file if requested or required
-        if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_PORT'] == '':
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
+        utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
 
         # Callback Killdate
         # Use specified callback killdate if one is supplied
@@ -717,8 +716,7 @@ async def main():
             callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
 
         # Update env file if requested or required
-        if args.update_env == True or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] == '':
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
+        utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
 
         # Process apollo payloads
         if args.apollo == True:
