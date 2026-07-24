@@ -23,7 +23,7 @@ $PWD/mythic-cli start;
 echo "Installing Apollo (Windows Agent)!";
 $PWD/mythic-cli install github https://github.com/MythicAgents/Apollo.git --force;
 
-echo "Installing Poseidon (Linux Agent)!";
+echo "Installing Poseidon (POSIX Agent)!";
 $PWD/mythic-cli install github https://github.com/MythicAgents/poseidon.git --force;
 
 echo "Installing Athena (Cross-Platform Agent)";

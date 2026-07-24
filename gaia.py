@@ -9,121 +9,224 @@ else:
 #################################################################### CLI PARSING ####################################################################
 
 # Root options that are available across the whole application
+formatter = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=200)
+
 global_parser = argparse.ArgumentParser(
-    prog='gaia.py',
-    description='Lightweight tool to help install and manage mythic c2 for lab environments')
+    prog="Gaia",
+    description="Lightweight tool to help install and manage simple Mythic c2 installations with a focus on students, CTF, and lab environments",
+    formatter_class=formatter
+    )
 
-# 'Core' modules
-subparsers = global_parser.add_subparsers(title='modules', help='', dest='subcommand')
-auth_parser = subparsers.add_parser('auth', help='authenticates to mythic and dumps api key to .env')
-dns_parser = subparsers.add_parser('dns', help='manage dns records')
-install_parser = subparsers.add_parser('install', help='manages mythic installation components')
-operation_parser = subparsers.add_parser('operations', help='manages mythic operations')
-payload_parser = subparsers.add_parser('payloads', help='creates payloads')
-user_parser = subparsers.add_parser('users', help='creates mythic users')
-redirector_parser = subparsers.add_parser('redirector', help='create redirectors in cloud services')
-certbot_parser = subparsers.add_parser('certbot', help='configure certbot on redirector')
-connect_parser = subparsers.add_parser('connect', help='connect mythic to redirector server')
+# Global switches
+global_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates")
+global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.0", help="Display software version")
 
-# Global modules
-global_parser.add_argument('-k', '--no-ssl', action='store_true', help='disable ssl verification checks')
 
-# Auth modules
-auth_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help="hostname, fqdn, or ip address for mythic server")
-auth_parser.add_argument('-P', '--port', nargs=1, metavar='', help="port for web interface on mythic server")
-auth_parser.add_argument('-p', '--password', required=True, action="store_true", help='password for specified mythic user account')
-auth_parser.add_argument('-u', '--username', required=True, nargs=1, metavar='', help='username for mythic authentication')
+# Core modules
+subparsers = global_parser.add_subparsers(title="Modules", dest="subcommand", help="")
+install_parser = subparsers.add_parser(name="install", formatter_class=formatter, help="Installs Mythic on Debian, Ubuntu, or Kali")
+auth_parser = subparsers.add_parser(name="auth", formatter_class=formatter, help="Authenticate to Mythic")
+operation_parser = subparsers.add_parser(name="operation", formatter_class=formatter, help="Manage operations in Mythic")
+user_parser = subparsers.add_parser(name="user", formatter_class=formatter, help="Manage users in Mythic")
+payload_parser = subparsers.add_parser(name="payload", formatter_class=formatter, help="Manage payloads in Mythic")
+dns_parser = subparsers.add_parser(name="dns", formatter_class=formatter, help="Manage DNS records with 3rd party registrars")
+redir_parser = subparsers.add_parser(name="redirector", formatter_class=formatter, help="Manage redirector configuration within public clouds")
 
-# User modules
-action_user_parser = user_parser.add_mutually_exclusive_group(required=True)
-user_parser.add_argument('-u', '--users', nargs='+', metavar='', help='specify one or more user account to process')
-user_parser.add_argument('-l', '--user-list', nargs='?', metavar="path/to/user_list", help='pass user list via file')
-user_parser.add_argument('-o', '--user-output', nargs='?', metavar='path/to/output', help='dumps newly created credentials to specified file')
-action_user_parser.add_argument('-c', '--create', action='store_true', help='creates user accounts in mythic')
-# action_user_parser.add_argument('-d', '--delete', action='store_true', help='deletes user accounts in mythic') 
-user_parser.add_argument('-s', '--stdout', action='store_true', help='echos newly created creds to stdout')
 
-# Operation modules
-operation_parser.add_argument('-o', '--operation', required=True, nargs=1, metavar='', help='specifies operation to manage')
-operation_parser.add_argument('-u', '--users', nargs='+', metavar='', help='specify one or more user account to process')
-operation_parser.add_argument('-c', '--create', action='store_true', help='creates operations in mythic')
-operation_parser.add_argument('-l', '--list', action='store_true', help='lists operations in mythic')
+# Install options
+install_parser.add_argument("--install-updates", action="store_true", help="Update target server with apt before installing Mythic")
+install_parser.add_argument("--install-deps", action="store_true", help="Install dependencies required for Mythic to function")
+install_parser.add_argument("--install-mythic", action="store_true", help="Install Mythic on target server")
+install_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Server to install Mythic on via hostname or IP address")
+install_parser.add_argument("-P", "--port", default=22, type=int, metavar='22', help="SSH port on target server")
+install_parser.add_argument("-u", "--user", required=True, type=str, metavar='', help="User to authenticate as over SSH")
+install_parser.add_argument("-p", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
+install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate with")
+install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps on target after stdout")
 
-action_operation_parser = operation_parser.add_mutually_exclusive_group()
-action_operation_parser.add_argument('-a', '--assign', action='store_true', help='assigns users to an operations')
-action_operation_parser.add_argument('-r', '--remove', action='store_true', help='removes users from an operations')
 
-# Payload Modules
-agent_parser = payload_parser.add_mutually_exclusive_group()
-agent_parser.add_argument('--apollo', action='store_true', help='builds apollo payloads')
-agent_parser.add_argument('--athena', action='store_true', help='builds athena payloads')
-agent_parser.add_argument('--poseidon', action='store_true', help='builds poseidon payloads')
-payload_parser.add_argument('-n', '--name', nargs=1, metavar='', help='base name of generated payloads before extensions are added')
-payload_parser.add_argument('-U', '--callback-url', nargs=1, metavar='', help='specify url for agents to call back to')
-payload_parser.add_argument('-P', '--callback-port', nargs=1, metavar='', help='specify port for agents to call back to')
-payload_parser.add_argument('-K', '--callback-killdate', nargs=1, metavar='', help='specify when callbacks should be automatically terminated in yyyy-mm-dd format. Defaults to 1 year')
-payload_parser.add_argument('-o', '--os', choices=['linux', 'macos', 'windows'], help='specify operating system for athena and poseidon')
-payload_parser.add_argument('-g', '--get', action='store_true', help='get active mythic payloads')
+# Authentication options
+auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Server running Mythic to authenticate against")
+auth_parser.add_argument("-P", "--port", required=True, type=int, default=7443, metavar='7443', help="Port the Mythic web interface is running on")
+auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="User to authenticate to Mythic")
+auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password to authenticate to Mythic")
 
-# Install Parser
-install_parser.add_argument('-U', '--install-updates', action='store_true', help='update system with apt before installing mythic')
-install_parser.add_argument('-D', '--install-deps', action='store_true', help='install dependencies on target host before installing mythic')
-install_parser.add_argument('-M', '--install-mythic', action='store_true', help='install mythic on the target.')
-install_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to install mythic on')
-install_parser.add_argument('-P', '--port', nargs=1, metavar='', help='port to connect to server over ssh')
-install_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-install_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
-install_parser.add_argument('-i', '--identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
-install_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from target server')
 
-# DNS Parser
-dns_record = dns_parser.add_mutually_exclusive_group(required=True)
-dns_record.add_argument('--a', action='store_true', help='set an a record')
-dns_record.add_argument('--cname', action='store_true', help='set a cname record')
-dns_record.add_argument('--aaaa', action='store_true', help='set a aaaa record')
-dns_parser.add_argument('-d', '--domain', required=True, metavar='', help='associate a record with a given domain or subdomain')
-dns_parser.add_argument('-v', '--value', required=True, metavar='', help='assign a value to the domain record')
-dns_parser.add_argument('-z', '--zone', required=True, metavar='', help='dns zone to change')
-dns_parser.add_argument('--delete', action='store_true', help='delete a dns record')
-dns_parser.add_argument('-k', '--api-key', metavar='', help='use the associated api key')
-dns_service = dns_parser.add_mutually_exclusive_group(required=True)
-dns_service.add_argument('-C', '--cloudflare', action='store_true', help='use cloudflare for domain management')
-#dns_service.add_argument('-N', '--namecheap', action='store_true', help='use namecheap for domain management')
-dns_service.add_argument('-P', '--porkbun', action='store_true', help='use porkbun for domain management')
-#dns_service.add_argument('-A', '--aws', action='store_true', help='use aws route 53 for domain management')
-#dns_service.add_argument('-M', '--azure', action='store_true', help='use azure for domain management')
+# Mythic operations management
+operation_subparser = operation_parser.add_subparsers(title="Operations", dest="operation", description="")
+create_operation_subparser = operation_subparser.add_parser(name="create", formatter_class=formatter, help="Create new operations in Mythic")
+create_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specify name of new operation")
+create_operation_subparser.add_argument("-u", "--users", nargs="+", type=list, metavar='', help="Specify which users are assigned to the new operation")
 
-# Redirector parser
-redirector_parser.add_argument("-a", "--aws", action="store_true", help='manage redirectors in aws')
-redirector_parser.add_argument("-c", "--create", action="store_true", help='create a new redirector')
-redirector_parser.add_argument("-d", "--delete", action="store_true", help='destroy a redirector')
-redirector_parser.add_argument('-s', '--size', choices=['micro', 'small', 'medium'], help='set the size of the VM to be used for the redirector')
-redirector_parser.add_argument('-o', '--os', choices=['ubuntu', 'debian'], help='specify the os used for the redirector')
+# delete_operation_subparser = operations_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete existing operations in Mythic")
+# delete_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specifies which operation to delete")
 
-# Certbot Parser
-certbot_parser.add_argument('-d', '--domain', required=True, nargs=1, metavar='', help="specify the fully qualified domain to enable https on")
-certbot_parser.add_argument('-S', '--server', required=True, nargs=1, metavar='', help='specifies server to configure certbot on')
-certbot_parser.add_argument('-u', '--user', required=True, nargs=1, metavar='', help='user to connect to server over ssh')
-certbot_parser.add_argument('-p', '--password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
-certbot_parser.add_argument('-i', '--identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
-certbot_parser.add_argument('-e', '--stderr', action='store_true', help='show stderr output from redirector')
+assign_operation_subparser = operation_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
+assign_operation_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Specify which operation users will be assigned to")
+assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify users to be reassigned")
 
-# Connector Parser
-connect_parser.add_argument('-mS', '--mythic-server', required=True, nargs=1, metavar='', help='mythic server ip or hostname')
-connect_parser.add_argument('-mP', '--mythic-ssh-port', nargs=1, metavar='', help='port to connect to mythic server over ssh')
-connect_parser.add_argument('-mu', '--mythic-ssh-user', required=True, nargs=1, metavar='', help='user to connect to mythic server over ssh')
-connect_parser.add_argument('-mp', '--mythic-ssh-password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
-connect_parser.add_argument('-mi', '--mythic-ssh-identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
-connect_parser.add_argument('-rS', '--redirector-ssh', required=True, nargs=1, metavar='', help='redirector server fully qualified domian name')
-connect_parser.add_argument('-rP', '--redirector-ssh-port', nargs=1, metavar='', help='port to connect to redirector over ssh')
-connect_parser.add_argument('-ru', '--redirector-ssh-user', required=True, nargs=1, metavar='', help='user to connect to redirector over ssh')
-connect_parser.add_argument('-rp', '--redirector-ssh-password', action='store_true', help='prompt for user password to authenticate or for use as ssh key passphrase')
-connect_parser.add_argument('-ri', '--redirector-ssh-identity-file', nargs='?', metavar="path/to/user_list", help='provide path to ssh key')
-connect_parser.add_argument('-u', '--payload-uuid', metavar="", help='payload uuid to generate payload rules from')
-connect_parser.add_argument('-r', '--redirect-target', metavar="", help='website to redirect non c2 traffic to')
+operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
+
+
+# Mythic users management
+user_subparser = user_parser.add_subparsers(title="User Actions", dest="user", description="")
+create_user_subparser = user_subparser.add_parser(name="create", formatter_class=formatter, help="Create new users in Mythic")
+create_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Specify usernames of new Mythic users")
+create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Specify location of file containing usernames to create")
+create_user_subparser.add_argument("-f", "--cred-file", type=str, metavar='path/to/file', help="Specify location of file to dump new user creds after account creation")
+create_user_subparser.add_argument("-d", "--cred-stdout", action="store_true", help="Print newly created user creds to the terminal")
+
+# delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
+# delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify usernames of Mythic users to delete")
+
+# list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Lists users in Mythic")
+
+assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
+assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Specify which operation users will be assigned to")
+assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify users to be reassigned")
+
+
+# Mythic payloads 
+payload_subparser = payload_parser.add_subparsers(title="Payload Management", dest="payloads", description="")
+create_payload_subparser = payload_subparser.add_parser(name="create", formatter_class=formatter, description="Create new payloads")
+
+agent_subparser = create_payload_subparser.add_subparsers(title="Agents", dest="agent", help="Create a payload using the specified Mythic agent")
+apollo_subparser = agent_subparser.add_parser(name="apollo", formatter_class=formatter, help="Manage Apollo payloads")
+apollo_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
+apollo_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL excluding port that C2 agents should connect to establish connection to the Mythic server")
+apollo_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents should connect to establish connection to the Mythic server (Default 80)")
+apollo_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="C2 agent will refuse to run after the specified date (YYYY-MM-DD)")
+
+poseidon_subparser = agent_subparser.add_parser(name="poseidon", formatter_class=formatter, help="Manage Poseidon payloads")
+poseidon_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
+poseidon_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL excluding port that C2 agents should connect to establish connection to the Mythic server")
+poseidon_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents should connect to establish connection to the Mythic server (Default 80)")
+poseidon_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="C2 agent will refuse to run after the specified date (YYYY-MM-DD)")
+poseidon_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos"], help="Specify which OS to build the C2 agent for")
+
+athena_subparser = agent_subparser.add_parser(name="athena", formatter_class=formatter, help="Manage Athena payloads")
+athena_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
+athena_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL excluding port that C2 agents should connect to establish connection to the Mythic server")
+athena_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents should connect to establish connection to the Mythic server (Default 80)")
+athena_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="C2 agent will refuse to run after the specified date (YYYY-MM-DD)")
+athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos", "windows"], help="Specify which OS to build the C2 agent for")
+
+# delete_payload_subparser = payload_subparser.add_parser(name="delete", formatter_class=formatter, description="Delete payloads")
+
+list_payload_subparser = payload_subparser.add_parser(name="list", formatter_class=formatter, description="List payloads")
+
+# DNS management
+# Cloudflare optionsc
+dns_registrar_subparser = dns_parser.add_subparsers(title="Registrar", dest="registrar", description='')
+
+cloudflare_subparser = dns_registrar_subparser.add_parser(name="cloudflare", formatter_class=formatter, help="Manage DNS records via Cloudflare")
+cf_actions_subparser = cloudflare_subparser.add_subparsers(title="DNS Actions", dest="dns_action", description="Specify what operation to perform")
+
+# Creation actions
+cf_create_subparser = cf_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
+cf_create_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API token and dump it to .env when action completes")
+cf_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
+cf_create_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
+cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
+cf_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+
+cf_create_record_type = cf_create_subparser.add_mutually_exclusive_group(required=True)
+cf_create_record_type.add_argument("--a", action="store_true", help="Create a new A record")
+cf_create_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
+cf_create_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+
+# Delete modules
+cf_delete_subparser = cf_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
+cf_delete_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API token and dump it to .env when action completes")
+cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain modify")
+cf_delete_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
+cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
+cf_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+
+cf_delete_record_type = cf_delete_subparser.add_mutually_exclusive_group(required=True)
+cf_delete_record_type.add_argument("--a", action="store_true", help="Create a new A record")
+cf_delete_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
+cf_delete_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+
+# cf_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
+
+# Porkbun options
+porkbun_subparser = dns_registrar_subparser.add_parser(name="porkbun", formatter_class=formatter, help="Manage DNS records via Porkbun")
+pb_actions_subparser = porkbun_subparser.add_subparsers(title="DNS Actions", dest="dns_action", description="Specify what operation to perform")
+
+# Creation actions
+pb_create_subparser = pb_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
+pb_create_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API key and dump it to .env when action completes")
+pb_create_subparser.add_argument("-s", "--secret-key", type=str, metavar='', help="Specify the secret key and dump it to .env when action completes")
+pb_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain and zone to modify")
+pb_create_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
+pb_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
+pb_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+
+pb_create_record_type = pb_create_subparser.add_mutually_exclusive_group(required=True)
+pb_create_record_type.add_argument("--a", action="store_true", help="Create a new A record")
+pb_create_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
+pb_create_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+
+# Deletion actions
+pb_delete_subparser = pb_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
+pb_delete_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API key and dump it to .env when action completes")
+pb_delete_subparser.add_argument("-s", "--secret-key", type=str, metavar='', help="Specify the secret key and dump it to .env when action completes")
+pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
+pb_delete_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
+pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
+pb_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+
+pb_delete_record_type = pb_delete_subparser.add_mutually_exclusive_group(required=True)
+pb_delete_record_type.add_argument("--a", action="store_true", help="Create a new A record")
+pb_delete_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
+pb_delete_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+
+# pb_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
+
+# Redirector config
+redir_subparser = redir_parser.add_subparsers(title="Redirector Actions", dest="redir_action", description="Manage redirectors and software installed on them")
+create_redir_subparser = redir_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new redirector")
+cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider you'd like to build a redirector in")
+
+aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
+aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Supply AWS access key")
+aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Supply AWS secret key")
+aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.micro", "t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Select size of EC2 for redirector")
+aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
+
+
+delete_redir_subparser = redir_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a redirector")
+cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to decommission Gaia-created redirector infrastructure in")
+aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Delete Gaia redirector infrastructure from AWS")
+
+certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
+certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN of website to generate TLS certificates for")
+certbot_redir_subparser.add_argument("-S", "--redirector-server", required=True, type=str, metavar='', help="Server to generate TLS certificates for")
+certbot_redir_subparser.add_argument("-u", "--redirector-user", required=True, type=str, metavar='', help="User to authenticate as for TLS certificate generation")
+certbot_redir_subparser.add_argument("-P", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
+certbot_redir_subparser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate with")
+certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show stderr from install steps on target after stdout")
+
+rules_redir_subparser = redir_subparser.add_parser(name="generate", formatter_class=formatter, help="Generate redirector rules based on existing payload in Mythic and upload them to redirector")
+rules_redir_subparser.add_argument("-u", "--payload-uuid", required=True, type=str, metavar='', help="UUID of payload to use as basis of apache mod_rewrite rule generation")
+rules_redir_subparser.add_argument("-t", "--redirect-target", required=True, type=str, metavar='', help="URL of website to redirect non-c2 traffic to")
+
+tunnel_redir_subparser = redir_subparser.add_parser(name="tunnel", formatter_class=formatter, help="Configure SSH tunnel between Mythic server and redirector")
+tunnel_redir_subparser.add_argument("-ms", "--mythic-server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
+tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-port", required=True, default=22, type=int, metavar='', help="SSH port for Mythic server")
+tunnel_redir_subparser.add_argument("-mu", "--mythic-ssh-user", required=True, type=str, metavar='', help="User to authenticate to Mythic server")
+tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-password", type=str, metavar='', help="Mythic SSH user password or SSH key passphrase")
+tunnel_redir_subparser.add_argument("-mi", "--mythic-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to Mythic with")
+tunnel_redir_subparser.add_argument("-rs", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
+tunnel_redir_subparser.add_argument("-rp", "--redir-ssh-port", required=True, default=22, type=int, metavar='', help="SSH port for redirector server")
+tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate to redirector server")
+tunnel_redir_subparser.add_argument("-rp", "--redir-ssh-password", type=str, metavar='', help="Redirector SSH user password or SSH key passphrase")
+tunnel_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to redirector with")
+
+
 
 args = global_parser.parse_args()
-
 ##################################################################  END CLI PARSING ##################################################################
 
 
@@ -142,26 +245,11 @@ async def main():
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         # Get connection information
-        server = args.server[0].strip()
-        user = args.user[0].strip()
-
-        # Determine if we show stderr on streamed terminal output
-        if args.stderr == True:
-            display_stderr = True
-        else:
-            display_stderr = False
-
-        # SSH port
-        if args.port == True:
-            port = args.port[0].strip()
-        else:
-            port = 22
-
-        # Ready SSH key if one is specified
-        if args.identity_file != None:
-            ssh_key = args.identity_file.strip()
-        else:
-            ssh_key = None
+        server = args.server
+        port = args.port
+        user = args.user
+        display_stderr = args.stderr
+        ssh_key = args.identity_file
 
         # Ready password or ssh passphrase
         if args.password == True:
@@ -217,13 +305,9 @@ async def main():
         import utils.env
         
         # Authenticates to mythic if server, port, user, and password are specified
-        auth_user = str(args.username[0]).strip()
-        mythic_host = str(args.server[0]).strip()
-
-        if args.port != None:
-            mythic_port = int(args.port[0])
-        else:
-            mythic_port = 7443
+        auth_user = args.username
+        mythic_host = args.server
+        mythic_port = args.port
 
         if args.password == True:
             auth_password = getpass.getpass()
@@ -249,30 +333,27 @@ async def main():
 
     # Handles DNS management
     if args.subcommand == "dns":
-        domain_edit = args.zone
-        target_domain = args.domain
-        target_value = args.value
-        delete = args.delete
+        import utils.env
 
-        # Check if the new domain record type has been set
-        if args.a == None:
-            print("Please specify a domain record type. Exiting!")
-            sys.exit(1)
+        domain_edit = args.domain
+        record_name = args.record_name
+        target_value = args.record_value
+
+        if args.dns_action == "delete":
+            delete = True
         else:
-            a_record = args.a
-            aaaa_record = args.aaaa
-            cname_record = args.cname
+            delete = False
 
         # Set record type to be passed to the function
-        if a_record == True:
+        if args.a == True:
             record_type = "A"
-        elif cname_record == True:
+        elif args.cname == True:
             record_type = "CNAME"
-        elif aaaa_record == True:
+        elif args.aaaa == True:
             record_type = "AAAA"
 
 
-        if args.cloudflare == True:
+        if args.registrar == "cloudflare":
             # Validate that we have the CF API key
             import utils.dns.cf
 
@@ -305,31 +386,31 @@ async def main():
             # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
             if records["result"] != []:
                 for i in records["result"]:
-                    if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == False:
+                    if i["name"] == record_name and i["type"] == record_type and i["content"] == target_value and delete == False:
                         print("Requested domain record exists in this DNS zone. Exiting!")
                         sys.exit(1)
 
-                    elif i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == True:
+                    elif i["name"] == record_name and i["type"] == record_type and i["content"] == target_value and delete == True:
                         record_id = i["id"]
                         utils.dns.cf.delete_domain_record(api_token=api_token, zone_id=domain_id, dns_record_id=record_id)
                         print("Successfully deleted specified domain record.")
                         sys.exit(1)
                     
-                    elif i["name"] == target_domain and delete == False:
+                    elif i["name"] == record_name and delete == False:
                         print("Domain name conflicts with existing record. Please delete existing record before proceeding.")
                         sys.exit(1)
                     
                     elif delete != True:
-                        record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=target_domain, record_type=record_type, record_target=target_value)
+                        record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=record_name, record_type=record_type, record_target=target_value)
                         print(record_create)
             else:
-                record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=target_domain, record_type=record_type, record_target=target_value)
+                record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=record_name, record_type=record_type, record_target=target_value)
                 print(record_create)
 
             sys.exit(0)
 
 
-        if args.porkbun == True:
+        if args.registrar == "porkbun":
             import utils.dns.porkbun
 
             api_pk1 = config["PORKBUN_API_KEY"]
@@ -357,9 +438,11 @@ async def main():
             # Get the current dns records
             records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=target_domain)
 
+            target_fqdn = f"{record_name}.{target_domain}"
+
             # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
             for i in records["records"]:
-                if i["name"] == target_domain and i["type"] == record_type and i["content"] == target_value and delete == False:
+                if i["name"] == target_fqdn and i["type"] == record_type and i["content"] == target_value and delete == False:
                     print("Requested domain record exists in this DNS zone. Exiting!")
                     sys.exit(1)
 
@@ -370,12 +453,10 @@ async def main():
                     sys.exit(0)
 
             # Catch Porkbun quirk of wanting an empty string for a root domain object
-            if len(target_domain.split(".")) == 2:
-                target_record = ""
-            else:
-                target_record = target_domain
+            if target_domain == record_name or record_name == "@" or record_name == "":
+                record_name = ""
 
-            record_create = utils.dns.porkbun.create_domain_record(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_name=target_record, record_type=record_type, record_target=target_value)
+            record_create = utils.dns.porkbun.create_domain_record(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_name=record_name, record_type=record_type, record_target=target_value)
             print(record_create)
             sys.exit(0)
 
@@ -587,11 +668,12 @@ async def main():
     mythic_session = await utils.auth.mythic_login_with_api(api_token=api_key, server_host=mythic_host, server_port=mythic_port)
 
     # Manages users
-    if args.subcommand == "users":
+    if args.subcommand == "user":
         import utils.users, utils.operations
 
         users_stdin = args.users
-        stdout = args.stdout
+        stdout = args.cred_stdout
+        operation = args.operation
 
         # Ready user list as input and prepares for merge later
         if args.user_list:
@@ -600,25 +682,20 @@ async def main():
             user_list_in = []
 
         # Ready user credentials list for output
-        if args.user_output:
-            user_list_out = args.user_output.strip()
+        if args.cred_file:
+            user_list_out = args.cred_file.strip()
             cred_list = []
         else:
             cred_list = None
 
         # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
         users = utils.users.prepare_users(users_stdin=users_stdin, user_file_in=user_list_in)
-
-        # Get current operations to prepare to assign a default for a new user
-        operations = await utils.operations.get_operations(mythic_instance=mythic_session)
-        default_operation = operations[0]
         
         # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
-        if args.create == True:
+        if args.user == "create":
             
             for i in users:
                 user_creds = await utils.users.create_user(mythic_instance=mythic_session, username=i)
-                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=default_operation["name"], username=i)
                 
                 # Print creds if user specifies to
                 if stdout == True:
@@ -631,31 +708,40 @@ async def main():
 
             # Dump creds to file
             if cred_list != None:
-                with open(user_list_out, 'aw') as file:
+                with open(user_list_out, 'a') as file:
                     file.writelines(cred_list)
                 
+    # if args.user == "delete":
+    #     pass    
+    
+    # if args.user == "assign":
+    #     # Get current operations to prepare to assign a default for a new user
+    #     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation, username=i)
+
+    # if args.user == "list":
+    #     pass
 
         sys.exit(0)
 
     # Process operations
-    if args.subcommand == "operations":
+    if args.subcommand == "operation":
         import utils.operations, utils.env
 
-        if args.list == True:
+        if args.operation == "list":
             operations = await utils.operations.get_operations(mythic_instance=mythic_session)
             for i in operations:
                 print(i)
 
         # Creates new operation
-        if args.create == True:
-            operation = str(args.operation[0]).strip()
+        if args.operation == "create":
+            operation = args.name
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
             utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
 
-        # Assign users to operations
-        if args.assign == True:
+        # Assigns users to operations
+        if args.operation == "assign":
             operation = args.operation
             users = args.users
             for i in operation:
@@ -665,160 +751,151 @@ async def main():
         sys.exit(0)
 
     # Create payloads
-    if args.subcommand == "payloads":
-        import utils.payloads, utils.env, datetime
+    if args.subcommand == "payload":
+        import utils.payloads
+        if args.payloads == "create":
+            import utils.env, datetime
 
-        # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
-        # Use specified callback url if one is supplied
-        if args.callback_url:
-            callback_url = args.callback_url[0].strip()
-        
-        # Otherwise use the value saved in env
-        elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '' or config != None:
-            callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
-        else:
-            print("Ensure that a callback url is specified in either .env or passed via cli")
-            payload_parser.print_help()
-            sys.exit(1)
-
-        # Update env file if requested or required
-        utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
-
-        # Callback Ports
-        # Use specified callback port if one is supplied
-        if args.callback_port:
-            callback_port = args.callback_port[0].strip()
-        
-        # Otherwise use the value saved in env
-        elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '' or config != None:
-            callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
-
-        else:
-            print("Ensure that a callback port is specified in either .env or passed via cli")
-            payload_parser.print_help()
-            sys.exit(1)
-
-        # Update env file if requested or required
-        utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
-
-        # Callback Killdate
-        # Use specified callback killdate if one is supplied
-        if args.callback_killdate:
-            callback_killdate = args.callback_killdate[0].strip()
-        
-        # Otherwise use the value saved in env
-        elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '' or config != None:
-            callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
-        
-        # Otherwise use the default of a year
-        else:
-            callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
-            callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
-
-        # Update env file if requested or required
-        utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
-
-        # Process apollo payloads
-        if args.apollo == True:
-            payload_name_base = args.name[0].strip()
-
-            # Generate normal executable
-            print("Apollo portable executable building")
-            payload_name_exe = payload_name_base + ".exe"
-            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 .NET Framework Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-            print("Apollo portable executable built")
-
-            # Generate shellcode
-            print("Apollo shellcode building")
-            payload_name_bin = payload_name_base + ".bin"
-            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-            print("Apollo shellcode built")
-
-            # Generate service executable
-            print("Apollo service executable building")
-            payload_name_svc = payload_name_base + "Svc.exe"
-            await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-            print("Apollo service executable built")
-
-            sys.exit(0)
-
-        # process poseidon payloads
-        if args.poseidon == True:
-            payload_name = args.name[0].strip()
-            payload_os = args.os.capitalize()
-
-
-            if args.os == "linux":
-                # Generate linux x64 static elf
-                print("Poseidon linux x64 elf building")
-                await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="AMD_x64", payload_name=payload_name, static_linking="True", payload_description="Linux x64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Poseidon linux x64 elf built")
-
-                # Generate linux arm64 static elf
-                print("Poseidon linux arm64 elf building")
-                await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="True", payload_description="Linux arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Poseidon linux arm64 elf built")
-
-            elif args.os == "macos":
-                # Translates to value poseidon builder expects
-                payload_os = "macOS"
-
-                # Generate macos arm64 static elf. macOS does not like static bins for some reason.
-                print("Poseidon macos x64 elf building")
-                await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name, static_linking="False", payload_description="macOS arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Poseidon macos x64 elf built")
-    
-            else:
-                print("specify os when creating poseidon payloads")
-                sys.exit(0)
-
-        # Process athena payloads
-        if args.athena == True:
-            payload_os = args.os.capitalize()
-
-            if args.os == "windows":
-                payload_name_base = args.name[0].strip()
-
-                # Generate windows x64 .net portable executable
-                print("Athena windows x64 portable executable building")
-                payload_name_exe = payload_name_base + ".exe"
-                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_exe, payload_description="Windows x64 .NET Portable Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Athena windows x64 portable executable built")
-
-                # Generate windows x64 .net service executable
-                print("Athena windows x64 service executable building")
-                payload_name_svc = payload_name_base + "Svc.exe"
-                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="windows service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Service Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Athena windows x64 service executable built")
+            # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
+            # Use specified callback url if one is supplied
+            if args.callback_url:
+                callback_url = args.callback_url
             
-            elif args.os == "linux":
-                payload_name_base = args.name[0].strip()
+            # Otherwise use the value saved in env
+            elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '' or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '':
+                callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
+            else:
+                print("Ensure that a callback url is specified in either .env or passed via cli")
+                payload_parser.print_help()
+                sys.exit(1)
 
-                # Generate linux x64 .net elf
-                print("Athena linux x64 elf building")
-                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_base, payload_description="Linux x64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Athena linux x64 elf built")
+            # Update env file if requested or required
+            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
 
-                # Generate linux arm64 .net elf
-                print("Athena linux arm64 elf building")
-                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="Linux arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Athena linux arm64 elf built")
-
-            elif args.os == "macos":
-                # Translates to value athena builder expects
-                payload_os = "macOS"
-                payload_name_base = args.name[0].strip()
-
-                # Generate macOS arm64 .net elf
-                print("Athena macos arm64 elf building")
-                await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="macOS arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Athena macos arm64 elf built")
+            # Callback Ports
+            # Use specified callback port if one is supplied
+            if args.callback_port:
+                callback_port = args.callback_port
+            
+            # Otherwise use the value saved in env
+            elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '' or config['MYTHIC_HTTP_CALLBACK_PORT'] != '':
+                callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
 
             else:
-                print("specify os when creating athena payloads")
+                print("Ensure that a callback port is specified in either .env or passed via cli")
+                payload_parser.print_help()
+                sys.exit(1)
+
+            # Update env file if requested or required
+            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
+
+            # Callback Killdate
+            # Use specified callback killdate if one is supplied
+            if args.callback_killdate:
+                callback_killdate = args.callback_killdate
+            
+            # Otherwise use the value saved in env
+            elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '' or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
+                callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
+            
+            # Otherwise use the default of a year
+            else:
+                callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
+                callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
+
+            # Update env file if requested or required
+            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
+
+            payload_name_base = args.name
+
+            # Process apollo payloads
+            if args.agent == "apollo":
+                # Generate normal executable
+                print("Apollo portable executable building")
+                payload_name_exe = payload_name_base + ".exe"
+                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 .NET Framework Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Apollo portable executable built")
+
+                # Generate shellcode
+                print("Apollo shellcode building")
+                payload_name_bin = payload_name_base + ".bin"
+                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Apollo shellcode built")
+
+                # Generate service executable
+                print("Apollo service executable building")
+                payload_name_svc = payload_name_base + "Svc.exe"
+                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                print("Apollo service executable built")
+
                 sys.exit(0)
 
-        if args.get == True:
+            # process poseidon payloads
+            if args.agent == "poseidon":
+                payload_os = args.os.capitalize()
+
+                if args.os == "linux":
+                    # Generate linux x64 static elf
+                    print("Poseidon linux x64 elf building")
+                    await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="AMD_x64", payload_name=payload_name_base, static_linking="True", payload_description="Linux x64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Poseidon linux x64 elf built")
+
+                    # Generate linux arm64 static elf
+                    print("Poseidon linux arm64 elf building")
+                    await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name_base, static_linking="True", payload_description="Linux arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Poseidon linux arm64 elf built")
+
+                elif args.os == "macos":
+                    # Translates to value poseidon builder expects
+                    payload_os = "macOS"
+
+                    # Generate macos arm64 static elf. macOS does not like static bins for some reason.
+                    print("Poseidon macos x64 bin building")
+                    await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name_base, static_linking="False", payload_description="macOS arm64 Static bin", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Poseidon macos x64 bin built")
+        
+                sys.exit(0)
+
+            # Process athena payloads
+            if args.agent == "athena":
+                payload_os = args.os.capitalize()
+
+                if args.os == "windows":
+                    # Generate windows x64 .net portable executable
+                    print("Athena windows x64 portable executable building")
+                    payload_name_exe = payload_name_base + ".exe"
+                    await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_exe, payload_description="Windows x64 .NET Portable Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Athena windows x64 portable executable built")
+
+                    # Generate windows x64 .net service executable
+                    print("Athena windows x64 service executable building")
+                    payload_name_svc = payload_name_base + "Svc.exe"
+                    await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="windows service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Service Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Athena windows x64 service executable built")
+                
+                elif args.os == "linux":
+                    # Generate linux x64 .net elf
+                    print("Athena linux x64 elf building")
+                    await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_base, payload_description="Linux x64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Athena linux x64 elf built")
+
+                    # Generate linux arm64 .net elf
+                    print("Athena linux arm64 elf building")
+                    await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="Linux arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Athena linux arm64 elf built")
+
+                elif args.os == "macos":
+                    # Translates to value athena builder expects
+                    payload_os = "macOS"
+
+                    # Generate macOS arm64 .net elf
+                    print("Athena macos arm64 elf building")
+                    await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="macOS arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                    print("Athena macos arm64 elf built")
+
+                sys.exit(0)
+
+        if args.payloads == "list":
             payload_info = await utils.payloads.get_payloads(mythic_instance=mythic_session)
             for i in payload_info:
                 if i["deleted"] == False:
@@ -833,8 +910,7 @@ async def main():
                         "payload_description" : payload_description
                         }
                     print(payload_display)
-            
-
+                
         sys.exit(0)
 
     if args.subcommand == "connect":
