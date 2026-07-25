@@ -126,7 +126,6 @@ cf_actions_subparser = cloudflare_subparser.add_subparsers(title="DNS Actions", 
 cf_create_subparser = cf_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
 cf_create_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API token and dump it to .env when action completes")
 cf_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
-cf_create_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
 cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 cf_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
 
@@ -139,7 +138,6 @@ cf_create_record_type.add_argument("--cname", action="store_true", help="Create 
 cf_delete_subparser = cf_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
 cf_delete_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API token and dump it to .env when action completes")
 cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain modify")
-cf_delete_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
 cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 cf_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
 
@@ -159,7 +157,6 @@ pb_create_subparser = pb_actions_subparser.add_parser(name="create", formatter_c
 pb_create_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API key and dump it to .env when action completes")
 pb_create_subparser.add_argument("-s", "--secret-key", type=str, metavar='', help="Specify the secret key and dump it to .env when action completes")
 pb_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain and zone to modify")
-pb_create_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
 pb_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 pb_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
 
@@ -173,7 +170,6 @@ pb_delete_subparser = pb_actions_subparser.add_parser(name="delete", formatter_c
 pb_delete_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API key and dump it to .env when action completes")
 pb_delete_subparser.add_argument("-s", "--secret-key", type=str, metavar='', help="Specify the secret key and dump it to .env when action completes")
 pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
-pb_delete_subparser.add_argument("-z", "--zone", type=str, metavar='', help="Specify DNS zone to modify")
 pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 pb_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
 
@@ -241,6 +237,7 @@ async def main():
     if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
         shutil.copy(".env-template", ".env")
 
+    # Install Mythic on designated system
     if args.subcommand == "install":
         import paramiko, utils.install
 
@@ -304,7 +301,9 @@ async def main():
         ssh.close()
         sys.exit(0)
 
+    # Import Mythic auth early for functions that require it
     import utils.auth
+
     # Handles authentication to Mythic
     if args.subcommand == "auth":
         import utils.env
@@ -380,10 +379,8 @@ async def main():
                     break
                 else:
                     domain_id = None
-                
-            if domain_id == None:
-                print("Please specify a valid domain. Exiting!")
-                sys.exit(1)
+                    print("Please specify a valid domain. Exiting!")
+                    sys.exit(1)
 
             # Get the current dns records
             records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
@@ -488,16 +485,19 @@ async def main():
                     aws_access_key = config["AWS_ACCESS_KEY_ID"]
                 else :
                     aws_access_key = getpass.getpass("AWS Access Key: ")
+                    # Fix env
 
                 if config["AWS_SECRET_ACCESS_KEY"] != "":
                     aws_secret_key = config["AWS_SECRET_ACCESS_KEY"]
                 else :
                     aws_secret_key = getpass.getpass("AWS Secret Key: ")
+                    # fix env
 
                 if config["AWS_DEFAULT_REGION"] != "":
                     aws_region = config["AWS_DEFAULT_REGION"]
                 else :
                     aws_region = args.region
+                    # fix env
 
                 ec2_size = args.size
 
@@ -510,6 +510,7 @@ async def main():
                 if args.os == "ubuntu":
                     ec2_os = "ubuntu"
                     ec2_user = "ubuntu"
+                    # Add these to env
 
                 elif args.os == "debian":
                     ec2_os = "debian"
@@ -526,7 +527,7 @@ async def main():
                 print("Creating EC2 Security Group.")
                 aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
 
-                # allows http, https, and ssh inbound
+                # Allows http, https, and ssh inbound
                 print("Allowing SSH, HTTP, and HTTPS into EC2 Instance.")
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
                 utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
@@ -551,6 +552,7 @@ async def main():
                 ssh.load_system_host_keys()
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+                # Update EC2s
                 print("Connecting to EC2 instance over SSH")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
                 print("Updating EC2 before rebooting.")
@@ -580,9 +582,7 @@ async def main():
             if args.cloud == "aws":
                 import boto3
 
-                instance_ids = []
-                ssh_key_ids = []
-                security_group_ids = []
+                instance_ids, ssh_key_ids, security_group_ids = []
 
                 aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
                 ec2_client = aws_session.client("ec2")  
@@ -687,6 +687,7 @@ async def main():
             (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain}")
             utils.install.print_terminal_output(stdout)
 
+            ssh.close()
             sys.exit(0)
 
         if args.redir_action == "generate":
