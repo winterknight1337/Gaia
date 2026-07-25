@@ -1,4 +1,4 @@
-import argparse, sys, os, asyncio, dotenv, getpass, time
+import argparse, sys, os, asyncio, dotenv, getpass, time, shutil
 
 # Load environment variables first
 if os.path.isfile(".env"):
@@ -236,6 +236,10 @@ async def main():
     if args.subcommand == None:
         global_parser.print_help()
         sys.exit(1)
+
+    # Copy .env template to .env
+    if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
+        shutil.copy(".env-template", ".env")
 
     if args.subcommand == "install":
         import paramiko, utils.install
