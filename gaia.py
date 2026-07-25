@@ -193,6 +193,7 @@ aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws",
 aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Supply AWS access key")
 aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Supply AWS secret key")
 aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.micro", "t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Select size of EC2 for redirector")
+aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="AWS Region to create redirector")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
 
 
@@ -211,20 +212,20 @@ certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show
 rules_redir_subparser = redir_subparser.add_parser(name="generate", formatter_class=formatter, help="Generate redirector rules based on existing payload in Mythic and upload them to redirector")
 rules_redir_subparser.add_argument("-u", "--payload-uuid", required=True, type=str, metavar='', help="UUID of payload to use as basis of apache mod_rewrite rule generation")
 rules_redir_subparser.add_argument("-t", "--redirect-target", required=True, type=str, metavar='', help="URL of website to redirect non-c2 traffic to")
+rules_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
+rules_redir_subparser.add_argument("-rP", "--redir-ssh-port", default=22, type=int, metavar='', help="SSH port for redirector server")
+rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate to redirector server")
+rules_redir_subparser.add_argument("-rp", "--redir-ssh-password", type=str, metavar='', help="Redirector SSH user password or SSH key passphrase")
+rules_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to redirector with")
 
 tunnel_redir_subparser = redir_subparser.add_parser(name="tunnel", formatter_class=formatter, help="Configure SSH tunnel between Mythic server and redirector")
-tunnel_redir_subparser.add_argument("-ms", "--mythic-server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
-tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-port", required=True, default=22, type=int, metavar='', help="SSH port for Mythic server")
+tunnel_redir_subparser.add_argument("-mS", "--mythic-server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
+tunnel_redir_subparser.add_argument("-mP", "--mythic-ssh-port", default=22, type=int, metavar='', help="SSH port for Mythic server")
 tunnel_redir_subparser.add_argument("-mu", "--mythic-ssh-user", required=True, type=str, metavar='', help="User to authenticate to Mythic server")
 tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-password", type=str, metavar='', help="Mythic SSH user password or SSH key passphrase")
 tunnel_redir_subparser.add_argument("-mi", "--mythic-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to Mythic with")
-tunnel_redir_subparser.add_argument("-rs", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-tunnel_redir_subparser.add_argument("-rp", "--redir-ssh-port", required=True, default=22, type=int, metavar='', help="SSH port for redirector server")
+tunnel_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
 tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate to redirector server")
-tunnel_redir_subparser.add_argument("-rp", "--redir-ssh-password", type=str, metavar='', help="Redirector SSH user password or SSH key passphrase")
-tunnel_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to redirector with")
-
-
 
 args = global_parser.parse_args()
 ##################################################################  END CLI PARSING ##################################################################
@@ -460,17 +461,46 @@ async def main():
             print(record_create)
             sys.exit(0)
 
+    # Check if config has been changed, if not then env has not been loaded.
+    if config["MYTHIC_API_KEY"] == "":
+        print("No Mythic API key detected in .env. Have you authenticated to Mythic?")
+        auth_parser.print_help()
+        sys.exit(1)
+
+    # Authenticates to mythic with API key if auth is not specified
+    api_key = config["MYTHIC_API_KEY"]
+    mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
+    mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
+    mythic_session = await utils.auth.mythic_login_with_api(api_token=api_key, server_host=mythic_host, server_port=mythic_port)
+    
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
-        if args.aws == True:
-            import boto3, utils.redirector, paramiko, utils.install, utils.env
+        import utils.redirector, paramiko, utils.install, utils.env
+        if args.redir_action == "create":
+            if args.cloud == "aws":
+                import boto3
 
-            # Connect to EC2 Service
-            print("Connecting to AWS.")
-            aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
-            ec2_client = aws_session.client("ec2")
+                if config["AWS_ACCESS_KEY_ID"] != "":
+                    aws_access_key = config["AWS_ACCESS_KEY_ID"]
+                else :
+                    aws_access_key = getpass.getpass("AWS Access Key: ")
 
-            if args.create == True:       
+                if config["AWS_SECRET_ACCESS_KEY"] != "":
+                    aws_secret_key = config["AWS_SECRET_ACCESS_KEY"]
+                else :
+                    aws_secret_key = getpass.getpass("AWS Secret Key: ")
+
+                if config["AWS_DEFAULT_REGION"] != "":
+                    aws_region = config["AWS_DEFAULT_REGION"]
+                else :
+                    aws_region = args.region
+
+                ec2_size = args.size
+
+                # Connect to EC2 Service
+                print("Connecting to AWS")
+                aws_session = boto3.Session(aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, region_name=aws_region)
+                ec2_client = aws_session.client("ec2")   
 
                 # Specify OS for redirector EC2
                 if args.os == "ubuntu":
@@ -481,18 +511,8 @@ async def main():
                     ec2_os = "debian"
                     ec2_user = "admin"
 
-                # Define EC2 size
-                if args.size == "micro":
-                    ec2_size = "t3.micro"
-
-                elif args.size == "small":
-                    ec2_size = "t3.small"
-
-                elif args.size == "medium":
-                    ec2_size == "t3.medium"
-
                 # Create EC2 key pair
-                print("Creating gaia-redir keypair for EC2.")
+                print("Creating gaia-redir keypair for EC2")
                 aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
                 home_dir = os.path.expanduser("~")
                 ssh_dir = f"{home_dir}/.ssh/"
@@ -548,10 +568,20 @@ async def main():
                 utils.install.convert_line_endings("install_apache.sh")
                 utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
 
-            if args.delete == True:
+                ssh.close()
+
+                sys.exit(0)
+
+        if args.redir_action == "delete":
+            if args.cloud == "aws":
+                import boto3
+
                 instance_ids = []
                 ssh_key_ids = []
                 security_group_ids = []
+
+                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
+                ec2_client = aws_session.client("ec2")  
 
                 # Query for EC2s with gaia tags on them
                 print("Getting Gaia EC2s from AWS")
@@ -610,62 +640,159 @@ async def main():
 
                 print("Gaia cleanup complete! Exiting!")
 
-        sys.exit(0)
+                sys.exit(0)
     
-    # Handles configuration of certbot
-    if args.subcommand == "certbot":
-        import paramiko, utils.install
+        # Handles configuration of certbot
+        if args.redir_action == "certbot":
+            import paramiko, utils.install
 
-        # Get domain to activate certbot on
-        certbot_domain = args.domain[0].strip()
+            # Get domain to activate certbot on
+            certbot_domain = args.domain
 
-         # Initialize SSH
-        ssh = paramiko.SSHClient()
-        ssh.load_system_host_keys()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # Initialize SSH
+            ssh = paramiko.SSHClient()
+            ssh.load_system_host_keys()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        # Get connection information
-        server = args.server[0].strip()
-        user = args.user[0].strip()
+            # Get connection information
+            server = args.redirector_server
+            user = args.redirector_user
 
-        # Determine if we show stderr on streamed terminal output
-        if args.stderr == True:
-            display_stderr = True
-        else:
-            display_stderr = False
+            # Determine if we show stderr on streamed terminal output
+            if args.stderr == True:
+                display_stderr = True
+            else:
+                display_stderr = False
 
-        # Ready SSH key if one is specified
-        if args.identity_file != None:
-            ssh_key = args.identity_file.strip()
-        else:
-            ssh_key = None
+            # Ready SSH key if one is specified
+            if args.identity_file != None:
+                ssh_key = args.identity_file.strip()
+            else:
+                ssh_key = None
 
-        # Ready password or ssh passphrase
-        if args.password == True:
-            password = getpass.getpass()
-        else:
-            password = None
-            
-        # Paramiko attempts SSH key auth first, then password as a fallback
-        ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
+            # Ready password or ssh passphrase
+            if args.password == True:
+                password = getpass.getpass()
+            else:
+                password = None
+                
+            # Paramiko attempts SSH key auth first, then password as a fallback
+            ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
-        # Configures certbot
-        (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain}")
-        utils.install.print_terminal_output(stdout)
+            # Configures certbot
+            (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain}")
+            utils.install.print_terminal_output(stdout)
 
-        sys.exit(0)
-    
-    # Check if config has been changed, if not then env has not been loaded.
-    if config == None:
-        print("No mythic api key detected in .env. have you authenticated to mythic?")
-        auth_parser.print_help()
-        sys.exit(1)
+            sys.exit(0)
 
-    # Authenticates to mythic with API key if auth is not specified
-    api_key = config["MYTHIC_API_KEY"]
-    mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
-    mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
-    mythic_session = await utils.auth.mythic_login_with_api(api_token=api_key, server_host=mythic_host, server_port=mythic_port)
+        if args.redir_action == "generate":
+
+            payload_uuid = args.payload_uuid
+            redirector_server = args.redir_server
+            redirector_ssh_port = args.redir_ssh_port
+
+            redirector_server_user = args.redir_ssh_user
+            redirect_target = args.redirect_target
+
+            if args.redir_ssh_password == True:
+                redirector_ssh_password = getpass.getpass("Redirector User SSH Password")
+            else:
+                redirector_ssh_password = None
+
+            if args.redir_ssh_identity_file != None:
+                redirector_ssh_key = args.redir_ssh_identity_file
+            else:
+                redirector_ssh_key = None
+
+            # Query for mod_rewrite rules
+            redirector_rules_line = await utils.redirector.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
+
+            # Modify mod_rewrite rules so they work as expected
+            redirector_rules = redirector_rules_line["redirect_rules"]["output"].split("\n")
+            for i in range(len(redirector_rules)):
+                if "http://C2_SERVER_HERE:80" in redirector_rules[i]:
+                    redirector_rules[i] = redirector_rules[i].replace("http://C2_SERVER_HERE:80", f"http://localhost:8443")
+                elif "redirect/?" in redirector_rules[i]:
+                    redirector_rules[i] = redirector_rules[i].replace("redirect/?", f"\"{redirect_target}\"")
+                
+                redirector_rules[i] = redirector_rules[i] + '\n'
+
+            # Write .htaccess file
+            with open (".htaccess", "w") as file:
+                file.writelines(redirector_rules)
+
+            # Upload mod_rewrite rules to the redirector and reboot apache
+            # Initialize SSH for redirector
+            redir_tunnel = paramiko.SSHClient()
+            redir_tunnel.load_system_host_keys()
+            redir_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+            redir_tunnel.connect(hostname=redirector_server, port=redirector_ssh_port, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
+            utils.install.copy_file(ssh=redir_tunnel, file=".htaccess")
+
+            (stdin, stdout, stderr) = redir_tunnel.exec_command("sudo cp .htaccess /var/www/html/.htaccess && sudo chmod 644 /var/www/html/.htaccess && sudo systemctl restart apache2")
+            utils.install.print_terminal_output(stdout)
+
+            redir_tunnel.close()
+            sys.exit(0)
+
+        if args.redir_action == "tunnel":
+                import paramiko, utils.redirector, utils.payloads, utils.install
+
+                mythic_server = args.mythic_server
+                mythic_server_user = args.mythic_ssh_user
+                mythic_ssh_port = args.mythic_ssh_port
+
+                if args.mythic_ssh_identity_file != None:
+                    mythic_ssh_key = args.mythic_ssh_identify_file
+                else:
+                    mythic_ssh_key = None
+
+                if args.mythic_ssh_password == True:
+                    mythic_ssh_password = getpass.getpass("Mythic SSH User Password:")
+                else:
+                    mythic_ssh_password = None
+
+                # Redirector server connection information
+                redirector_server = args.redir_server
+                redirector_server_user = args.redir_ssh_user
+                
+                # Create the SSH tunnel to the redirector
+                # Initialize SSH for redirector
+                mythic_tunnel = paramiko.SSHClient()
+                mythic_tunnel.load_system_host_keys()
+                mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+                mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
+                utils.install.copy_gaia_ssh_key(ssh=mythic_tunnel)
+                (stdin, stdout, stderr) = mythic_tunnel.exec_command(f"chmod 600 ~/.ssh/gaia-redir.pem")
+
+
+                with open("utils/redirector-tunnel-key.service", "r") as file:
+                    service = file.readlines()
+
+                for i in range(len(service)):
+                    if "user@example.com" in service[i]:
+                        service[i] = service[i].replace("user@example.com", f"{redirector_server_user}@{redirector_server}")
+                        service[i] = service[i].replace("/home/example/.ssh/gaia-redir.pem", f"/home/{mythic_server_user}/.ssh/gaia-redir.pem")
+                    if "User=" in service[i]:
+                        service[i] = service[i].replace("User=\n", f"User={mythic_server_user}\n")
+                        
+
+                with open("redirector-tunnel.service", "w") as file:
+                    file.writelines(service)
+
+                utils.install.copy_file(ssh=mythic_tunnel, file="redirector-tunnel.service")
+                mythic_tunnel.exec_command("sudo cp redirector-tunnel.service /etc/systemd/system/redirector-tunnel.service")
+                mythic_tunnel.exec_command("sudo chown root:root /etc/systemd/system/redirector-tunnel.service")
+                mythic_tunnel.exec_command("sudo chmod 644 /etc/systemd/system/redirector-tunnel.service")
+                mythic_tunnel.exec_command("sudo systemctl daemon-reload")
+                mythic_tunnel.exec_command("sudo systemctl start redirector-tunnel.service")
+                mythic_tunnel.exec_command("sudo systemctl enable redirector-tunnel.service")
+
+                mythic_tunnel.close()
+
+                sys.exit(0)
 
     # Manages users
     if args.subcommand == "user":
@@ -913,116 +1040,7 @@ async def main():
                 
         sys.exit(0)
 
-    if args.subcommand == "connect":
-        import paramiko, utils.redirector, utils.payloads, utils.install
-
-        payload_uuid = args.payload_uuid
-        mythic_server = args.mythic_server[0].strip()
-        mythic_server_user = args.mythic_ssh_user[0].strip()
-
-        if args.mythic_ssh_identity_file != None:
-            mythic_ssh_key = args.mythic_ssh_identify_file
-        else:
-            mythic_ssh_key = None
-
-        if args.mythic_ssh_password == True:
-            mythic_ssh_password = getpass.getpass("Mythic SSH User Password:")
-        else:
-            mythic_ssh_password = None
-
-        if args.mythic_ssh_port != None:
-            mythic_ssh_port = args.mythic_ssh_port
-        else:
-            mythic_ssh_port = 22
-        
-
-        redirector_server = args.redirector_ssh[0].strip()
-        
-        # SSH port info
-        if args.redirector_ssh_port != None:
-            redirector_ssh_port = args.redirector_ssh_port
-        else:
-            redirector_ssh_port = 22
-
-        redirector_server_user = args.redirector_ssh_user[0].strip()
-        redirect_target = args.redirect_target
-
-        if args.redirector_ssh_password == True:
-            redirector_ssh_password = getpass.getpass("Redirector User SSH Password")
-        else:
-            redirector_ssh_password = None
-
-        if args.redirector_ssh_identity_file != None:
-            redirector_ssh_key = args.redirector_ssh_identity_file
-        else:
-            redirector_ssh_key = None
-
-        # Query for mod_rewrite rules
-        redirector_rules_line = await utils.redirector.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
-
-        # Modify mod_rewrite rules so they work as expected
-        redirector_rules = redirector_rules_line["redirect_rules"]["output"].split("\n")
-        for i in range(len(redirector_rules)):
-            if "http://C2_SERVER_HERE:80" in redirector_rules[i]:
-                redirector_rules[i] = redirector_rules[i].replace("http://C2_SERVER_HERE:80", f"http://localhost:8443")
-            elif "redirect/?" in redirector_rules[i]:
-                redirector_rules[i] = redirector_rules[i].replace("redirect/?", f"\"{redirect_target}\"")
-            
-            redirector_rules[i] = redirector_rules[i] + '\n'
-
-        # Write .htaccess file
-        with open (".htaccess", "w") as file:
-            file.writelines(redirector_rules)
-
-        # Upload mod_rewrite rules to the redirector and reboot apache
-        # Initialize SSH for redirector
-        redir_tunnel = paramiko.SSHClient()
-        redir_tunnel.load_system_host_keys()
-        redir_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        redir_tunnel.connect(hostname=redirector_server, port=redirector_ssh_port, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
-        utils.install.copy_file(ssh=redir_tunnel, file=".htaccess")
-
-        (stdin, stdout, stderr) = redir_tunnel.exec_command("sudo cp .htaccess /var/www/html/.htaccess && sudo chmod 644 /var/www/html/.htaccess && sudo systemctl restart apache2")
-        utils.install.print_terminal_output(stdout)
-        
-        # Create the SSH tunnel to the redirector
-        # Initialize SSH for redirector
-        mythic_tunnel = paramiko.SSHClient()
-        mythic_tunnel.load_system_host_keys()
-        mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
-        utils.install.copy_gaia_ssh_key(ssh=mythic_tunnel)
-        (stdin, stdout, stderr) = mythic_tunnel.exec_command(f"chmod 600 ~/.ssh/gaia-redir.pem")
-
-
-        with open("utils/redirector-tunnel-key.service", "r") as file:
-            service = file.readlines()
-
-        for i in range(len(service)):
-            if "user@example.com" in service[i]:
-                service[i] = service[i].replace("user@example.com", f"{redirector_server_user}@{redirector_server}")
-                service[i] = service[i].replace("/home/example/.ssh/gaia-redir.pem", f"/home/{mythic_server_user}/.ssh/gaia-redir.pem")
-            if "User=" in service[i]:
-                service[i] = service[i].replace("User=\n", f"User={mythic_server_user}\n")
-                
-
-        with open("redirector-tunnel.service", "w") as file:
-            file.writelines(service)
-
-        utils.install.copy_file(ssh=mythic_tunnel, file="redirector-tunnel.service")
-        mythic_tunnel.exec_command("sudo cp redirector-tunnel.service /etc/systemd/system/redirector-tunnel.service")
-        mythic_tunnel.exec_command("sudo chown root:root /etc/systemd/system/redirector-tunnel.service")
-        mythic_tunnel.exec_command("sudo chmod 644 /etc/systemd/system/redirector-tunnel.service")
-        mythic_tunnel.exec_command("sudo systemctl daemon-reload")
-        mythic_tunnel.exec_command("sudo systemctl start redirector-tunnel.service")
-        mythic_tunnel.exec_command("sudo systemctl enable redirector-tunnel.service")
-
-        redir_tunnel.close()
-        mythic_tunnel.close()
-
-        sys.exit(0)
+    
 
 
 if __name__ == '__main__':
