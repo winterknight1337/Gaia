@@ -14,7 +14,7 @@ apt install git vim make autossh -y;
 echo "Installing Docker!";
 
 OS=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2);
-VERSION_ID=$(cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2);
+VERSION_ID=$(cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2 | cut -d '"' -f 2);
 
 if [ $OS == "debian" ] && [ $VERSION_ID == "12" ]
     then echo "Installing Docker for Debian 12";
@@ -24,7 +24,7 @@ if [ $OS == "debian" ] && [ $VERSION_ID == "12" ]
     echo "Docker install completed";
     rm ./install_docker_debian.sh;
 
-if [ $OS == "debian" ] && [ $VERSION_ID == "13" ]
+elif [ $OS == "debian" ] && [ $VERSION_ID == "13" ]
     then echo "Installing Docker for Debian 13"
     apt install -y apt-transport-https ca-certificates curl gnupg2;
     install -m 0755 -d /etc/apt/keyrings;
@@ -32,8 +32,8 @@ if [ $OS == "debian" ] && [ $VERSION_ID == "13" ]
     chmod a+r /etc/apt/keyrings/docker.asc;
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list;
     apt update;
-    apt-get install -y --no-install-recommends docker-ce docker-compose-plugin
-    echo "Docker install completed"
+    apt-get install -y --no-install-recommends docker-ce docker-compose-plugin;
+    echo "Docker install completed";
 
 elif [ $OS == "kali" ]
     then wget https://github.com/its-a-feature/Mythic/raw/refs/heads/master/install_docker_kali.sh;
