@@ -802,7 +802,6 @@ async def main():
             sys.exit(0)
 
         if args.redir_action == "generate":
-
             payload_uuid = args.payload_uuid
             redirector_server = args.redir_server
             redirector_ssh_port = args.redir_ssh_port
@@ -853,62 +852,62 @@ async def main():
             sys.exit(0)
 
         if args.redir_action == "tunnel":
-                import paramiko, utils.redirector, utils.payloads, utils.install
+            import paramiko, utils.redirector, utils.payloads, utils.install
 
-                mythic_server = args.mythic_server
-                mythic_server_user = args.mythic_ssh_user
-                mythic_ssh_port = args.mythic_ssh_port
+            mythic_server = args.mythic_server
+            mythic_server_user = args.mythic_ssh_user
+            mythic_ssh_port = args.mythic_ssh_port
 
-                if args.mythic_ssh_identity_file != None:
-                    mythic_ssh_key = args.mythic_ssh_identify_file
-                else:
-                    mythic_ssh_key = None
+            if args.mythic_ssh_identity_file != None:
+                mythic_ssh_key = args.mythic_ssh_identify_file
+            else:
+                mythic_ssh_key = None
 
-                if args.mythic_ssh_password == True:
-                    mythic_ssh_password = getpass.getpass("Mythic SSH User Password:")
-                else:
-                    mythic_ssh_password = None
+            if args.mythic_ssh_password == True:
+                mythic_ssh_password = getpass.getpass("Mythic SSH User Password:")
+            else:
+                mythic_ssh_password = None
 
-                # Redirector server connection information
-                redirector_server = args.redir_server
-                redirector_server_user = args.redir_ssh_user
-                
-                # Create the SSH tunnel to the redirector
-                # Initialize SSH for redirector
-                mythic_tunnel = paramiko.SSHClient()
-                mythic_tunnel.load_system_host_keys()
-                mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # Redirector server connection information
+            redirector_server = args.redir_server
+            redirector_server_user = args.redir_ssh_user
+            
+            # Create the SSH tunnel to the redirector
+            # Initialize SSH for redirector
+            mythic_tunnel = paramiko.SSHClient()
+            mythic_tunnel.load_system_host_keys()
+            mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-                mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
-                utils.install.copy_gaia_ssh_key(ssh=mythic_tunnel)
-                (stdin, stdout, stderr) = mythic_tunnel.exec_command(f"chmod 600 ~/.ssh/gaia-redir.pem")
+            mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
+            utils.install.copy_gaia_ssh_key(ssh=mythic_tunnel)
+            (stdin, stdout, stderr) = mythic_tunnel.exec_command(f"chmod 600 ~/.ssh/gaia-redir.pem")
 
 
-                with open("utils/redirector-tunnel-key.service", "r") as file:
-                    service = file.readlines()
+            with open("utils/redirector-tunnel-key.service", "r") as file:
+                service = file.readlines()
 
-                for i in range(len(service)):
-                    if "user@example.com" in service[i]:
-                        service[i] = service[i].replace("user@example.com", f"{redirector_server_user}@{redirector_server}")
-                        service[i] = service[i].replace("/home/example/.ssh/gaia-redir.pem", f"/home/{mythic_server_user}/.ssh/gaia-redir.pem")
-                    if "User=" in service[i]:
-                        service[i] = service[i].replace("User=\n", f"User={mythic_server_user}\n")
-                        
+            for i in range(len(service)):
+                if "user@example.com" in service[i]:
+                    service[i] = service[i].replace("user@example.com", f"{redirector_server_user}@{redirector_server}")
+                    service[i] = service[i].replace("/home/example/.ssh/gaia-redir.pem", f"/home/{mythic_server_user}/.ssh/gaia-redir.pem")
+                if "User=" in service[i]:
+                    service[i] = service[i].replace("User=\n", f"User={mythic_server_user}\n")
+                    
 
-                with open("redirector-tunnel.service", "w") as file:
-                    file.writelines(service)
+            with open("redirector-tunnel.service", "w") as file:
+                file.writelines(service)
 
-                utils.install.copy_file(ssh=mythic_tunnel, file="redirector-tunnel.service")
-                mythic_tunnel.exec_command("sudo cp redirector-tunnel.service /etc/systemd/system/redirector-tunnel.service")
-                mythic_tunnel.exec_command("sudo chown root:root /etc/systemd/system/redirector-tunnel.service")
-                mythic_tunnel.exec_command("sudo chmod 644 /etc/systemd/system/redirector-tunnel.service")
-                mythic_tunnel.exec_command("sudo systemctl daemon-reload")
-                mythic_tunnel.exec_command("sudo systemctl start redirector-tunnel.service")
-                mythic_tunnel.exec_command("sudo systemctl enable redirector-tunnel.service")
+            utils.install.copy_file(ssh=mythic_tunnel, file="redirector-tunnel.service")
+            mythic_tunnel.exec_command("sudo cp redirector-tunnel.service /etc/systemd/system/redirector-tunnel.service")
+            mythic_tunnel.exec_command("sudo chown root:root /etc/systemd/system/redirector-tunnel.service")
+            mythic_tunnel.exec_command("sudo chmod 644 /etc/systemd/system/redirector-tunnel.service")
+            mythic_tunnel.exec_command("sudo systemctl daemon-reload")
+            mythic_tunnel.exec_command("sudo systemctl start redirector-tunnel.service")
+            mythic_tunnel.exec_command("sudo systemctl enable redirector-tunnel.service")
 
-                mythic_tunnel.close()
+            mythic_tunnel.close()
 
-                sys.exit(0)
+            sys.exit(0)
 
     # Manages users
     if args.subcommand == "user":
