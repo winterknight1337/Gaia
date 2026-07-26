@@ -124,7 +124,7 @@ cf_actions_subparser = cloudflare_subparser.add_subparsers(title="DNS Actions", 
 
 # Creation actions
 cf_create_subparser = cf_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
-cf_create_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API token and dump it to .env when action completes")
+cf_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
 cf_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
 cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 cf_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
@@ -136,7 +136,7 @@ cf_create_record_type.add_argument("--cname", action="store_true", help="Create 
 
 # Delete modules
 cf_delete_subparser = cf_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
-cf_delete_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API token and dump it to .env when action completes")
+cf_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
 cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain modify")
 cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 cf_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
@@ -154,8 +154,8 @@ pb_actions_subparser = porkbun_subparser.add_subparsers(title="DNS Actions", des
 
 # Creation actions
 pb_create_subparser = pb_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
-pb_create_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API key and dump it to .env when action completes")
-pb_create_subparser.add_argument("-s", "--secret-key", type=str, metavar='', help="Specify the secret key and dump it to .env when action completes")
+pb_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
+pb_create_subparser.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
 pb_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain and zone to modify")
 pb_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 pb_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
@@ -167,8 +167,8 @@ pb_create_record_type.add_argument("--cname", action="store_true", help="Create 
 
 # Deletion actions
 pb_delete_subparser = pb_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
-pb_delete_subparser.add_argument("-k", "--api-key", type=str, metavar='', help="Specify the API key and dump it to .env when action completes")
-pb_delete_subparser.add_argument("-s", "--secret-key", type=str, metavar='', help="Specify the secret key and dump it to .env when action completes")
+pb_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
+pb_delete_subparser.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
 pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
 pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 pb_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
@@ -361,14 +361,20 @@ async def main():
             # Validate that we have the CF API key
             import utils.dns.cf
 
-            if args.api_key == None:
+            # Pull API key from env
+            if args.api_key == False:
                 api_token = config["CLOUDFLARE_API_TOKEN"]
-                # Allow this to be specified in the CLI
-                if api_token != None:
-                    utils.env.update_env(env_key="CLOUDFLARE_API_TOKEN", env_value=api_token)
-                else:
-                    print("Specify a Cloudflare API Key. Exiting!")
-                    sys.exit(1)
+
+            # Sepcify API key
+            elif args.api_key == True:
+                api_token = getpass.getpass("Cloudflare API Key: ")
+
+            # Update env file with API key
+            if api_token != None:
+                utils.env.update_env(env_key="CLOUDFLARE_API_TOKEN", env_value=api_token)
+            else:
+                print("Specify a Cloudflare API Key with --api-key or in .env. Exiting!")
+                sys.exit(1)
 
             # Get the domains listed in the account
             domains = utils.dns.cf.get_domains(api_token=api_token)
@@ -435,11 +441,34 @@ async def main():
         if args.registrar == "porkbun":
             import utils.dns.porkbun
 
-            api_pk1 = config["PORKBUN_API_KEY"]
-            api_sk1 = config["PORKBUN_SECRET_KEY"]
+            # Pull Porkbun API from env
+            if args.api_key == False:
+                api_pk1 = config["PORKBUN_API_KEY"]
 
-            if api_pk1 == None or api_sk1 == None:
-                print("Please specify your porkbun keys in .env")
+            # Sepcify API key
+            elif args.api_key == True:
+                api_pk1 = getpass.getpass("Porkbun API Key: ")
+
+            # Update env file with API key
+            if api_pk1 != None:
+                utils.env.update_env(env_key="PORKBUN_API_KEY", env_value=api_pk1)
+            else:
+                print("Specify a Porkbun API Key with --api-key or in .env. Exiting!")
+                sys.exit(1)
+            
+            # Pull Porkbun secret from env
+            if args.secret_key == False:
+                api_sk1 = config["PORKBUN_SECRET_KEY"]
+
+            # Sepcify Secret key
+            elif args.api_key == True:
+                api_pk1 = getpass.getpass("Porkbun API Key: ")
+
+            # Update env file with API key
+            if api_pk1 != None:
+                utils.env.update_env(env_key="PORKBUN_SECRET_KEY", env_value=api_sk1)
+            else:
+                print("Specify a Porkbun Secret Key with --secret-key or in .env. Exiting!")
                 sys.exit(1)
 
             # Get the domains listed in the account
