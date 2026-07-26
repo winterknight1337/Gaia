@@ -17,7 +17,7 @@ def copy_and_execute_script(ssh, script: str, err: bool=False):
 
     # Execute depednency install script
     ssh.exec_command(f"chmod 770 ~/{script}", get_pty=True)
-    (stdin, stdout, stderr) = ssh.exec_command(f"sudo bash ~/{script}", get_pty=True)
+    (stdin, stdout, stderr) = ssh.exec_command(f"sudo bash ~/{script}", get_pty=False)
 
     print_terminal_output(stdout)
 
