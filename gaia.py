@@ -390,6 +390,8 @@ async def main():
 
                         # Split out some of the domain parameters for easier debugging
                         existing_record_name = i["name"]
+
+                        # Allow for -n to only need the key rather than FQDN
                         target_fqdn = f"{record_name}.{domain}"
 
                         # Exit if there is a domain record name conflict
@@ -436,8 +438,11 @@ async def main():
                         existing_record_name = i["name"]
                         existing_record_id = i["id"]
 
+                        # Allow for -n to only need the key rather than FQDN
+                        target_fqdn = f"{record_name}.{domain}"
+
                         # Exit if there is a domain record name conflict
-                        if existing_record_name == record_name:
+                        if existing_record_name == target_fqdn:
                             utils.dns.cf.delete_domain_record(api_token=api_token, zone_id=domain_id, dns_record_id=existing_record_id)
                             print("Domain record deleted.")
                             sys.exit(0)
