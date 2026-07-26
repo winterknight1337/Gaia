@@ -13,12 +13,11 @@ formatter = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, wid
 
 global_parser = argparse.ArgumentParser(
     prog="Gaia",
-    description="Lightweight tool to help install and manage simple Mythic c2 installations with a focus on students, CTF, and lab environments",
+    description="Lightweight tool to help install and manage simple Mythic c2 installations focused on students, CTF players, Mythic developers, and security researchers",
     formatter_class=formatter
     )
 
 # Global switches
-global_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates")
 global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.0", help="Display software version")
 
 
@@ -35,35 +34,36 @@ redir_parser = subparsers.add_parser(name="redirector", formatter_class=formatte
 
 # Install options
 install_parser.add_argument("--install-updates", action="store_true", help="Update target server with apt before installing Mythic")
-install_parser.add_argument("--install-deps", action="store_true", help="Install dependencies required for Mythic to function")
+install_parser.add_argument("--install-deps", action="store_true", help="Install dependencies required for Mythic on target server")
 install_parser.add_argument("--install-mythic", action="store_true", help="Install Mythic on target server")
-install_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Server to install Mythic on via hostname or IP address")
-install_parser.add_argument("-P", "--port", default=22, type=int, metavar='22', help="SSH port on target server")
-install_parser.add_argument("-u", "--user", required=True, type=str, metavar='', help="User to authenticate as over SSH")
+install_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of target server")
+install_parser.add_argument("-P", "--port", default=22, type=int, metavar='22', help="SSH port of target server")
+install_parser.add_argument("-u", "--user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
 install_parser.add_argument("-p", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
-install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate with")
-install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps on target after stdout")
+install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
+install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
+global_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
 
 
 # Authentication options
-auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Server running Mythic to authenticate against")
-auth_parser.add_argument("-P", "--port", required=True, type=int, default=7443, metavar='7443', help="Port the Mythic web interface is running on")
-auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="User to authenticate to Mythic")
-auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password to authenticate to Mythic")
+auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
+auth_parser.add_argument("-P", "--port", required=True, type=int, default=7443, metavar='7443', help="Port to access Mythic's web interface")
+auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
+auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password for target user for Mythic authentication")
 
 
 # Mythic operations management
 operation_subparser = operation_parser.add_subparsers(title="Operations", dest="operation", description="")
 create_operation_subparser = operation_subparser.add_parser(name="create", formatter_class=formatter, help="Create new operations in Mythic")
-create_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specify name of new operation")
-create_operation_subparser.add_argument("-u", "--users", nargs="+", type=list, metavar='', help="Specify which users are assigned to the new operation")
+create_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of new operation in Mythic")
+create_operation_subparser.add_argument("-u", "--users", nargs="+", type=list, metavar='', help="Users to assign to new operation in Mythic")
 
 # delete_operation_subparser = operations_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete existing operations in Mythic")
 # delete_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specifies which operation to delete")
 
 assign_operation_subparser = operation_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
-assign_operation_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Specify which operation users will be assigned to")
-assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify users to be reassigned")
+assign_operation_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
+assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Users to be assigned to target operation")
 
 operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
 
@@ -72,48 +72,48 @@ operation_subparser.add_parser(name="list", formatter_class=formatter, help="Lis
 user_subparser = user_parser.add_subparsers(title="User Actions", dest="user", description="")
 create_user_subparser = user_subparser.add_parser(name="create", formatter_class=formatter, help="Create new users in Mythic")
 create_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Specify usernames of new Mythic users")
-create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Specify location of file containing usernames to create")
-create_user_subparser.add_argument("-f", "--cred-file", type=str, metavar='path/to/file', help="Specify location of file to dump new user creds after account creation")
-create_user_subparser.add_argument("-d", "--cred-stdout", action="store_true", help="Print newly created user creds to the terminal")
+create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file listing users to be created")
+create_user_subparser.add_argument("-f", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
+create_user_subparser.add_argument("-d", "--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
 
 # delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
 # delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify usernames of Mythic users to delete")
 
 # list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Lists users in Mythic")
 
-assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
-assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Specify which operation users will be assigned to")
-assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify users to be reassigned")
+# assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
+# assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
+# assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Users to be assigned to target operation")
 
 
 # Mythic payloads 
 payload_subparser = payload_parser.add_subparsers(title="Payload Management", dest="payloads", description="")
 create_payload_subparser = payload_subparser.add_parser(name="create", formatter_class=formatter, description="Create new payloads")
 
-agent_subparser = create_payload_subparser.add_subparsers(title="Agents", dest="agent", help="Create a payload using the specified Mythic agent")
+agent_subparser = create_payload_subparser.add_subparsers(title="Agents", dest="agent", help="Create a payload from the specified agent")
 apollo_subparser = agent_subparser.add_parser(name="apollo", formatter_class=formatter, help="Manage Apollo payloads")
 apollo_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
-apollo_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL excluding port that C2 agents should connect to establish connection to the Mythic server")
-apollo_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents should connect to establish connection to the Mythic server (Default 80)")
-apollo_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="C2 agent will refuse to run after the specified date (YYYY-MM-DD)")
+apollo_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL (excluding port) the C2 agents will connect to")
+apollo_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to (Default 80)")
+apollo_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
 
 poseidon_subparser = agent_subparser.add_parser(name="poseidon", formatter_class=formatter, help="Manage Poseidon payloads")
 poseidon_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
-poseidon_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL excluding port that C2 agents should connect to establish connection to the Mythic server")
-poseidon_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents should connect to establish connection to the Mythic server (Default 80)")
-poseidon_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="C2 agent will refuse to run after the specified date (YYYY-MM-DD)")
-poseidon_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos"], help="Specify which OS to build the C2 agent for")
+poseidon_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL (excluding port) the C2 agents will connect to")
+poseidon_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to (Default 80)")
+poseidon_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
+poseidon_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos"], help="Build C2 agents for the target operating system")
 
 athena_subparser = agent_subparser.add_parser(name="athena", formatter_class=formatter, help="Manage Athena payloads")
 athena_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
-athena_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL excluding port that C2 agents should connect to establish connection to the Mythic server")
-athena_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents should connect to establish connection to the Mythic server (Default 80)")
-athena_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="C2 agent will refuse to run after the specified date (YYYY-MM-DD)")
-athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos", "windows"], help="Specify which OS to build the C2 agent for")
+athena_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL (excluding port) the C2 agents will connect to")
+athena_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to (Default 80)")
+athena_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
+athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos", "windows"], help="Build C2 agents for the target operating system")
 
 # delete_payload_subparser = payload_subparser.add_parser(name="delete", formatter_class=formatter, description="Delete payloads")
 
-list_payload_subparser = payload_subparser.add_parser(name="list", formatter_class=formatter, description="List payloads")
+list_payload_subparser = payload_subparser.add_parser(name="list", formatter_class=formatter, description="List current Mythic payloads")
 
 
 # DNS management
@@ -121,24 +121,24 @@ list_payload_subparser = payload_subparser.add_parser(name="list", formatter_cla
 dns_registrar_subparser = dns_parser.add_subparsers(title="Registrar", dest="registrar", description='')
 
 cloudflare_subparser = dns_registrar_subparser.add_parser(name="cloudflare", formatter_class=formatter, help="Manage DNS records via Cloudflare")
-cf_actions_subparser = cloudflare_subparser.add_subparsers(title="DNS Actions", dest="dns_action", description="Specify what operation to perform")
+cf_actions_subparser = cloudflare_subparser.add_subparsers(title="DNS Actions", dest="dns_action", description="Specify operation to perform")
 
 # Creation actions
 cf_create_subparser = cf_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
-cf_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
-cf_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
-cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias") # Add note about FQDN
-cf_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+cf_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Enter Cloudflare API token when requested")
+cf_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Creates new records in target domain")
+cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of new domain record")
+cf_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or FQDN for CNAME alias")
 cf_create_subparser.add_argument("-t", "--record-type", type=str, choices=["a", "aaaa", "cname"], help="Type of domain record to create")
 
 # Delete modules
 cf_delete_subparser = cf_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
-cf_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
-cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain modify")
-cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
+cf_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Enter Cloudflare API token when requested")
+cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Deletes records from target domain")
+cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
 cf_list_domains = cf_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
-cf_list_domains.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
+cf_list_domains.add_argument("-k", "--api-key", action="store_true", help="Enter Cloudflare API token when requested")
 
 # Porkbun options
 porkbun_subparser = dns_registrar_subparser.add_parser(name="porkbun", formatter_class=formatter, help="Manage DNS records via Porkbun")
@@ -146,35 +146,35 @@ pb_actions_subparser = porkbun_subparser.add_subparsers(title="DNS Actions", des
 
 # Creation actions
 pb_create_subparser = pb_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
-pb_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
-pb_create_subparser.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
-pb_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain and zone to modify")
-pb_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
-pb_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+pb_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Enter the Porkbun API key when requested")
+pb_create_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the Porkbun secret key when requested")
+pb_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Creates new records in target domain")
+pb_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of new domain record")
+pb_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or FQDN for CNAME alias")
 pb_create_subparser.add_argument("-t", "--record-type", type=str, choices=["a", "aaaa", "cname"], help="Type of domain record to create")
 
 # Deletion actions
 pb_delete_subparser = pb_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
-pb_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
-pb_delete_subparser.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
-pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
+pb_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Enter the Porkbun API key when requested")
+pb_delete_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the Porkbun secret key when requested")
+pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Deletes records from target domain")
 pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
 pb_list_domains = pb_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
-pb_list_domains.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
-pb_list_domains.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
+pb_list_domains.add_argument("-k", "--api-key", action="store_true", help="Enter the Porkbun API key when requested")
+pb_list_domains.add_argument("-s", "--secret-key", action="store_true", help="Enter the Porkbun secret key when requested")
 
 
 # Redirector config
-redir_subparser = redir_parser.add_subparsers(title="Redirector Actions", dest="redir_action", description="Manage redirectors and software installed on them")
+redir_subparser = redir_parser.add_subparsers(title="Redirector Actions", dest="redir_action", description="Manage redirectors")
 create_redir_subparser = redir_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new redirector")
 cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider you'd like to build a redirector in")
 
 aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
-aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Supply AWS access key")
-aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Supply AWS secret key")
-aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.micro", "t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Select size of EC2 for redirector")
-aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="AWS Region to create redirector")
+aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Enter the AWS access key when requested")
+aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the AWS secret key when requested")
+aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.micro", "t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
+aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
 
 
@@ -183,30 +183,29 @@ cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="clou
 aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Delete Gaia redirector infrastructure from AWS")
 
 certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
-certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN of website to generate TLS certificates for")
-certbot_redir_subparser.add_argument("-S", "--redirector-server", required=True, type=str, metavar='', help="Server to generate TLS certificates for")
-certbot_redir_subparser.add_argument("-u", "--redirector-user", required=True, type=str, metavar='', help="User to authenticate as for TLS certificate generation")
+certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
+certbot_redir_subparser.add_argument("-S", "--redirector-server", required=True, type=str, metavar='', help="Hostname or IP address of target server to execute certbot")
+certbot_redir_subparser.add_argument("-u", "--redirector-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
 certbot_redir_subparser.add_argument("-P", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
-certbot_redir_subparser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate with")
-certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show stderr from install steps on target after stdout")
+certbot_redir_subparser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
+certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
 rules_redir_subparser = redir_subparser.add_parser(name="generate", formatter_class=formatter, help="Generate redirector rules based on existing payload in Mythic and upload them to redirector")
-rules_redir_subparser.add_argument("-u", "--payload-uuid", required=True, type=str, metavar='', help="UUID of payload to use as basis of apache mod_rewrite rule generation")
+rules_redir_subparser.add_argument("-u", "--payload-uuid", required=True, type=str, metavar='', help="UUID of payload to use as the basis of apache mod_rewrite rule generation")
 rules_redir_subparser.add_argument("-t", "--redirect-target", required=True, type=str, metavar='', help="URL of website to redirect non-c2 traffic to")
 rules_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-rules_redir_subparser.add_argument("-rP", "--redir-ssh-port", default=22, type=int, metavar='', help="SSH port for redirector server")
-rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate to redirector server")
+rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 rules_redir_subparser.add_argument("-rp", "--redir-ssh-password", type=str, metavar='', help="Redirector SSH user password or SSH key passphrase")
-rules_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to redirector with")
+rules_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 
 tunnel_redir_subparser = redir_subparser.add_parser(name="tunnel", formatter_class=formatter, help="Configure SSH tunnel between Mythic server and redirector")
 tunnel_redir_subparser.add_argument("-mS", "--mythic-server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
 tunnel_redir_subparser.add_argument("-mP", "--mythic-ssh-port", default=22, type=int, metavar='', help="SSH port for Mythic server")
-tunnel_redir_subparser.add_argument("-mu", "--mythic-ssh-user", required=True, type=str, metavar='', help="User to authenticate to Mythic server")
+tunnel_redir_subparser.add_argument("-mu", "--mythic-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-password", type=str, metavar='', help="Mythic SSH user password or SSH key passphrase")
-tunnel_redir_subparser.add_argument("-mi", "--mythic-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key to authenticate to Mythic with")
+tunnel_redir_subparser.add_argument("-mi", "--mythic-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 tunnel_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate to redirector server")
+tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 
 args = global_parser.parse_args()
 ##################################################################  END CLI PARSING ##################################################################
@@ -250,7 +249,9 @@ async def main():
         
         # Update system if requested
         if args.install_updates == True:
-            print("Updating remote system")
+            print("###########################")
+            print("# Updating remote system! #")
+            print("###########################")
             (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y")
             utils.install.print_terminal_output(stdout)
 
@@ -260,13 +261,17 @@ async def main():
 
         # Install dependencies if requested
         if args.install_deps == True:
-            print("Installing Dependencies")
+            print("###########################")
+            print("# Installing Dependencies #")
+            print("###########################")
             utils.install.convert_line_endings("install_deps.sh")
             utils.install.copy_and_execute_script(ssh=ssh, script="install_deps.sh", err=display_stderr)
 
         # Install Mythic and it's dependencies if true
         if args.install_mythic == True:
-            print("Installing Mythic. This will take a while, so go get some coffee.")
+            print("#####################################################################")
+            print("# Installing Mythic. This will take a while, so go get some coffee. #")
+            print("#####################################################################")
             utils.install.convert_line_endings("install_deps.sh")
             utils.install.copy_and_execute_script(ssh=ssh, script="install_mythic.sh", err=display_stderr)
 
@@ -276,12 +281,14 @@ async def main():
             mythic_admin_password = mythic_admin_password[0].split('"')
             mythic_admin_password = mythic_admin_password[1]
 
-            print("Dumping mythic creds to local disk!")
+            print("#######################################")
+            print("# Dumping mythic creds to local disk! #")
+            print("#######################################")
             with open("mythic_admin_creds.txt", "w") as file:
                 mythic_admin_creds = "mythic_admin:" + mythic_admin_password
                 file.write(mythic_admin_creds)
 
-            print("If the password for `mythic_admin` is lost, run `grep \"MYTHIC_ADMIN_PASSWORD\" /opt/Mythic/.env | cut -d \'\"\' -f 2` on the server mythic is installed on.")
+            print("NOTE: If the password for `mythic_admin` is lost, run `grep \"MYTHIC_ADMIN_PASSWORD\" /opt/Mythic/.env | cut -d \'\"\' -f 2` on the server mythic is installed on.")
 
         ssh.close()
         sys.exit(0)
@@ -318,6 +325,7 @@ async def main():
         utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
         utils.env.update_env("MYTHIC_API_KEY", api_token)
 
+        print("Mythic authentication successful!")
         sys.exit(0)
 
     # Handles DNS management
@@ -447,7 +455,7 @@ async def main():
                             print("Domain record deleted.")
                             sys.exit(0)
 
-                    print("No matching records to delete. Please specify FQDN for --name if you have not done so.")
+                    print("No matching records to delete.")
                     sys.exit(1)
                 else:
                     print("No records to delete.")
@@ -664,7 +672,7 @@ async def main():
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
                 # Update EC2s
-                print("Connecting to EC2 instance over SSH")
+                print("Connecting to EC2 instance over SSH.")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
                 print("Updating EC2 before rebooting.")
                 (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y && sudo reboot")
@@ -677,7 +685,7 @@ async def main():
                 # Save the public IP for the redirector
                 utils.env.update_env("REDIRECTOR_PUBLIC_IP", instance_public_ip)
 
-                print("Reconnect to EC2 before installing apache2")
+                print("Reconnecting to EC2 before installing apache2")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
 
                 # Install and perform initial configuration of apache from the shell script
@@ -686,7 +694,6 @@ async def main():
                 utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
 
                 ssh.close()
-
                 sys.exit(0)
 
         if args.redir_action == "delete":
@@ -722,7 +729,7 @@ async def main():
                 # Terminate Gaia instances
                 print("Terminating Gaia related EC2 instances.")
                 terminate = utils.redirector.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
-                print("Sleep for 2 minutes to allow EC2 instances to terminate.")
+                print("Sleeping for 2 minutes to allow EC2 instances to terminate.")
                 time.sleep(120)
 
                 # Delete Gaia SSH Keys
@@ -738,7 +745,7 @@ async def main():
                             continue
 
                 # Delete local copy of ssh key
-                print("Deleting local copy of SSH key for Gaia")
+                print("Deleting local copy of SSH key for Gaia.")
                 utils.redirector.delete_local_gaia_ssh_key("gaia-redir")
 
                 # Delete Gaia Security groups
@@ -754,7 +761,6 @@ async def main():
                             continue
 
                 print("Gaia cleanup complete!")
-
                 sys.exit(0)
     
         # Handles configuration of certbot
@@ -791,10 +797,12 @@ async def main():
             else:
                 password = None
                 
+            print("Connecting to redirector.")
             # Paramiko attempts SSH key auth first, then password as a fallback
             ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
             # Configures certbot
+            print("Running certbot.")
             (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain}")
             utils.install.print_terminal_output(stdout)
 
@@ -804,8 +812,6 @@ async def main():
         if args.redir_action == "generate":
             payload_uuid = args.payload_uuid
             redirector_server = args.redir_server
-            redirector_ssh_port = args.redir_ssh_port
-
             redirector_server_user = args.redir_ssh_user
             redirect_target = args.redirect_target
 
@@ -820,9 +826,11 @@ async def main():
                 redirector_ssh_key = None
 
             # Query for mod_rewrite rules
+            print("Generating base redirector rules.")
             redirector_rules_line = await utils.redirector.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
 
             # Modify mod_rewrite rules so they work as expected
+            print("Modifying redirector rules to ensure they work with given parameters.")
             redirector_rules = redirector_rules_line["redirect_rules"]["output"].split("\n")
             for i in range(len(redirector_rules)):
                 if "http://C2_SERVER_HERE:80" in redirector_rules[i]:
@@ -833,6 +841,7 @@ async def main():
                 redirector_rules[i] = redirector_rules[i] + '\n'
 
             # Write .htaccess file
+            print("Saving redirector rules on disk as .htaccess.")
             with open (".htaccess", "w") as file:
                 file.writelines(redirector_rules)
 
@@ -842,12 +851,17 @@ async def main():
             redir_tunnel.load_system_host_keys()
             redir_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            redir_tunnel.connect(hostname=redirector_server, port=redirector_ssh_port, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
+            print("Connecting to redirector.")
+            redir_tunnel.connect(hostname=redirector_server, port=22, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
+            
+            print("Copying .htaccess to redirector.")
             utils.install.copy_file(ssh=redir_tunnel, file=".htaccess")
 
+            print("Moving .htaccess to /var/www/html/ and reloading apache")
             (stdin, stdout, stderr) = redir_tunnel.exec_command("sudo cp .htaccess /var/www/html/.htaccess && sudo chmod 644 /var/www/html/.htaccess && sudo systemctl restart apache2")
             utils.install.print_terminal_output(stdout)
 
+            print("Redirector file successfully configured!")
             redir_tunnel.close()
             sys.exit(0)
 
@@ -878,14 +892,18 @@ async def main():
             mythic_tunnel.load_system_host_keys()
             mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+            print("Connecting to Mythic server.")
             mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
+
+            print("Copying Gaia-created SSH key for redirector to Mythic server.")
             utils.install.copy_gaia_ssh_key(ssh=mythic_tunnel)
             (stdin, stdout, stderr) = mythic_tunnel.exec_command(f"chmod 600 ~/.ssh/gaia-redir.pem")
 
-
+            print("Creating systemd service file to build SSH tunnel on redirector.")
             with open("utils/redirector-tunnel-key.service", "r") as file:
                 service = file.readlines()
 
+            print("Modifying systemd service file with specified parameters.")
             for i in range(len(service)):
                 if "user@example.com" in service[i]:
                     service[i] = service[i].replace("user@example.com", f"{redirector_server_user}@{redirector_server}")
@@ -893,10 +911,11 @@ async def main():
                 if "User=" in service[i]:
                     service[i] = service[i].replace("User=\n", f"User={mythic_server_user}\n")
                     
-
+            print("Saving modified systemd service file on disk before sending it to Mythic server.")
             with open("redirector-tunnel.service", "w") as file:
                 file.writelines(service)
 
+            print("Copying finished systemd service file to Mythic server, enabling the new service, and building the SSH tunnel to redirector.")
             utils.install.copy_file(ssh=mythic_tunnel, file="redirector-tunnel.service")
             mythic_tunnel.exec_command("sudo cp redirector-tunnel.service /etc/systemd/system/redirector-tunnel.service")
             mythic_tunnel.exec_command("sudo chown root:root /etc/systemd/system/redirector-tunnel.service")
@@ -905,8 +924,8 @@ async def main():
             mythic_tunnel.exec_command("sudo systemctl start redirector-tunnel.service")
             mythic_tunnel.exec_command("sudo systemctl enable redirector-tunnel.service")
 
+            print("SSH tunnel and service successfully created!")
             mythic_tunnel.close()
-
             sys.exit(0)
 
     # Manages users
@@ -919,6 +938,7 @@ async def main():
 
         # Ready user list as input and prepares for merge later
         if args.user_list:
+            print("Reading user list from file.")
             user_list_in = args.user_list.strip()
         else:
             user_list_in = []
@@ -931,11 +951,13 @@ async def main():
             cred_list = None
 
         # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+        print("Merging user file and cli specified users into a single list.")
         users = utils.users.prepare_users(users_stdin=users_stdin, user_file_in=user_list_in)
         
         # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
         if args.user == "create":
             
+            print("Creating new Mythic users.")
             for i in users:
                 user_creds = await utils.users.create_user(mythic_instance=mythic_session, username=i)
                 
@@ -950,6 +972,7 @@ async def main():
 
             # Dump creds to file
             if cred_list != None:
+                print("Dumping new Mythic user credentials to disk.")
                 with open(user_list_out, 'a') as file:
                     file.writelines(cred_list)
                 
@@ -971,12 +994,14 @@ async def main():
 
         if args.operation == "list":
             operations = await utils.operations.get_operations(mythic_instance=mythic_session)
+            print("Current operations in Mythic:")
             for i in operations:
                 print(i)
 
         # Creates new operation
         if args.operation == "create":
             operation = args.name
+            print(f"Creating new Operation: {operation}")
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
@@ -986,6 +1011,8 @@ async def main():
         if args.operation == "assign":
             operation = args.operation
             users = args.users
+
+            print("Assigning users to operation")
             for i in operation:
                 for j in users:
                     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=i, username=j)
@@ -1139,6 +1166,7 @@ async def main():
 
         if args.payloads == "list":
             payload_info = await utils.payloads.get_payloads(mythic_instance=mythic_session)
+            print("Current Payloads:")
             for i in payload_info:
                 if i["deleted"] == False:
                     payload_uuid = i["uuid"]
