@@ -115,6 +115,7 @@ athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["l
 
 list_payload_subparser = payload_subparser.add_parser(name="list", formatter_class=formatter, description="List payloads")
 
+
 # DNS management
 # Cloudflare optionsc
 dns_registrar_subparser = dns_parser.add_subparsers(title="Registrar", dest="registrar", description='')
@@ -126,27 +127,18 @@ cf_actions_subparser = cloudflare_subparser.add_subparsers(title="DNS Actions", 
 cf_create_subparser = cf_actions_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new domain record")
 cf_create_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
 cf_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
-cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
+cf_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias") # Add note about FQDN
 cf_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
-
-cf_create_record_type = cf_create_subparser.add_mutually_exclusive_group(required=True)
-cf_create_record_type.add_argument("--a", action="store_true", help="Create a new A record")
-cf_create_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
-cf_create_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+cf_create_subparser.add_argument("-t", "--record-type", type=str, choices=["a", "aaaa", "cname"], help="Type of domain record to create")
 
 # Delete modules
 cf_delete_subparser = cf_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
 cf_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
 cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain modify")
 cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
-cf_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
 
-cf_delete_record_type = cf_delete_subparser.add_mutually_exclusive_group(required=True)
-cf_delete_record_type.add_argument("--a", action="store_true", help="Create a new A record")
-cf_delete_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
-cf_delete_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
-
-# cf_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
+cf_list_domains = cf_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
+cf_list_domains.add_argument("-k", "--api-key", action="store_true", help="Specify the API token and dump it to .env when action completes")
 
 # Porkbun options
 porkbun_subparser = dns_registrar_subparser.add_parser(name="porkbun", formatter_class=formatter, help="Manage DNS records via Porkbun")
@@ -159,26 +151,19 @@ pb_create_subparser.add_argument("-s", "--secret-key", action="store_true", help
 pb_create_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain and zone to modify")
 pb_create_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
 pb_create_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
-
-pb_create_record_type = pb_create_subparser.add_mutually_exclusive_group(required=True)
-pb_create_record_type.add_argument("--a", action="store_true", help="Create a new A record")
-pb_create_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
-pb_create_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+pb_create_subparser.add_argument("-t", "--record-type", type=str, choices=["a", "aaaa", "cname"], help="Type of domain record to create")
 
 # Deletion actions
 pb_delete_subparser = pb_actions_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a domain record")
 pb_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
 pb_delete_subparser.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
 pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Specify domain to modify")
-pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record: A or AAAA subdomain record, or CNAME alias")
-pb_delete_subparser.add_argument("-v", "--record-value", type=str, metavar='', help="Value of domain record: IP address for A or AAAA record, or base record for CNAME alias")
+pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
-pb_delete_record_type = pb_delete_subparser.add_mutually_exclusive_group(required=True)
-pb_delete_record_type.add_argument("--a", action="store_true", help="Create a new A record")
-pb_delete_record_type.add_argument("--aaaa", action="store_true", help="Create a new AAAA record")
-pb_delete_record_type.add_argument("--cname", action="store_true", help="Create a new CNAME record")
+pb_list_domains = pb_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
+pb_list_domains.add_argument("-k", "--api-key", action="store_true", help="Specify the API key and dump it to .env when action completes")
+pb_list_domains.add_argument("-s", "--secret-key", action="store_true", help="Specify the secret key and dump it to .env when action completes")
 
-# pb_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
 
 # Redirector config
 redir_subparser = redir_parser.add_subparsers(title="Redirector Actions", dest="redir_action", description="Manage redirectors and software installed on them")
@@ -322,7 +307,7 @@ async def main():
         elif args.no_ssl == True:
             mythic_session = await utils.auth.mythic_login_with_user_creds_no_ssl(username=auth_user, password=auth_password, server_host=mythic_host, server_port=mythic_port)
         else:
-            print("Unknown error in SSL processing during mythic authentication flow. Exiting!")
+            print("Unknown error in SSL processing during mythic authentication flow.")
             sys.exit(1)
 
         # Create an API key for the current user
@@ -338,24 +323,6 @@ async def main():
     # Handles DNS management
     if args.subcommand == "dns":
         import utils.env
-
-        domain = args.domain
-        record_name = args.record_name
-        record_value = args.record_value
-
-        if args.dns_action == "delete":
-            delete = True
-        else:
-            delete = False
-
-        # Set record type to be passed to the function
-        if args.a == True:
-            record_type = "A"
-        elif args.cname == True:
-            record_type = "CNAME"
-        elif args.aaaa == True:
-            record_type = "AAAA"
-
 
         if args.registrar == "cloudflare":
             # Validate that we have the CF API key
@@ -373,73 +340,118 @@ async def main():
             if api_token != None:
                 utils.env.update_env(env_key="CLOUDFLARE_API_TOKEN", env_value=api_token)
             else:
-                print("Specify a Cloudflare API Key with --api-key or in .env. Exiting!")
+                print("Specify a Cloudflare API Key with --api-key or in .env.")
                 sys.exit(1)
 
-            # Get the domains listed in the account
-            domains = utils.dns.cf.get_domains(api_token=api_token)
-            
-            # Check that our specified domain returns from this account
-            for i in domains["result"]:
-                if i["name"] == domain:
-                    domain_id = i["id"]
-                    break
-                else:
-                    domain_id = None                    
+            # Print active domains
+            if args.dns_action == "list":
+                # Get the domains listed in the account
+                domains = utils.dns.cf.get_domains(api_token=api_token)
 
-            # Make sure that the domain returned
-            if domain_id == None:
-                print("Please specify a valid domain. Exiting!")
-                sys.exit(1)
+                # Print active domains
+                print("Active domains:")
+                for i in domains["result"]:
+                    if i["status"] == "active":
+                        print(i["name"])
 
-            # Get the current dns records for the given domain
-            records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
-            
-            # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
-            if records["result"] != []:
-                for i in records["result"]:
+                sys.exit(0)
 
-                    # Split out some of the domain parameters for easier debugging
-                    existing_record_name = i["name"]
-                    existing_record_type = i["type"]
-                    existing_record_value = i["content"]
 
-                    # Exit if there is a domain record name conflict
-                    if existing_record_name == record_name and delete == False:
-                        print("Record name conflicts with existing record. Please delete existing record before proceeding.")
-                        sys.exit(1)
-                    
-                    # Exit if the record exists in its entirety (May remove if it is useless, its 2am when I wrote this, but I think its useless).
-                    elif existing_record_name == record_name and existing_record_type == record_type and existing_record_value == record_value and delete == False:
-                        print("Requested domain record already exists in this domain. Exiting!")
-                        sys.exit(1)
+            if args.dns_action == "create":
+                domain = args.domain
+                record_name = args.record_name
+                record_value = args.record_value
+                record_type = args.record_type
+                domain_id = None
+                
 
-                    # If the record matches, and delete is set to true, delete the record
-                    elif existing_record_name == record_name and existing_record_type == record_type and existing_record_value == record_value and delete == True:
-                        record_id = i["id"]
-                        utils.dns.cf.delete_domain_record(api_token=api_token, zone_id=domain_id, dns_record_id=record_id)
-                        print("Successfully deleted specified domain record.")
-                        sys.exit(0)
-                    
-                # If domain record does not exist and we are trying to create a new record, create it.
-                if delete != True:
+                # Get the domains listed in the account
+                domains = utils.dns.cf.get_domains(api_token=api_token)
+                
+                # Check that our specified domain returns from this account
+                for i in domains["result"]:
+                    if i["name"] == domain:
+                        domain_id = i["id"]
+                        break                  
+
+                # Make sure that the domain returned
+                if domain_id == None:
+                    print("Please specify a valid domain.")
+                    sys.exit(1)
+
+                # Get the current dns records for the given domain
+                records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
+
+                target_fqdn = f"{record_name}.{domain}"
+                
+                # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
+                if records["result"] != []:
+                    for i in records["result"]:
+
+                        # Split out some of the domain parameters for easier debugging
+                        existing_record_name = i["name"]
+                        target_fqdn = f"{record_name}.{domain}"
+
+                        # Exit if there is a domain record name conflict
+                        if existing_record_name == target_fqdn:
+                            print("New record name conflicts with existing record.")
+                            sys.exit(1)
+                        
+                    # If domain record does not exist and we are trying to create a new record, create it.
                     record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=record_name, record_type=record_type, record_target=record_value)
-                    print(record_create)
+                    print("Created requested domain record.")
 
                 else:
-                    print("Domain record targeted for deletion does not exist.")
-                    sys.exit(0)
+                    # Create the record if there are no pre-existing domain records
+                    record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=record_name, record_type=record_type, record_target=record_value)
+                    print("Created requested domain record.")
 
-            else:
-                # Create the record if there are no pre-existing domain records
-                record_create = utils.dns.cf.create_domain_record(api_token=api_token, zone_id=domain_id, record_name=record_name, record_type=record_type, record_target=record_value)
-                print("Created requested domain record.")
+                sys.exit(0)
 
-            sys.exit(0)
+            if args.dns_action == "delete":
+                domain_id = None
+                domain = args.domain
+                record_name = args.record_name                
+
+                # Get the domains listed in the account
+                domains = utils.dns.cf.get_domains(api_token=api_token)
+                
+                # Check that our specified domain returns from this account
+                for i in domains["result"]:
+                    if i["name"] == domain:
+                        domain_id = i["id"]
+                        break                   
+
+                # Make sure that the domain returned
+                if domain_id == None:
+                    print("Please specify a valid domain.")
+                    sys.exit(1)
+
+                # Get the current dns records for the given domain
+                records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
+                if records["result"] != []:
+                    for i in records["result"]:
+
+                        # Split out some of the domain parameters for easier debugging
+                        existing_record_name = i["name"]
+                        existing_record_id = i["id"]
+
+                        # Exit if there is a domain record name conflict
+                        if existing_record_name == record_name:
+                            utils.dns.cf.delete_domain_record(api_token=api_token, zone_id=domain_id, dns_record_id=existing_record_id)
+                            print("Domain record deleted.")
+                            sys.exit(0)
+
+                    print("No matching records to delete. Please specify FQDN for --name if you have not done so.")
+                    sys.exit(1)
+                else:
+                    print("No records to delete.")
+                    sys.exit(1)
 
 
         if args.registrar == "porkbun":
             import utils.dns.porkbun
+            domain_id = None
 
             # Pull Porkbun API from env
             if args.api_key == False:
@@ -453,7 +465,7 @@ async def main():
             if api_pk1 != None:
                 utils.env.update_env(env_key="PORKBUN_API_KEY", env_value=api_pk1)
             else:
-                print("Specify a Porkbun API Key with --api-key or in .env. Exiting!")
+                print("Specify a Porkbun API Key with --api-key or in .env.")
                 sys.exit(1)
             
             # Pull Porkbun secret from env
@@ -468,48 +480,93 @@ async def main():
             if api_pk1 != None:
                 utils.env.update_env(env_key="PORKBUN_SECRET_KEY", env_value=api_sk1)
             else:
-                print("Specify a Porkbun Secret Key with --secret-key or in .env. Exiting!")
+                print("Specify a Porkbun Secret Key with --secret-key or in .env.")
                 sys.exit(1)
 
-            # Get the domains listed in the account
-            domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+            if args.dns_action == "list":
+                domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
 
-            # Check that our specified domain returns from this account
-            for i in domains["domains"]:
-                if i["domain"] == domain:
-                    target_domain = i["domain"]
-                    break
-                else:
-                    target_domain = None
-                
-            if target_domain == None:
-                print("Please specify a valid domain. Exiting!")
-                sys.exit(1)
+                # Print active domains
+                print("Active domains:")
+                for i in domains["domains"]:
+                    if i["status"] == "ACTIVE":
+                        print(i["domain"])
 
-            # Get the current dns records
-            records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=target_domain)
+                sys.exit(0)
+            if args.dns_action == "create":
+                target_domain = None
+                domain = args.domain
+                record_name = args.record_name
+                record_value = args.record_value
+                record_type = args.record_type
 
-            target_fqdn = f"{record_name}.{target_domain}"
+                # Get the domains listed in the account
+                domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
 
-            # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
-            for i in records["records"]:
-                if i["name"] == target_fqdn and i["type"] == record_type and i["content"] == record_value and delete == False:
-                    print("Requested domain record exists in this DNS zone. Exiting!")
+                # Check that our specified domain returns from this account
+                for i in domains["domains"]:
+                    if i["domain"] == domain:
+                        target_domain = i["domain"]
+                        break
+                    
+                if target_domain == None:
+                    print("Please specify a valid domain.")
                     sys.exit(1)
 
-                elif i["name"] == target_domain and i["type"] == record_type and i["content"] == record_value and delete == True:
-                    record_id = i["id"]
-                    utils.dns.porkbun.delete_domain_record_by_id(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_id=record_id)
-                    print("Successfully deleted specified domain record.")
-                    sys.exit(0)
+                # Get the current dns records
+                records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=target_domain)
 
-            # Catch Porkbun quirk of wanting an empty string for a root domain object
-            if target_domain == record_name or record_name == "@" or record_name == "":
-                record_name = ""
+                # Required because porkbun wants to specify the record name without the rest of the domain
+                target_fqdn = f"{record_name}.{target_domain}"
 
-            record_create = utils.dns.porkbun.create_domain_record(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_name=record_name, record_type=record_type, record_target=record_value)
-            print(record_create)
-            sys.exit(0)
+                # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
+                for i in records["records"]:
+                    if i["name"] == target_fqdn:
+                        print("New record name conflicts with existing record.")
+                        sys.exit(1)
+
+                # Catch Porkbun quirk of wanting an empty string for a root domain object
+                if target_domain == record_name or record_name == "@" or record_name == "":
+                    record_name = ""
+
+                record_create = utils.dns.porkbun.create_domain_record(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_name=record_name, record_type=record_type, record_target=record_value)
+                print("Created requested domain record.")
+                sys.exit(0)
+
+            if args.dns_action == "delete":
+                target_domain = None
+                domain = args.domain
+                record_name = args.record_name
+
+                # Get the domains listed in the account
+                domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+
+                # Check that our specified domain returns from this account
+                for i in domains["domains"]:
+                    if i["domain"] == domain:
+                        target_domain = i["domain"]
+                        break
+                    
+                if target_domain == None:
+                    print("Please specify a valid domain.")
+                    sys.exit(1)
+
+                # Get the current dns records
+                records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=target_domain)
+
+                # Required because porkbun wants to specify the record name without the rest of the domain
+                target_fqdn = f"{record_name}.{target_domain}"
+
+                # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
+                for i in records["records"]:
+                    if i["name"] == target_fqdn:
+                        record_id = i["id"]
+                        utils.dns.porkbun.delete_domain_record_by_id(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_id=record_id)
+                        print("Successfully deleted specified domain record.")
+                        sys.exit(0)
+
+                print("No matching records to delete.")
+                sys.exit(1)
 
     # Check if config has been changed, if not then env has not been loaded.
     if config["MYTHIC_API_KEY"] == "":
@@ -691,7 +748,7 @@ async def main():
                             print("Security Group deletion failed again, retry later.")
                             continue
 
-                print("Gaia cleanup complete! Exiting!")
+                print("Gaia cleanup complete!")
 
                 sys.exit(0)
     
