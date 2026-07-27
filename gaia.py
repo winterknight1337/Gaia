@@ -486,10 +486,10 @@ async def main():
 
             # Sepcify Secret key
             elif args.secret_key == True:
-                api_pk1 = getpass.getpass("Porkbun Secret Key: ")
+                api_sk1 = getpass.getpass("Porkbun Secret Key: ")
 
             # Update env file with API key
-            if api_pk1 != '':
+            if api_sk1 != '':
                 utils.env.update_env(env_key="PORKBUN_SECRET_KEY", env_value=api_sk1)
             else:
                 print("Specify a Porkbun Secret Key with --secret-key or in .env.")
