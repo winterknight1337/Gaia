@@ -858,7 +858,7 @@ async def main():
             print("Copying .htaccess to redirector.")
             utils.install.copy_file(ssh=redir_tunnel, file=".htaccess")
 
-            print("Moving .htaccess to /var/www/html/ and reloading apache")
+            print("Moving .htaccess to /var/www/html/ and reloading apache.")
             (stdin, stdout, stderr) = redir_tunnel.exec_command("sudo cp .htaccess /var/www/html/.htaccess && sudo chmod 644 /var/www/html/.htaccess && sudo systemctl restart apache2")
             utils.install.print_terminal_output(stdout)
 
@@ -1089,13 +1089,13 @@ async def main():
                 # Generate shellcode
                 print("Apollo shellcode building")
                 payload_name_bin = payload_name_base + ".bin"
-                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
                 print("Apollo shellcode built")
 
                 # Generate service executable
                 print("Apollo service executable building")
                 payload_name_svc = payload_name_base + "Svc.exe"
-                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
+                await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
                 print("Apollo service executable built")
 
                 sys.exit(0)
