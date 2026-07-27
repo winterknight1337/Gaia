@@ -1008,7 +1008,7 @@ async def main():
 
         # Assigns users to operations
         if args.operation == "assign":
-            operation = args.operation
+            operation = args.operation_name
             users = args.users
 
             print("Assigning users to operation")
