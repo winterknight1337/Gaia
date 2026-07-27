@@ -474,7 +474,7 @@ async def main():
                 api_pk1 = getpass.getpass("Porkbun API Key: ")
 
             # Update env file with API key
-            if api_pk1 != None:
+            if api_pk1 != '':
                 utils.env.update_env(env_key="PORKBUN_API_KEY", env_value=api_pk1)
             else:
                 print("Specify a Porkbun API Key with --api-key or in .env.")
@@ -485,11 +485,11 @@ async def main():
                 api_sk1 = config["PORKBUN_SECRET_KEY"]
 
             # Sepcify Secret key
-            elif args.api_key == True:
-                api_pk1 = getpass.getpass("Porkbun API Key: ")
+            elif args.secret_key == True:
+                api_pk1 = getpass.getpass("Porkbun Secret Key: ")
 
             # Update env file with API key
-            if api_pk1 != None:
+            if api_pk1 != '':
                 utils.env.update_env(env_key="PORKBUN_SECRET_KEY", env_value=api_sk1)
             else:
                 print("Specify a Porkbun Secret Key with --secret-key or in .env.")
@@ -505,6 +505,8 @@ async def main():
                         print(i["domain"])
 
                 sys.exit(0)
+
+
             if args.dns_action == "create":
                 target_domain = None
                 domain = args.domain
