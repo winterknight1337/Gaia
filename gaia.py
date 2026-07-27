@@ -56,14 +56,13 @@ auth_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't veri
 operation_subparser = operation_parser.add_subparsers(title="Operations", dest="operation", description="")
 create_operation_subparser = operation_subparser.add_parser(name="create", formatter_class=formatter, help="Create new operations in Mythic")
 create_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of new operation in Mythic")
-create_operation_subparser.add_argument("-u", "--users", nargs="+", type=list, metavar='', help="Users to assign to new operation in Mythic")
 
 # delete_operation_subparser = operations_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete existing operations in Mythic")
 # delete_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specifies which operation to delete")
 
 assign_operation_subparser = operation_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
-assign_operation_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
-assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Users to be assigned to target operation")
+assign_operation_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
+assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Users to be assigned to target operation")
 
 operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
 
