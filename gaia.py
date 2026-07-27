@@ -934,7 +934,7 @@ async def main():
 
         users_stdin = args.users
         stdout = args.cred_stdout
-        operation = args.operation
+        # operation = args.operation
 
         # Ready user list as input and prepares for merge later
         if args.user_list:
