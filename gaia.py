@@ -1008,13 +1008,12 @@ async def main():
 
         # Assigns users to operations
         if args.operation == "assign":
-            operation = args.operation_name
+            operation_name = args.operation_name
             users = args.users
 
             print("Assigning users to operation")
-            for i in operation:
-                for j in users:
-                    await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=i, username=j)
+            for i in users:
+                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
 
         sys.exit(0)
 
