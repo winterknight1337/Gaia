@@ -37,11 +37,11 @@ It supports the following capabilities:
     - Windows
         ```powershell
         python3.exe -m venv .venv
-        Scripts/Activate.ps1
+        .venv/Scripts/Activate.ps1
         ```
 
 3. Install required packages
-    ```bash
+    ```
     pip3 install -r requirements.txt
     ```
 
@@ -81,7 +81,7 @@ Finally, if you wish to manage DNS through Gaia, you'll need API keys for either
 
 # Usage Instructions
 Basic Usage of Gaia
-```bash
+```
 ./gaia -h
 usage: gaia [-h] [-v] {install,auth,operation,user,payload,dns,redirector} ...
 
@@ -104,7 +104,7 @@ Modules:
 
 ### Gaia Install
 Gaia install help
-```bash
+```
 ./gaia.py install -h
 usage: gaia install [-h] [--install-updates] [--install-deps] [--install-mythic] -S  [-P 22] -u  [-p ] [-i path/to/file] [--stderr] [-k]
 
@@ -123,14 +123,14 @@ options:
 ```
 
 Mythic and depedency installation example with Gaia.
-```bash
+```
 ./gaia.py install -S 192.168.1.1 -u winterknight --install-updates --install-deps --install-mythic
 ```
 The above example assumes a relatively common SSH private key name that paramiko can find on it's own. For example, `id_rsa` or `id_ed25519`. Custom SSH key names can be defined with `-i` and either a relative or absolute path. Additionally, if the SSH key has a passphrase, that can be captured with `-p` and used with the SSH key.
 
 ### Gaia Auth
 Gaia auth help
-```bash
+```
 ./gaia.py auth -h
 usage: gaia auth [-h] -S  -P 7443 -u mythic_admin -p
 
@@ -143,13 +143,13 @@ options:
 ```
 
 Authenticates to Mythic and dumps the API key to `.env`.
-```bash
+```
 ./gaia.py auth -S 192.168.1.1 -u mythic_admin -p
 ```
 
 ### Gaia Operation
 Gaia operation help
-```bash
+```
 ./gaia.py auth --help           
 usage: gaia auth [-h] -S  -P 7443 -u mythic_admin -p
 
@@ -162,39 +162,39 @@ options:
 ```
 
 List current Mythic operations with Gaia.
-```bash
+```
 ./gaia.py operation list
 ```
 
 Create a new Mythic operation with Gaia and assign specified users to it.
-```bash
+```
 ./gaia.py operation create -n mwccdc -u WinterKnight, RedefiningReality, Grafftix
 ```
 
 Assign users to an operation in Mythic.
-```bash
+```
 ./gaia.py operation assign -o mwccdc -u WinterKnight, tal0n, AGrapplerNamedSam
 ```
 
 ### Gaia User
 Create new users in Mythic with Gaia from a user list and dump new creds to disk.
-```bash
+```
 ./gaia.py user create -l ./users.txt -d ./creds.txt
 ```
 
 Use Gaia to create new Mythic users with usernames specified on CLI and creds printed to stdout.
-```bash
+```
 ./gaia.py user create -u WinterKnight, elrey, Armada, ilree --stdout
 ```
 
 ### Gaia Payload
 Listing current payloads in Mythic with Gaia.
-```bash
+```
 ./gaia.py payload list
 ```
 
 Payload creation help
-```bash
+```
 ./gaia.py payload create -h
 usage: gaia payload create [-h] {apollo,poseidon,athena} ...
 
@@ -211,17 +211,17 @@ Agents:
 ```
 
 Creating Poseidon payloads without a redirector for your local network (For lab, dev, and research usage).
-```bash
+```
 ./gaia.py payload create poseidon -n notmalware -u http://192.168.1.1 -p 80 -os linux
 ```
 
 Creating Poseidon payloads without a redirector for your local network (For lab, dev, and research usage).
-```bash
+```
 ./gaia.py payload create athena -n dotnet_cross -u http://192.168.1.1 -p 80 -os macos
 ```
 
 Creating Apollo payloads through a redirector with a killdate (For CCDC or other sanctioned remote targets).
-```bash
+```
 ./gaia.py payload create apollo -n notapollo -u https://mythic.example.com -p 443 -k 2026-08-09
 ```
 
@@ -231,7 +231,7 @@ Gaia currently supports DNS record creation, deletion, and listing. As of now Ga
 
 #### Gaia DNS Through Cloudflare
 Cloudflare domain record creation help
-```bash
+```
 ./gaia.py dns cloudflare create -h
 usage: gaia dns cloudflare create [-h] [-k] [-d ] [-n ] [-v ] [-t {a,aaaa,cname}]
 
@@ -245,17 +245,17 @@ options:
 ```
 
 Listing current domains available in Cloudflare with API key request
-```bash
+```
 ./gaia.py dns cloudflare list -k
 ```
 
 Creating a new A record in Cloudflare
-```bash
+```
 ./gaia.py dns cloudflare create -d example.com -n mythic -t a -v 1.1.1.1 
 ```
 
 Cloudflare domain record deletion help
-```bash
+```
 ./gaia.py dns cloudflare delete -h
 usage: gaia dns cloudflare delete [-h] [-k] [-d ] [-n ]
 
@@ -267,18 +267,18 @@ options:
 ```
 
 Deleting a domain record in Cloudflare
-```bash
+```
 ./gaia.py dns cloudflare delete -d exmaple.com -n www
 ```
 
 ### Gaia DNS through Porkbun
 Listing current domains wtih Porkbun with API keys requested
-```bash
+```
 ./gaia dns porkbun list -k -s
 ```
 
 Porkbun domain record creation help
-```bash
+```
 ./gaia.py dns porkbun create -h
 usage: gaia dns porkbun create [-h] [-k] [-s] [-d ] [-n ] [-v ] [-t {a,aaaa,cname}]
 
@@ -293,12 +293,12 @@ options:
 ```
 
 Porkbun domain record creation
-```bash
+```
 ./gaia.py dns porkbun create -d example.com -n test -t cname -v www.example.com
 ```
 
 Porkbun domain record deletion help
-```bash
+```
 ./gaia.py dns porkbun delete -h
 usage: gaia dns porkbun delete [-h] [-k] [-s] [-d ] [-n ]
 
@@ -311,7 +311,7 @@ options:
 ```
 
 Porkbun domain record deletion
-```bash
+```
 ./gaia.py dns porkbun delete -d example.com -n test
 ```
 
@@ -319,7 +319,7 @@ Porkbun domain record deletion
 This is the area that I expect students to struggle with the most. I will be writing an Intro to C2s blog post in the future, which I will link here when it's written. 
 
 Gaia redirector help
-```bash
+```
 ./gaia.py redirector -h
 usage: gaia redirector [-h] {create,delete,certbot,generate,tunnel} ...
 
@@ -339,7 +339,7 @@ Redirector Actions:
 
 Currently redirectors can only be created in AWS. Future versions of Gaia will include the ability to create redirectors in Azure as well.
 AWS Redirector creation help
-```bash
+```
 ./gaia.py redirector create aws -h     
 usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.micro,t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
                                                                                                                                          
@@ -353,19 +353,19 @@ options:
 ```
 
 Creating a redirector in AWS
-```bash
+```
 ./gaia.py redirector create aws -r us-east-2 -S t3.micro -o debian -a -s
 ```
 
 Deleting a redirector in AWS
-```bash
+```
 ./gaia.py redirector delete aws
 ```
 
 When Gaia creates infrastructure in AWS, it tags it with `createdBy:gaia`. The AWS redirector deletion functionality searches for, and deletes EC2 instances, keypairs, and security groups with this tag.
 
 Redirector certbot help
-```bash
+```
 ./gaia.py redirector certbot -h    
 usage: gaia redirector certbot [-h] -d  -S  -u  [-P ] [-i path/to/file] [--stderr]
 
@@ -380,12 +380,12 @@ options:
 ```
 
 Creating a TLS certificate with Certbot
-```bash
+```
 ./gaia.py redirector certbot -d mythic.example.com -S 1.1.1.1 -u admin -i ~/.ssh/gaia.key.pem
 ```
 
 Redirector generate help
-```bash
+```
 ./baia.py redirector generate -h
 usage: gaia redirector generate [-h] -u  -t  -rS  -ru  [-rp ] [-ri path/to/file]
 
@@ -400,12 +400,12 @@ options:
 ```
 
 .htaccess file generation example
-```bash
+```
 ./gaia.py -u 266f58c3-0fdf-4d15-87e8-12b65d7d990c -t www.example.com -rS mythic.example.com -ru admin -ri ~/.ssh/gaia-redir.pem
 ```
 
 Gaia redirector tunnel help
-```bash
+```
 ./gaia.py redirector tunnel -h
 usage: gaia redirector tunnel [-h] -mS  [-mP ] -mu  [-mp ] [-mi path/to/file] -rS  -ru 
 
@@ -421,7 +421,7 @@ options:
 ```
 
 Creating SSH tunnel between Mythic server and redirector
-```bash
+```
 ./gaia.py redirector tunnel -ms 192.168.1.1 -mu WinterKnight -rS mythic.example.com -ru admin
 ```
 Note the above command will automatically look for `gaia-redir.pem` that gets created and dumped to the user's `.ssh` folder when spinning up redirectors in AWS.
@@ -429,9 +429,8 @@ Note the above command will automatically look for `gaia-redir.pem` that gets cr
 # Some notes on .env
 Some items in this tool uses a `.env` file. You may either pre-fill the values by copying `.env-template` to `.env` and manually filling them in, or you may specify them in the CLI and Gaia will populate it into the relevant section automatically. The idea here was to prevent the need to endlessly copy-paste some of the more tedious parts of the CLI like API keys. The variables placed in `.env` should rarely change. The names given in `.env` will either closely or exactly match the value given on the CLI. 
 
-
 # Acknowledgements
 I want to give a shout out to [@its-a-feature](https://github.com/its-a-feature) for his work creating and mainting Mythic and it's libraries that I use in this project.
-I'd like to give another shout out to [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for giving me some tips on where to start on this project.
-[@AGrapplerNamedSam](https://github.com/AGrapplerNamedSam) and [elreydetoda](https://github.com/elreydetoda) for helping me test pre-release versions of Gaia. Having both a Specter's and a student's perspective on this was extremely helpful!
+I'd like to give another shout out to [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for giving me some tips on where to start on the project.
+Next, [elreydetoda](https://github.com/elreydetoda) and [@AGrapplerNamedSam](https://github.com/AGrapplerNamedSam) for helping me test pre-release versions of Gaia. Having both a Specter's and a student's perspective for the project was extremely helpful!
 Last but not least @leidy-tector and the greater SpecterOps team for enabling and encouraging me to work on this!
