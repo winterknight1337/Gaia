@@ -12,8 +12,8 @@ else:
 formatter = lambda prog: argparse.HelpFormatter(prog, max_help_position=100, width=200)
 
 global_parser = argparse.ArgumentParser(
-    prog="Gaia",
-    description="Lightweight tool to help install and manage simple Mythic c2 installations focused on students, CTF players, Mythic developers, and security researchers",
+    prog="gaia",
+    description="Lightweight helper tool to install and manage Mythic c2 with a focus on students, CTF players, Mythic developers, and security researchers",
     formatter_class=formatter
     )
 
@@ -73,8 +73,8 @@ user_subparser = user_parser.add_subparsers(title="User Actions", dest="user", d
 create_user_subparser = user_subparser.add_parser(name="create", formatter_class=formatter, help="Create new users in Mythic")
 create_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Specify usernames of new Mythic users")
 create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file listing users to be created")
-create_user_subparser.add_argument("-f", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
-create_user_subparser.add_argument("-d", "--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
+create_user_subparser.add_argument("-d", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
+create_user_subparser.add_argument("--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
 
 # delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
 # delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify usernames of Mythic users to delete")
@@ -700,7 +700,7 @@ async def main():
             if args.cloud == "aws":
                 import boto3
 
-                instance_ids, ssh_key_ids, security_group_ids = []
+                instance_ids, ssh_key_ids, security_group_ids = [], [], []
 
                 aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
                 ec2_client = aws_session.client("ec2")  
