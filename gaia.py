@@ -42,7 +42,6 @@ install_parser.add_argument("-u", "--user", required=True, type=str, metavar='',
 install_parser.add_argument("-p", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
 install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
-install_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
 
 
 # Authentication options
@@ -50,6 +49,7 @@ auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', 
 auth_parser.add_argument("-P", "--port", type=int, default=7443, metavar='7443', help="Port to access Mythic's web interface")
 auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
 auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password for target user for Mythic authentication")
+auth_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
 
 
 # Mythic operations management
