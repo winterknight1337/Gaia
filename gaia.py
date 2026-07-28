@@ -605,19 +605,19 @@ async def main():
                     aws_access_key = config["AWS_ACCESS_KEY_ID"]
                 else :
                     aws_access_key = getpass.getpass("AWS Access Key: ")
-                    # Fix env
+                    utils.env.update_env("AWS_ACCESS_KEY_ID", aws_access_key)
 
                 if config["AWS_SECRET_ACCESS_KEY"] != "":
                     aws_secret_key = config["AWS_SECRET_ACCESS_KEY"]
                 else :
                     aws_secret_key = getpass.getpass("AWS Secret Key: ")
-                    # fix env
+                    utils.env.update_env("AWS_SECRET_ACCESS_KEY", aws_secret_key)
 
                 if config["AWS_DEFAULT_REGION"] != "":
                     aws_region = config["AWS_DEFAULT_REGION"]
                 else :
                     aws_region = args.region
-                    # fix env
+                    utils.env.update_env("AWS_DEFAULT_REGION", aws_region)
 
                 ec2_size = args.size
 
