@@ -46,7 +46,7 @@ install_parser.add_argument("--stderr", action="store_true", help="Show stderr f
 
 # Authentication options
 auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
-auth_parser.add_argument("-P", "--port", type=int, default=7443, metavar='7443', help="Port to access Mythic's web interface")
+auth_parser.add_argument("-P", "--port", default=7443, type=int, metavar='7443', help="Port to access Mythic's web interface")
 auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
 auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password for target user for Mythic authentication")
 auth_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
@@ -93,20 +93,20 @@ agent_subparser = create_payload_subparser.add_subparsers(title="Agents", dest="
 apollo_subparser = agent_subparser.add_parser(name="apollo", formatter_class=formatter, help="Manage Apollo payloads")
 apollo_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
 apollo_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL (excluding port) the C2 agents will connect to")
-apollo_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to (Default 80)")
+apollo_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to")
 apollo_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
 
 poseidon_subparser = agent_subparser.add_parser(name="poseidon", formatter_class=formatter, help="Manage Poseidon payloads")
 poseidon_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
 poseidon_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL (excluding port) the C2 agents will connect to")
-poseidon_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to (Default 80)")
+poseidon_subparser.add_argument("-p", "--callback-port", type=int, default=80, metavar='80', help="Port that C2 agents will connect to")
 poseidon_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
 poseidon_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos"], help="Build C2 agents for the target operating system")
 
 athena_subparser = agent_subparser.add_parser(name="athena", formatter_class=formatter, help="Manage Athena payloads")
 athena_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of generated payload before file extensions")
 athena_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help="URL (excluding port) the C2 agents will connect to")
-athena_subparser.add_argument("-p", "--callback-port", type=int, metavar='', default=80, help="Port that C2 agents will connect to (Default 80)")
+athena_subparser.add_argument("-p", "--callback-port", type=int, default=80, metavar='80', help="Port that C2 agents will connect to")
 athena_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
 athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos", "windows"], help="Build C2 agents for the target operating system")
 
