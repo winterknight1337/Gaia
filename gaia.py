@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import argparse, sys, os, asyncio, dotenv, getpass, time, shutil
 
 # Load environment variables first
