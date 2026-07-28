@@ -432,5 +432,5 @@ Some items in this tool uses a `.env` file. You may either pre-fill the values b
 # Acknowledgements
 I want to give a shout out to [@its-a-feature](https://github.com/its-a-feature) for his work creating and mainting Mythic and it's libraries that I use in this project.
 I'd like to give another shout out to [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for giving me some tips on where to start on the project.
-Next, [elreydetoda](https://github.com/elreydetoda) and [@AGrapplerNamedSam](https://github.com/AGrapplerNamedSam) for helping me test pre-release versions of Gaia. Having both a Specter's and a student's perspective for the project was extremely helpful!
+Next, [@elreydetoda](https://github.com/elreydetoda) and [@AGrapplerNamedSam](https://github.com/AGrapplerNamedSam) for helping me test pre-release versions of Gaia. Having both a Specter's and a student's perspective for the project was extremely helpful!
 Last but not least @leidy-tector and the greater SpecterOps team for enabling and encouraging me to work on this!
