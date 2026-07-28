@@ -46,5 +46,5 @@ async def mythic_login_with_api_no_ssl(api_token: str, server_host: str, server_
 
 async def mythic_get_api_token(mythic_instance:mythic):
     api_token = await mythic.create_apitoken(mythic=mythic_instance)
-    print("api token dumped to .env file")
+    print("API token dumped to .env file")
     return api_token

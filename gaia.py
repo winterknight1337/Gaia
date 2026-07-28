@@ -694,7 +694,7 @@ async def main():
                 utils.install.convert_line_endings("install_apache.sh")
                 utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
 
-                print(f"EC2 created! Public IP address for the EC2 is {instance_public_ip}.")
+                print(f"EC2 created! Public IP address for the EC2 is {instance_public_ip}. The default user for your instance is {ec2_user}.")
 
                 ssh.close()
                 sys.exit(0)
