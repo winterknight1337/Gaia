@@ -214,7 +214,7 @@ Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
 ```
 
 If you check out the web UI, you'll see 2 Poseidon payloads waiting for you.
-![[poseidon_create.png]]
+![[readme_images/poseidon_create.png]]
 
 On the x64 Static ELF, I'll click on Actions > View Payload Configuration > Right-click URL > Copy Link. Then go to your Mythic VM (or another Linux VM). We are using curl to pull down the payload, `-k` to ignore curl's certificate warning, then `-o` to specify the file output name. Next, change the permissions to allow execution before executing the payload.
 ```
@@ -227,7 +227,7 @@ winterknight@debian:~$ ./poseidon
 ```
 
 Once you execute the payload, the terminal will hang. If you go back to your Mythic UI, you should see a callback waiting for you.
-![[poseidon_callback.png]]
+![[readme_images/poseidon_callback.png]]
 If you were only looking for how to use Gaia locally, or in a lab, you're all done here! At this point it's time to showcase using Gaia to create payloads that go over the internet and through redirectors before landing in your Mythic server!
 
 Next, let's create an Apollo payload that goes to `www.thislookslegit.net` for use with a redirector we will create later. We are doing this over https and specifying port 443 this time. Note you want this to be a domain you own so you can create records for it. 
@@ -243,7 +243,7 @@ Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
 ```
 
 If you check Mythic again, you'll see the new payloads in the payloads menu.
-![[apollo_create.png]]
+![[readme_images/apollo_create.png]]
 
 So, next we need to create a redirector. Fortunately, the help menu in Gaia essentially acts as a todo list, with the exception of delete. Deleting infra just after making it would be silly.
 ```
@@ -333,7 +333,7 @@ Created requested domain record.
 ```
 
 Let's check Porkbun to make sure the record was added properly. The other 3 domain records come by default with Porkbun and were not added manually by me, or Gaia.
-![[porkbun_a_create.png]]
+![[readme_images/porkbun_a_create.png]]
 
 Next, creating a certificate with `certbot`. This will enable HTTPS on your redirector site.
 ```
@@ -445,7 +445,7 @@ SSH tunnel and service successfully created!
 
 
 Time to test the payload! Since Apollo is *not evasive*, we will first need to turn off Windows Defender.
-![[defender_gone.png]]
+![[readme_images/defender_gone.png]]
 
 Then we will download and execute Apollo onto our Windows workstation and see that it works! 
 ```
@@ -457,7 +457,7 @@ PS C:\tools> .\apollo.exe
 ```
 
 And if you did it all correctly, you should see a callback going through the redirector! 
-![[apollo_callback.png]]
+![[readme_images/apollo_callback.png]]
 For CCDC, this is more or less where infrastructure stops. However, we don't want to rack up AWS charges all day, so lets take the infrastructure down. First thing we will have to do is stop payload execution either by using `CTRL+C` or Task Manager. Once that's done, we will delete the EC2 and it's associated components. Gaia identifies components to delete using those `createdBy:gaia` tags I mentioned when we spun up the redirector. It searches for EC2 Keypairs, Security Groups, and Instances with those tags before deleting them.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector delete aws
@@ -480,7 +480,7 @@ Successfully deleted specified domain record.
 ```
 
 When I implement subdomain record listing, that's what I would show next here, but you'll have to see the records in Porkbun instead. These records are the default records Porkbun automatically created for me when I registered the domain.
-![[porkbun_after_delete.png]]
+![[readme_images/porkbun_after_delete.png]]
 At this point, feel free to revert the Mythic server to a VM image to a snapshot from before you installed Mythic, or delete the VM. If you are running on bare-metal, you can delete the docker containers if you wish. The way I use Gaia is by reverting the VM back to just after installation. 
 
 Thanks for checking Gaia out! I hope it and this guide helps you better understand how C2s work, and help you come up with strategies to counter them in the wild.
