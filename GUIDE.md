@@ -337,6 +337,8 @@ Created requested domain record.
 ```
 
 Let's check Porkbun to make sure the record was added properly. The other 3 domain records come by default with Porkbun and were not added manually by me, or Gaia.
+
+
 ![New A Record in Porkbun](readme_images/porkbun_a_create.png)
 
 
