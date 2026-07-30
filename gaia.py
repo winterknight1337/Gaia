@@ -137,8 +137,10 @@ cf_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="E
 cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Deletes records from target domain")
 cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
+# List domains
 cf_list_domains = cf_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
 cf_list_domains.add_argument("-k", "--api-key", action="store_true", help="Enter Cloudflare API token when requested")
+cf_list_domains.add_argument("-d", "--domain", type=str, metavar='', help="Display records for a given domain")
 
 # Porkbun options
 porkbun_subparser = dns_registrar_subparser.add_parser(name="porkbun", formatter_class=formatter, help="Manage DNS records via Porkbun")
@@ -160,9 +162,11 @@ pb_delete_subparser.add_argument("-s", "--secret-key", action="store_true", help
 pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Deletes records from target domain")
 pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
+# List domains
 pb_list_domains = pb_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
 pb_list_domains.add_argument("-k", "--api-key", action="store_true", help="Enter the Porkbun API key when requested")
 pb_list_domains.add_argument("-s", "--secret-key", action="store_true", help="Enter the Porkbun secret key when requested")
+pb_list_domains.add_argument("-d", "--domain", type=str, metavar='', help="Display records for a given domain")
 
 
 # Redirector config
@@ -353,17 +357,36 @@ async def main():
 
             # Print active domains
             if args.dns_action == "list":
+
                 # Get the domains listed in the account
                 domains = utils.dns.cf.get_domains(api_token=api_token)
 
-                # Print active domains
-                print("Active domains:")
-                for i in domains["result"]:
-                    if i["status"] == "active":
-                        print(i["name"])
+                # Print domian records
+                if args.domain == None:
+                    # Print active domains
+                    print("Active domains:")
+                    for i in domains["result"]:
+                        if i["status"] == "active":
+                            print(i["name"])
+
+                elif args.domain != None:
+                    domain = args.domain
+
+                    # Get the domain ID from CF
+                    for i in domains["result"]:
+                        if i["name"] == domain:
+                            domain_id = i["id"]
+                            break
+
+                    # Get the domain records and print them
+                    domain_records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
+                    for i in domain_records["result"]:
+                        record_name = i["name"]
+                        record_type = i["type"]
+                        record_value = i["content"]
+                        print(f"Name: {record_name}  Type: {record_type}  Value: {record_value}")
 
                 sys.exit(0)
-
 
             if args.dns_action == "create":
                 domain = args.domain
@@ -497,13 +520,27 @@ async def main():
                 sys.exit(1)
 
             if args.dns_action == "list":
-                domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+                if args.domain == None:
+                    domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+                    
+                    # Print active domains
+                    print("Active domains:")
+                    for i in domains["domains"]:
+                        if i["status"] == "ACTIVE":
+                            print(i["domain"])
+                    
+                elif args.domain != None:
 
-                # Print active domains
-                print("Active domains:")
-                for i in domains["domains"]:
-                    if i["status"] == "ACTIVE":
-                        print(i["domain"])
+                    # Get the records for the domain
+                    domain = args.domain
+                    domain_records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=domain)
+
+                    # Print them
+                    for i in domain_records["records"]:
+                        record_name = i["name"]
+                        record_type = i["type"]
+                        record_value = i["content"]
+                        print(f"Name: {record_name}  Type: {record_type}  Value: {record_value}")
 
                 sys.exit(0)
 

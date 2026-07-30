@@ -77,7 +77,7 @@ The IAM account needs the following rights assigned in IAM Policies
 Access keys for IAM users can be created in IAM on the user page. You will need both the access and secret access keys so Gaia can connect to you AWS account and modify resources over the API.
 
 ### Cloudflare or PorkBun account with API keys
-Finally, if you wish to manage DNS through Gaia, you'll need API keys for either Cloudflare or Porkbun.
+Finally, if you wish to manage DNS through Gaia, you'll need API keys for either Cloudflare or Porkbun, along with a secondary domain you don't care about potentially harming it's reputation with your shenanagins.
 
 # Usage Instructions
 Basic Usage of Gaia
@@ -249,6 +249,11 @@ Listing current domains available in Cloudflare with API key request
 ./gaia.py dns cloudflare list -k
 ```
 
+Listing current records in Cloudflare for a given domain
+```
+./gaia.py dns cloudflare list -d <domain>
+```
+
 Creating a new A record in Cloudflare
 ```
 ./gaia.py dns cloudflare create -d example.com -n mythic -t a -v 1.1.1.1 
@@ -275,6 +280,11 @@ Deleting a domain record in Cloudflare
 Listing current domains wtih Porkbun with API keys requested
 ```
 ./gaia dns porkbun list -k -s
+```
+
+Listing current records in Porkbun for a given domain
+```
+./gaia.py dns porkbun list -d <domain>
 ```
 
 Porkbun domain record creation help

@@ -328,7 +328,20 @@ Porkbun Secret Key:
 Active domains:
 thislookslegit.net
 ```
-So we can use `thislookslegit.net`. As of now, printing records within a domain is not supported, however it is planned for the future. The idea here is to have with a blank throwaway domain you'd use for C2 and nothing else. So, when writing this guide, I'm assuming that the domain you'd use will have no records in it. 
+
+The idea here is to have with a blank throwaway domain you'd use for C2 and nothing else. This is best so you don't degrade your trust ratings on your legitimate domains. So, I'm assuming that you have a domain that doesn't have anything else in it. So we can use `thislookslegit.net` as our C2 domain.
+```
+.\gaia.py dns porkbun list --domain thislookslegit.net
+Name: www.thislookslegit.net  Type: A  Value: 13.59.54.21
+Name: thislookslegit.net  Type: MX  Value: fwd1.porkbun.com
+Name: thislookslegit.net  Type: MX  Value: fwd2.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: curitiba.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: fortaleza.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: maceio.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: salvador.porkbun.com
+Name: thislookslegit.net  Type: TXT  Value: v=spf1 include:_spf.porkbun.com ~all
+```
+Note that the MX, NS, and TXT records are default and pre-populated by Porkbun. Best to leave those alonse. 
 
 Time to create that A record using the EC2's public IP.
 ```
