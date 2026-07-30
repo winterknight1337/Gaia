@@ -320,6 +320,15 @@ Cleaning up install_apache.sh script
 EC2 created! Public IP address for the EC2 is 13.59.54.21. The default user for your instance is admin.
 ```
 
+Next we need to make sure the redirector was spun up properly. We can use redirector list for this.
+```
+./gaia redirector list aws
+Getting Gaia EC2s from AWS
+Instances in account:
+ID: i-0da415d00a5d16257  Status: running  Size: t3.micro  Arch: x86_64  Public IP: 13.59.54.21
+```
+Gaia determines that a redirector was created by it by tagging `createdBy:gaia` on EC2 resource creation. When Gaia queries for EC2 instances, it uses this tag to determine if it's Gaia affiliated or not, then skips the resource if it's not.
+
 We then need to make a quick jump over to DNS config. Time to get an A record created for the server, but first, to figure out what's in our Porkbun account. When we auth to Porkbun with the API keys, they get dumped into `.env`.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py dns porkbun list -k -s

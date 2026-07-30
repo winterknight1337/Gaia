@@ -181,10 +181,13 @@ aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str,
 aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
 
-
 delete_redir_subparser = redir_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a redirector")
 cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to decommission Gaia-created redirector infrastructure in")
 aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Delete Gaia redirector infrastructure from AWS")
+
+list_redir_subparser = redir_subparser.add_parser(name="list", formatter_class=formatter, help="Show current redirector infrastructure")
+cloud_list_redir_subparser = list_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to view Gaia related infrastructure")
+aws_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="View Gaia redirector infrastructure in AWS")
 
 certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
 certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
@@ -635,6 +638,7 @@ async def main():
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
         import utils.redirector, paramiko, utils.install, utils.env
+        # Create redir infra
         if args.redir_action == "create":
             if args.cloud == "aws":
                 import boto3
@@ -737,6 +741,7 @@ async def main():
                 ssh.close()
                 sys.exit(0)
 
+        # Delete redir infra
         if args.redir_action == "delete":
             if args.cloud == "aws":
                 import boto3
@@ -804,6 +809,38 @@ async def main():
                 print("Gaia cleanup complete!")
                 sys.exit(0)
     
+        # Shows redir infra
+        if args.redir_action == "list":
+            if args.cloud == "aws":
+                import boto3
+
+                # Auth to AWS and EC2
+                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
+                ec2_client = aws_session.client("ec2")  
+
+                # Query for EC2s with gaia tags on them
+                print("Getting Gaia EC2s from AWS")
+                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+
+                # Iterate over reservations and instances to pull relevant info
+                print("Instances in account:")
+                for reservations in ec2_info["Reservations"]:
+                    for instances in reservations["Instances"]:
+
+                        instance_id = instances["InstanceId"]
+                        instance_status = instances["State"]["Name"]
+                        instance_size = instances["InstanceType"]
+                        instance_arch = instances["Architecture"]
+
+                        try:
+                            instance_public_ip = instances["NetworkInterfaces"][0]["Association"]["PublicIp"]
+                        except:
+                            instance_public_ip = None
+
+                        print(f"ID: {instance_id}  Status: {instance_status}  Size: {instance_size}  Arch: {instance_arch}  Public IP: {instance_public_ip}")
+
+                sys.exit(0)
+
         # Handles configuration of certbot
         if args.redir_action == "certbot":
             import paramiko, utils.install
@@ -850,6 +887,7 @@ async def main():
             ssh.close()
             sys.exit(0)
 
+        # Handles generation of mod_rewrite rules
         if args.redir_action == "generate":
             payload_uuid = args.payload_uuid
             redirector_server = args.redir_server
@@ -906,6 +944,7 @@ async def main():
             redir_tunnel.close()
             sys.exit(0)
 
+        # Creates SSH tunnel and systemd wrapper service
         if args.redir_action == "tunnel":
             import paramiko, utils.redirector, utils.payloads, utils.install
 

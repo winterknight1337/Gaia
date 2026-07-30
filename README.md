@@ -362,6 +362,15 @@ options:
   -o, --os {debian,ubuntu}                                              Specify OS for the redirector
 ```
 
+Viewing current Gaia redirectors in AWS.
+```
+./gaia redirector list aws
+Getting Gaia EC2s from AWS
+Instances in account:
+ID: i-0da415d00a5d16257  Status: running  Size: t2.small  Arch: x86_64  Public IP: 18.191.140.215
+```
+Gaia determines that a redirector was created by it by tagging `createdBy:gaia` on EC2 resource creation. When Gaia queries for EC2 instances, it uses this tag to determine if it's Gaia affiliated or not, then skips the resource if it's not.
+
 Creating a redirector in AWS
 ```
 ./gaia.py redirector create aws -r us-east-2 -S t3.micro -o debian -a -s
