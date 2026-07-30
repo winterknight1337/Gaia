@@ -295,10 +295,10 @@ Once the EC2 is built, then Gaia handles some post-build configuration:
 4. Install Apache
 5. Enable `rewrite` `proxy` and `proxy_http`
 6. Create a new entry in `/etc/apache2/sites-enabled/000-default.conf` to allow usage of `.htaccess` files.
-7. Creates an empty `.htaccess` file at /var/www/html
+7. Creates an empty `.htaccess` file at `/var/www/html`
 8. Installs Certbot
 
-Here's what all that looks like (to some extent, the output is long). Note also that the AWS access key, AWS secret key, and AWS region, and public IP will be dumped into `.env`. OS and Username will be included in a future update. 
+Here's what all that looks like (to some extent, the output is long). Note also that the AWS access key, AWS secret key, and AWS region, public IP, OS, and Username will be dumped into `.env`.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector create aws -S t3.micro -r us-east-2 -o debian -a -s
 AWS Access Key:
