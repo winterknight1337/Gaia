@@ -48,7 +48,7 @@ install_parser.add_argument("--stderr", action="store_true", help="Show stderr f
 # Authentication options
 auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
 auth_parser.add_argument("-P", "--port", default=7443, type=int, metavar='7443', help="Port to access Mythic's web interface")
-auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
+auth_parser.add_argument("-u", "--user", type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
 auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password for target user for Mythic authentication")
 auth_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
 
@@ -191,8 +191,8 @@ aws_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="aws", for
 
 certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
 certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
-certbot_redir_subparser.add_argument("-S", "--redirector-server", required=True, type=str, metavar='', help="Hostname or IP address of target server to execute certbot")
-certbot_redir_subparser.add_argument("-u", "--redirector-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
+certbot_redir_subparser.add_argument("-S", "--redirector-server", type=str, metavar='', help="Hostname or IP address of target server to execute certbot")
+certbot_redir_subparser.add_argument("-u", "--redirector-user", type=str, metavar='', help="User to authenticate as over SSH on target server")
 certbot_redir_subparser.add_argument("-P", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
 certbot_redir_subparser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
@@ -200,8 +200,8 @@ certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show
 rules_redir_subparser = redir_subparser.add_parser(name="generate", formatter_class=formatter, help="Generate redirector rules based on existing payload in Mythic and upload them to redirector")
 rules_redir_subparser.add_argument("-u", "--payload-uuid", required=True, type=str, metavar='', help="UUID of payload to use as the basis of apache mod_rewrite rule generation")
 rules_redir_subparser.add_argument("-t", "--redirect-target", required=True, type=str, metavar='', help="URL of website to redirect non-c2 traffic to")
-rules_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
+rules_redir_subparser.add_argument("-rS", "--redir-server", type=str, metavar='', help="Hostname or IP address of redirector server")
+rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 rules_redir_subparser.add_argument("-rp", "--redir-ssh-password", type=str, metavar='', help="Redirector SSH user password or SSH key passphrase")
 rules_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 
@@ -211,8 +211,8 @@ tunnel_redir_subparser.add_argument("-mP", "--mythic-ssh-port", default=22, type
 tunnel_redir_subparser.add_argument("-mu", "--mythic-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-password", type=str, metavar='', help="Mythic SSH user password or SSH key passphrase")
 tunnel_redir_subparser.add_argument("-mi", "--mythic-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
-tunnel_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
+tunnel_redir_subparser.add_argument("-rS", "--redir-server", type=str, metavar='', help="Hostname or IP address of redirector server")
+tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 
 args = global_parser.parse_args()
 ##################################################################  END CLI PARSING ##################################################################
@@ -343,18 +343,9 @@ async def main():
             # Validate that we have the CF API key
             import utils.dns.cf
 
-            # Pull API key from env
-            if args.api_key == False:
-                api_token = config["CLOUDFLARE_API_TOKEN"]
-
-            # Sepcify API key
-            elif args.api_key == True:
-                api_token = getpass.getpass("Cloudflare API Key: ")
-
-            # Update env file with API key
-            if api_token != None:
-                utils.env.update_env(env_key="CLOUDFLARE_API_TOKEN", env_value=api_token)
-            else:
+            # Get the API key from env or CLI. Update env if needed
+            api_token = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="CLOUDFLARE_API_TOKEN", getpass_text="Cloudflare API Key: ", env=config)
+            if api_token == None:
                 print("Specify a Cloudflare API Key with --api-key or in .env.")
                 sys.exit(1)
 
@@ -492,33 +483,15 @@ async def main():
             import utils.dns.porkbun
             domain_id = None
 
-            # Pull Porkbun API from env
-            if args.api_key == False:
-                api_pk1 = config["PORKBUN_API_KEY"]
-
-            # Sepcify API key
-            elif args.api_key == True:
-                api_pk1 = getpass.getpass("Porkbun API Key: ")
-
-            # Update env file with API key
-            if api_pk1 != '':
-                utils.env.update_env(env_key="PORKBUN_API_KEY", env_value=api_pk1)
-            else:
+            # Get the API key from env or CLI. Update env if needed
+            api_pk1 = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="PORKBUN_API_KEY", getpass_text="Porkbun API Key: ", env=config)
+            if api_pk1 == None:
                 print("Specify a Porkbun API Key with --api-key or in .env.")
                 sys.exit(1)
-            
-            # Pull Porkbun secret from env
-            if args.secret_key == False:
-                api_sk1 = config["PORKBUN_SECRET_KEY"]
 
-            # Sepcify Secret key
-            elif args.secret_key == True:
-                api_sk1 = getpass.getpass("Porkbun Secret Key: ")
-
-            # Update env file with API key
-            if api_sk1 != '':
-                utils.env.update_env(env_key="PORKBUN_SECRET_KEY", env_value=api_sk1)
-            else:
+            # Get the API key from env or CLI. Update env if needed
+            api_sk1 = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="PORKBUN_SECRET_KEY", getpass_text="Porkbun Secret Key: ", env=config)
+            if api_sk1 == None:
                 print("Specify a Porkbun Secret Key with --secret-key or in .env.")
                 sys.exit(1)
 
@@ -546,7 +519,6 @@ async def main():
                         print(f"Name: {record_name}  Type: {record_type}  Value: {record_value}")
 
                 sys.exit(0)
-
 
             if args.dns_action == "create":
                 target_domain = None
@@ -643,40 +615,49 @@ async def main():
             if args.cloud == "aws":
                 import boto3
 
-                if config["AWS_ACCESS_KEY_ID"] != "":
-                    aws_access_key = config["AWS_ACCESS_KEY_ID"]
-                else :
-                    aws_access_key = getpass.getpass("AWS Access Key: ")
-                    utils.env.update_env("AWS_ACCESS_KEY_ID", aws_access_key)
+                # Get AWS access key and update env if required
+                aws_access_key = utils.env.resolve_env_api_key(arg_parameter=args.access_key, env_key="AWS_ACCESS_KEY_ID", getpass_text="AWS Access Key: ", env=config)
+                if aws_access_key == None:
+                    print("Ensure that an AWS access key is specified in either .env or passed via cli")
+                    sys.exit(1)
 
-                if config["AWS_SECRET_ACCESS_KEY"] != "":
-                    aws_secret_key = config["AWS_SECRET_ACCESS_KEY"]
-                else :
-                    aws_secret_key = getpass.getpass("AWS Secret Key: ")
-                    utils.env.update_env("AWS_SECRET_ACCESS_KEY", aws_secret_key)
+                aws_secret_key = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="AWS_SECRET_ACCESS_KEY", getpass_text="AWS Secret Key: ",env=config)
+                if aws_secret_key == None:
+                    print("Ensure that an AWS secret key is specified in either .env or passed via cli")
+                    sys.exit(1)
 
-                if config["AWS_DEFAULT_REGION"] != "":
-                    aws_region = config["AWS_DEFAULT_REGION"]
-                else :
-                    aws_region = args.region
-                    utils.env.update_env("AWS_DEFAULT_REGION", aws_region)
+                aws_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AWS_DEFAULT_REGION", env=config)
+                if aws_region == None:
+                    print("Ensure that an AWS region is specified in either .env or passed via cli")
+                    sys.exit(1)
 
                 ec2_size = args.size
 
                 # Connect to EC2 Service
                 print("Connecting to AWS")
                 aws_session = boto3.Session(aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, region_name=aws_region)
-                ec2_client = aws_session.client("ec2")   
+                ec2_client = aws_session.client("ec2")
+
+                # Assign EC2 OS and user if in .env. This doesn't use the standard workflow because the user is dependent on the OS.
+                if config["REDIRECTOR_OS"] != '':
+                    ec2_os = config["REDIRECTOR_OS"]
+
+                if config["REDIRECTOR_USER"] != '':
+                    ec2_user = config["REDIRECTOR_USER"]
 
                 # Specify OS for redirector EC2
                 if args.os == "ubuntu":
                     ec2_os = "ubuntu"
                     ec2_user = "ubuntu"
-                    # Add these to env
+                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
+                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
 
                 elif args.os == "debian":
                     ec2_os = "debian"
                     ec2_user = "admin"
+                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
+                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
+
 
                 # Create EC2 key pair
                 print("Creating gaia-redir keypair for EC2")
@@ -853,15 +834,21 @@ async def main():
             ssh.load_system_host_keys()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            # Get connection information
-            server = args.redirector_server
-            user = args.redirector_user
+            # Get server from CLI or env, update env if required
+            server = utils.env.resolve_env_inputs(arg_parameter=args.redirector_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
+            if server == None:
+                print("Ensure that a server is specified in either .env or passed via cli")
+                sys.exit(1)
+
+
+            # Get user from CLI or env, update env if required
+            user = utils.env.resolve_env_inputs(arg_parameter=args.redirector_user, env_key="REDIRECTOR_USER", env=config)
+            if user == None:
+                print("Ensure that a user is specified in either .env or passed via cli")
+                sys.exit(1)
 
             # Determine if we show stderr on streamed terminal output
-            if args.stderr == True:
-                display_stderr = True
-            else:
-                display_stderr = False
+            display_stderr = args.stderr
 
             # Ready SSH key if one is specified
             if args.identity_file != None:
@@ -1105,55 +1092,23 @@ async def main():
         if args.payloads == "create":
             import utils.env, datetime
 
-            # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
             # Use specified callback url if one is supplied
-            if args.callback_url:
-                callback_url = args.callback_url
-            
-            # Otherwise use the value saved in env
-            elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '' or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '':
-                callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
-            else:
+            callback_url = utils.env.resolve_env_inputs(arg_parameter=args.callback_url, env_key="MYTHIC_HTTP_CALLBACK_URL_BASE", env=config)
+            if callback_url == None:
                 print("Ensure that a callback url is specified in either .env or passed via cli")
-                payload_parser.print_help()
                 sys.exit(1)
-
-            # Update env file if requested or required
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
 
             # Callback Ports
-            # Use specified callback port if one is supplied
-            if args.callback_port:
-                callback_port = args.callback_port
-            
-            # Otherwise use the value saved in env
-            elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '' or config['MYTHIC_HTTP_CALLBACK_PORT'] != '':
-                callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
-
-            else:
+            callback_port = utils.env.resolve_env_inputs(arg_parameter=args.callback_port, env_key="MYTHIC_HTTP_CALLBACK_PORT", env=config)
+            if callback_port == None:
                 print("Ensure that a callback port is specified in either .env or passed via cli")
-                payload_parser.print_help()
                 sys.exit(1)
 
-            # Update env file if requested or required
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
-
-            # Callback Killdate
-            # Use specified callback killdate if one is supplied
-            if args.callback_killdate:
-                callback_killdate = args.callback_killdate
-            
-            # Otherwise use the value saved in env
-            elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '' or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
-                callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
-            
-            # Otherwise use the default of a year
-            else:
+            # Callback Killdate, defaults to a year if not provided
+            callback_killdate = utils.env.resolve_env_inputs(arg_parameter=args.callback_killdate, env_key="MYTHIC_HTTP_CALLBACK_KILLDATE", env=config)
+            if callback_killdate == None:
                 callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
                 callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
-
-            # Update env file if requested or required
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
 
             payload_name_base = args.name
 
