@@ -349,7 +349,7 @@ Time to create that A record using the EC2's public IP.
 Created requested domain record.
 ```
 
-Let's check Porkbun to make sure the record was added properly. The other 3 domain records come by default with Porkbun and were not added manually by me, or Gaia.
+Let's check Porkbun to make sure the record was added properly. The other domain records come by default with Porkbun and were not added manually by me, or Gaia.
 
 
 ![New A Record in Porkbun](readme_images/porkbun_a_create.png)
@@ -500,9 +500,21 @@ Next up, deleting the A record we created earlier. Despite the resource that bac
 Successfully deleted specified domain record.
 ```
 
-When I implement subdomain record listing, that's what I would show next here, but you'll have to see the records in Porkbun instead. These records are the default records Porkbun automatically created for me when I registered the domain.
-![Porkbun domains after deletion](readme_images/porkbun_after_delete.png)
+Now we double check that we removed all the records properly.
+```
+./gaia.py dns porkbun list --domain thislookslegit.net
+Name: www.thislookslegit.net  Type: A  Value: 13.59.54.21
+Name: thislookslegit.net  Type: MX  Value: fwd1.porkbun.com
+Name: thislookslegit.net  Type: MX  Value: fwd2.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: curitiba.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: fortaleza.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: maceio.porkbun.com
+Name: thislookslegit.net  Type: NS  Value: salvador.porkbun.com
+Name: thislookslegit.net  Type: TXT  Value: v=spf1 include:_spf.porkbun.com ~al
+```
+Here's the view from the web app.
 
+![Porkbun domains after deletion](readme_images/porkbun_after_delete.png)
 
 At this point, feel free to revert the Mythic server to a VM image to a snapshot from before you installed Mythic, or delete the VM. If you are running on bare-metal, you can delete the docker containers if you wish. The way I use Gaia is by reverting the VM back to just after installation. 
 
