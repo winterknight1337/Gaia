@@ -230,7 +230,7 @@ async def main():
 
     # Install Mythic on designated system
     if args.subcommand == "install":
-        import paramiko, utils.install
+        import paramiko, utils.install, utils.env
 
         # Initialize SSH
         ssh = paramiko.SSHClient()
@@ -238,9 +238,9 @@ async def main():
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         # Get connection information
-        server = args.server
+        server = utils.env.resolve_env_inputs(arg_parameter=args.server, env_key="MYTHIC_LOGIN_SERVER_HOST")
+        user = utils.env.resolve_env_inputs(arg_parameter=args.user, env_key="MYTHIC_SERVER_USER")
         port = args.port
-        user = args.user
         display_stderr = args.stderr
         ssh_key = args.identity_file
 
@@ -342,6 +342,10 @@ async def main():
         if args.registrar == "cloudflare":
             # Validate that we have the CF API key
             import utils.dns.cf
+
+            if args.dns_action != "list" and args.dns_action != "create" and args.dns_action != "delete":
+                print("Specify an action to take.")
+                sys.exit(1)
 
             # Get the API key from env or CLI. Update env if needed
             api_token = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="CLOUDFLARE_API_TOKEN", getpass_text="Cloudflare API Key: ", env=config)
@@ -482,6 +486,10 @@ async def main():
         if args.registrar == "porkbun":
             import utils.dns.porkbun
             domain_id = None
+
+            if args.dns_action != "list" and args.dns_action != "create" and args.dns_action != "delete":
+                print("Specify an action to take.")
+                sys.exit(1)
 
             # Get the API key from env or CLI. Update env if needed
             api_pk1 = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="PORKBUN_API_KEY", getpass_text="Porkbun API Key: ", env=config)
@@ -877,9 +885,9 @@ async def main():
         # Handles generation of mod_rewrite rules
         if args.redir_action == "generate":
             payload_uuid = args.payload_uuid
-            redirector_server = args.redir_server
-            redirector_server_user = args.redir_ssh_user
             redirect_target = args.redirect_target
+            redirector_server = utils.env.resolve_env_inputs(arg_parameter=args.redir_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
+            redirector_server_user = utils.env.resolve_env_inputs(arg_parameter=args.redir_ssh_user, env_key="REDIRECTOR_USER", env=config)
 
             if args.redir_ssh_password == True:
                 redirector_ssh_password = getpass.getpass("Redirector User SSH Password")
@@ -935,8 +943,8 @@ async def main():
         if args.redir_action == "tunnel":
             import paramiko, utils.redirector, utils.payloads, utils.install
 
-            mythic_server = args.mythic_server
-            mythic_server_user = args.mythic_ssh_user
+            mythic_server = utils.env.resolve_env_inputs(arg_parameter=args.mythic_server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+            mythic_server_user = utils.env.resolve_env_inputs(arg_parameter=args.mythic_ssh_user, env_key="MYTHIC_SERVER_USER", env=config)
             mythic_ssh_port = args.mythic_ssh_port
 
             if args.mythic_ssh_identity_file != None:
@@ -950,8 +958,8 @@ async def main():
                 mythic_ssh_password = None
 
             # Redirector server connection information
-            redirector_server = args.redir_server
-            redirector_server_user = args.redir_ssh_user
+            redirector_server = utils.env.resolve_env_inputs(arg_parameter=args.redir_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
+            redirector_server_user = utils.env.resolve_env_inputs(arg_parameter=args.redir_ssh_user, env_key="REDIRECTOR_USER", env=config)
             
             # Create the SSH tunnel to the redirector
             # Initialize SSH for redirector
