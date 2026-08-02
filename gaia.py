@@ -862,7 +862,8 @@ async def main():
             if args.identity_file != None:
                 ssh_key = args.identity_file.strip()
             else:
-                ssh_key = None
+                home_dir = os.path.expanduser("~")
+                ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
 
             # Ready password or ssh passphrase
             if args.password == True:
@@ -897,7 +898,8 @@ async def main():
             if args.redir_ssh_identity_file != None:
                 redirector_ssh_key = args.redir_ssh_identity_file
             else:
-                redirector_ssh_key = None
+                home_dir = os.path.expanduser("~")
+                ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
 
             # Query for mod_rewrite rules
             print("Generating base redirector rules.")
