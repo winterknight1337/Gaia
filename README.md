@@ -357,7 +357,7 @@ options:
   -h, --help                                                            show this help message and exit
   -a, --access-key                                                      Enter the AWS access key when requested
   -s, --secret-key                                                      Enter the AWS secret key when requested
-  -S, --size {t2.micro,t2.small,t2,medium,t3.micro,t3.small,t3.medium}  Size of redirector EC2
+  -S, --size {t2.small,t2,medium,t3.micro,t3.small,t3.medium}  Size of redirector EC2
   -r, --region REGION                                                   Create redirector in target AWS region
   -o, --os {debian,ubuntu}                                              Specify OS for the redirector
 ```

