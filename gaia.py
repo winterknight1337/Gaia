@@ -177,7 +177,7 @@ cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="clou
 aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
 aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Enter the AWS access key when requested")
 aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the AWS secret key when requested")
-aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.micro", "t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
+aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
 aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
 
