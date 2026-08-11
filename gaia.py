@@ -238,8 +238,16 @@ async def main():
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         # Get connection information
-        server = utils.env.resolve_env_inputs(arg_parameter=args.server, env_key="MYTHIC_LOGIN_SERVER_HOST")
-        user = utils.env.resolve_env_inputs(arg_parameter=args.user, env_key="MYTHIC_SERVER_USER")
+        server = utils.env.resolve_env_inputs(arg_parameter=args.server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+        if server == None:
+            print("Specify a install server with --server or in .env.")
+            sys.exit(1)
+
+        user = utils.env.resolve_env_inputs(arg_parameter=args.user, env_key="MYTHIC_SERVER_USER", env=config)
+        if user == None:
+            print("Specify a server user with --user or in .env.")
+            sys.exit(1)
+
         port = args.port
         display_stderr = args.stderr
         ssh_key = args.identity_file
