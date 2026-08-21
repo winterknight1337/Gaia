@@ -40,7 +40,7 @@ install_parser.add_argument("--install-mythic", action="store_true", help="Insta
 install_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of target server")
 install_parser.add_argument("-P", "--port", default=22, type=int, metavar='22', help="SSH port of target server")
 install_parser.add_argument("-u", "--user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
-install_parser.add_argument("-p", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
+install_parser.add_argument("-p", "--password", action="allow_true", metavar='', help="Prompts for SSH user password or SSH key passphrase")
 install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
