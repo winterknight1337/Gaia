@@ -19,7 +19,7 @@ global_parser = argparse.ArgumentParser(
     )
 
 # Global switches
-global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.0", help="Display software version")
+global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.0.1", help="Display software version")
 
 
 # Core modules
