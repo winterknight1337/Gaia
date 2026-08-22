@@ -40,7 +40,7 @@ install_parser.add_argument("--install-mythic", action="store_true", help="Insta
 install_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of target server")
 install_parser.add_argument("-P", "--port", default=22, type=int, metavar='22', help="SSH port of target server")
 install_parser.add_argument("-u", "--user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
-install_parser.add_argument("-p", "--password", action="store_true", help="Prompts for SSH user password or SSH key passphrase")
+install_parser.add_argument("-p", "--password", action="store_true", help="Prompt for SSH user password or SSH key passphrase")
 install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
@@ -49,7 +49,7 @@ install_parser.add_argument("--stderr", action="store_true", help="Show stderr f
 auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
 auth_parser.add_argument("-P", "--port", default=7443, type=int, metavar='7443', help="Port to access Mythic's web interface")
 auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
-auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password for target user for Mythic authentication")
+auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Prompt for password for target user for Mythic authentication")
 auth_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
 
 
@@ -186,7 +186,7 @@ certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_c
 certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
 certbot_redir_subparser.add_argument("-S", "--redirector-server", required=True, type=str, metavar='', help="Hostname or IP address of target server to execute certbot")
 certbot_redir_subparser.add_argument("-u", "--redirector-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
-certbot_redir_subparser.add_argument("-P", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
+certbot_redir_subparser.add_argument("-P", "--password", action="store_true", help="Prompt for SSH user password or SSH key passphrase")
 certbot_redir_subparser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
