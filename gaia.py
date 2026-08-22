@@ -40,7 +40,7 @@ install_parser.add_argument("--install-mythic", action="store_true", help="Insta
 install_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of target server")
 install_parser.add_argument("-P", "--port", default=22, type=int, metavar='22', help="SSH port of target server")
 install_parser.add_argument("-u", "--user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
-install_parser.add_argument("-p", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
+install_parser.add_argument("-p", "--password", action="store_true", help="Prompt for SSH user password or SSH key passphrase")
 install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
@@ -77,7 +77,7 @@ create_user_subparser.add_argument("-d", "--cred-file", type=str, metavar='path/
 create_user_subparser.add_argument("--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
 
 delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
-delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify usernames of Mythic users to delete")
+delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Specify usernames of Mythic users to delete")
 
 list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users.")
 
@@ -1067,7 +1067,15 @@ async def main():
                     file.writelines(cred_list)
                 
     # if args.user == "delete":
+    #     users = args.users
+    #     mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
 
+    #     for i in users:
+    #         for j in mythic_users["operator"]:
+    #             if i == j["username"]:
+    #                 user_id = j["id"]
+    #                 user_delete = await utils.users.delete_mythic_user(mythic_instance=mythic_session, user_id=user_id)
+    #                 print(f"")
     
     # if args.user == "assign":
     #     # Get current operations to prepare to assign a default for a new user

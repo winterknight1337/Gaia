@@ -60,21 +60,18 @@ async def get_mythic_users(mythic_instance: mythic):
         )
     return users
 
+# Still broken, need to figure out why. Works in Hasura console
 async def delete_mythic_user(mythic_instance: mythic, user_id: int):
     user_del = await mythic.execute_custom_query(
         mythic=mythic_instance,
         query="""
-            mutation deleteOperator($id: Int!) {
+            mutation delete_operator($id: Int!) {
             delete_operator(where: {id: {_eq: $id}}) {
-                returning {
-                    id
-                    username
-                }
                 affected_rows
+                }  
             }
-        }
         """,
-        variables={"id" : f"{user_id}"}
+        variables={"id" : user_id}
     )
 
     return user_del
