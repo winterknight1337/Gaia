@@ -72,18 +72,20 @@ operation_subparser.add_parser(name="list", formatter_class=formatter, help="Lis
 user_subparser = user_parser.add_subparsers(title="User Actions", dest="user", description="")
 create_user_subparser = user_subparser.add_parser(name="create", formatter_class=formatter, help="Create new users in Mythic")
 create_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Specify usernames of new Mythic users")
-create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file listing users to be created")
+create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing users to be created")
 create_user_subparser.add_argument("-d", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
 create_user_subparser.add_argument("--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
 
-delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
-delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Specify usernames of Mythic users to delete")
+# delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
+# delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Specify usernames of Mythic users to delete")
+# delete_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be deleted")
 
 list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users.")
 
-# assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
-# assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
-# assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Users to be assigned to target operation")
+assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
+assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
+assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Mythic users to be assigned to target operation")
+assign_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
 
 
 # Mythic payloads 
@@ -1027,7 +1029,6 @@ async def main():
 
             users_stdin = args.users
             stdout = args.cred_stdout
-            # operation = args.operation
 
             # Ready user list as input and prepares for merge later
             if args.user_list:
@@ -1077,9 +1078,32 @@ async def main():
     #                 user_delete = await utils.users.delete_mythic_user(mythic_instance=mythic_session, user_id=user_id)
     #                 print(f"")
     
-    # if args.user == "assign":
-    #     # Get current operations to prepare to assign a default for a new user
-    #     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation, username=i)
+    # Assigns users to operations (functionally the same as operations subcommand, just providing another way to do it.)
+    if args.user == "assign":
+
+        # Get current operations to prepare to assign a default for a new user
+        operation_name = args.operation
+        users_stdin = args.users 
+        
+        # Ready user list as input and prepares for merge later
+        if args.user_list:
+            print("Reading user list from file")
+            user_list_in = args.user_list.strip()
+        else:
+            user_list_in = []
+
+        # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+        print("Merging user file and cli specified users into a single list.")
+        users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
+
+        print("Assigning users to operation")
+        for i in users:
+            try:
+                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
+                print(f"Assigned {i} to {operation_name}")
+            except Exception: # Surely Except Exception wont bite me later.
+                print(f"User {i} already assigned to operation")
+                continue
 
         sys.exit(0)
 
@@ -1096,7 +1120,7 @@ async def main():
         # Creates new operation
         if args.operation == "create":
             operation = args.name
-            print(f"Creating new Operation: {operation}")
+            print(f"Creating new operation: {operation}")
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
