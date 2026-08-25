@@ -1097,7 +1097,7 @@ async def main():
             users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
 
             # Modify env to include new operation
-            utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
+            utils.env.update_env("MYTHIC_OPERATION_NAME", operation_name)
 
             print("Assigning users to operation")
             for i in users:
