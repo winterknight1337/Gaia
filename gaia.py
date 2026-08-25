@@ -1102,7 +1102,7 @@ async def main():
                 await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
                 print(f"Assigned {i} to {operation_name}")
             except Exception: # Surely Except Exception wont bite me later.
-                print(f"User {i} already assigned to operation")
+                print(f"User {i} already assigned to {operation_name}")
                 continue
 
         sys.exit(0)
