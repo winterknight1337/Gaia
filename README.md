@@ -1,5 +1,5 @@
 # Description
-Gaia is a tool designed to manage a Mythic C2 installation with an emphasis on learning and lab usage. This emphasis is enforced by its usage of non-evasive payloads and Mythic C2 profiles. Gaia streamlines server standup to create a solid foundation of bundled tools and deafults to make Mythic easy to use for training.
+Gaia is a tool designed to manage a [Mythic C2](https://github.com/its-a-feature/Mythic) installation with an emphasis on learning and lab usage. This emphasis is enforced by its usage of non-evasive payloads and Mythic C2 profiles. Gaia streamlines server standup to create a solid foundation of bundled tools and deafults to make Mythic easy to use for training.
 
 Quick note, this is more of a reference-style document. If you are looking for something more of a usage guide, click [here](./GUIDE.md).
 
