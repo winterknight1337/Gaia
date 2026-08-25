@@ -24,6 +24,7 @@ It supports the following capabilities:
 ## Core Prerequisites
 1. Debian, Kali, or Ubuntu server or VM
     - If the system is a VM, I recommend at least 2 cores and 4GB of RAM, but prefer 4 cores and 8GB of RAM
+    - Sudo installed on the system
     - The system must be configured to allow either:
         - SSH into `root` account
         - SSH into another account configured to allow `sudo` without a password
