@@ -24,6 +24,7 @@ It supports the following capabilities:
 ## Core Prerequisites
 1. Debian, Kali, or Ubuntu server or VM
     - If the system is a VM, I recommend at least 2 cores and 4GB of RAM, but prefer 4 cores and 8GB of RAM
+    - Sudo installed on the system
     - The system must be configured to allow either:
         - SSH into `root` account
         - SSH into another account configured to allow `sudo` without a password
@@ -150,15 +151,18 @@ Authenticates to Mythic and dumps the API key to `.env`.
 ### Gaia Operation
 Gaia operation help
 ```
-./gaia.py auth --help           
-usage: gaia auth [-h] -S  -P 7443 -u mythic_admin -p
+./gaia.py operation -h
+usage: gaia operation [-h] {create,assign,list} ...
 
 options:
-  -h, --help               show this help message and exit
-  -S, --server             Hostname or IP address of Mythic server
-  -P, --port 7443          Port to access Mythic's web interface
-  -u, --user mythic_admin  Target user for Mythic authentication
-  -p, --password           Password for target user for Mythic authentication
+  -h, --help            show this help message and exit
+
+Operations:
+
+  {create,assign,list}
+    create              Create new operations in Mythic
+    assign              Assign users to operations in Mythic
+    list                List existing operations in Mythic
 ```
 
 List current Mythic operations with Gaia.
@@ -226,8 +230,8 @@ Creating Apollo payloads through a redirector with a killdate (For CCDC or other
 ```
 
 ### Gaia DNS
-Gaia supports 2 dns providers at this time. Cloudflare and Porkbun. Additional providers are being considered for future versions of Gaia. If you have any requests, please let me know!
-Gaia currently supports DNS record creation, deletion, and listing. As of now Gaia assumes that there is a single foreward lookup zone on the domain which you intend to use for C2. I *highly recommend* utilizing a throwaway C2 for this purpose, as evidence of C2 traffic going through a legitimate domain is subject to significant scrutiny from security and domain reputation vendors.
+Gaia supports 2 DNS providers at this time. Cloudflare and Porkbun. Additional providers are being considered for future versions of Gaia. If you have any requests, please let me know!
+Gaia currently supports DNS record creation, deletion, and listing. As of now Gaia assumes that there is a single foreward lookup zone on the domain which you intend to use for C2. I *highly recommend* utilizing a throwaway domain for this purpose, as evidence of C2 traffic going through a legitimate domain is subject to significant scrutiny from security and domain reputation vendors.
 
 #### Gaia DNS Through Cloudflare
 Cloudflare domain record creation help
@@ -449,7 +453,7 @@ Note the above command will automatically look for `gaia-redir.pem` that gets cr
 Some items in this tool uses a `.env` file. You may either pre-fill the values by copying `.env-template` to `.env` and manually filling them in, or you may specify them in the CLI and Gaia will populate it into the relevant section automatically. The idea here was to prevent the need to endlessly copy-paste some of the more tedious parts of the CLI like API keys. The variables placed in `.env` should rarely change. The names given in `.env` will either closely or exactly match the value given on the CLI. 
 
 # Acknowledgements
-I want to give a shout out to [@its-a-feature](https://github.com/its-a-feature) for his work creating and mainting Mythic and it's libraries that I use in this project.
-I'd like to give another shout out to [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for giving me some tips on where to start on the project.
+I want to give a shout out to [@its-a-feature](https://github.com/its-a-feature) for his work creating and mainting Mythic, it's libraries, and providing support for this project.
+I'd like to give another shout out to [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for giving me some tips on where to start.
 Next, [@elreydetoda](https://github.com/elreydetoda) and [@AGrapplerNamedSam](https://github.com/AGrapplerNamedSam) for helping me test pre-release versions of Gaia. Having both a Specter's and a student's perspective for the project was extremely helpful!
 Last but not least @leidy-tector and the greater SpecterOps team for enabling and encouraging me to work on this!
