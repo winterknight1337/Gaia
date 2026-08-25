@@ -119,7 +119,7 @@ list_payload_subparser = payload_subparser.add_parser(name="list", formatter_cla
 
 
 # DNS management
-# Cloudflare optionsc
+# Cloudflare options
 dns_registrar_subparser = dns_parser.add_subparsers(title="Registrar", dest="registrar", description='')
 
 cloudflare_subparser = dns_registrar_subparser.add_parser(name="cloudflare", formatter_class=formatter, help="Manage DNS records via Cloudflare")
@@ -1067,43 +1067,43 @@ async def main():
                 with open(user_list_out, 'a') as file:
                     file.writelines(cred_list)
                 
-    # if args.user == "delete":
-    #     users = args.users
-    #     mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
+        # if args.user == "delete":
+        #     users = args.users
+        #     mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
 
-    #     for i in users:
-    #         for j in mythic_users["operator"]:
-    #             if i == j["username"]:
-    #                 user_id = j["id"]
-    #                 user_delete = await utils.users.delete_mythic_user(mythic_instance=mythic_session, user_id=user_id)
-    #                 print(f"")
-    
-    # Assigns users to operations (functionally the same as operations subcommand, just providing another way to do it.)
-    if args.user == "assign":
-
-        # Get current operations to prepare to assign a default for a new user
-        operation_name = args.operation
-        users_stdin = args.users 
+        #     for i in users:
+        #         for j in mythic_users["operator"]:
+        #             if i == j["username"]:
+        #                 user_id = j["id"]
+        #                 user_delete = await utils.users.delete_mythic_user(mythic_instance=mythic_session, user_id=user_id)
+        #                 print(f"")
         
-        # Ready user list as input and prepares for merge later
-        if args.user_list:
-            print("Reading user list from file")
-            user_list_in = args.user_list.strip()
-        else:
-            user_list_in = []
+        # Assigns users to operations (functionally the same as operations subcommand, just providing another way to do it.)
+        if args.user == "assign":
 
-        # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
-        print("Merging user file and cli specified users into a single list.")
-        users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
+            # Get current operations to prepare to assign a default for a new user
+            operation_name = args.operation
+            users_stdin = args.users 
+            
+            # Ready user list as input and prepares for merge later
+            if args.user_list:
+                print("Reading user list from file")
+                user_list_in = args.user_list.strip()
+            else:
+                user_list_in = []
 
-        print("Assigning users to operation")
-        for i in users:
-            try:
-                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
-                print(f"Assigned {i} to {operation_name}")
-            except Exception: # Surely Except Exception wont bite me later.
-                print(f"User {i} already assigned to {operation_name}")
-                continue
+            # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+            print("Merging user file and cli specified users into a single list.")
+            users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
+
+            print("Assigning users to operation")
+            for i in users:
+                try:
+                    await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
+                    print(f"Assigned {i} to {operation_name}")
+                except Exception: # Surely Except Exception wont bite me later.
+                    print(f"User {i} already assigned to {operation_name}")
+                    continue
 
         sys.exit(0)
 
