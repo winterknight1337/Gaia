@@ -64,6 +64,8 @@ create_operation_subparser.add_argument("-n", "--name", required=True, type=str,
 assign_operation_subparser = operation_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
 assign_operation_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
 assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Users to be assigned to target operation")
+assign_operation_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
+
 
 operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
 
@@ -83,7 +85,7 @@ create_user_subparser.add_argument("--cred-stdout", action="store_true", help="P
 list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users.")
 
 assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
-assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
+assign_user_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
 assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Mythic users to be assigned to target operation")
 assign_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
 
@@ -1082,7 +1084,7 @@ async def main():
         if args.user == "assign":
 
             # Get current operations to prepare to assign a default for a new user
-            operation_name = args.operation
+            operation_name = args.operation_name
             users_stdin = args.users 
             
             # Ready user list as input and prepares for merge later
@@ -1109,7 +1111,7 @@ async def main():
 
     # Process operations
     if args.subcommand == "operation":
-        import utils.operations, utils.env
+        import utils.operations, utils.env, utils.users
 
         if args.operation == "list":
             operations = await utils.operations.get_operations(mythic_instance=mythic_session)
@@ -1128,13 +1130,29 @@ async def main():
 
         # Assigns users to operations
         if args.operation == "assign":
+            # Get current operations to prepare to assign a default for a new user
             operation_name = args.operation_name
-            users = args.users
+            users_stdin = args.users 
+            
+            # Ready user list as input and prepares for merge later
+            if args.user_list:
+                print("Reading user list from file")
+                user_list_in = args.user_list.strip()
+            else:
+                user_list_in = []
+
+            # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+            print("Merging user file and cli specified users into a single list.")
+            users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
 
             print("Assigning users to operation")
             for i in users:
-                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
-                print(f"Assigned user {i} to operation {operation_name}")
+                try:
+                    await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
+                    print(f"Assigned {i} to {operation_name}")
+                except Exception: # Surely Except Exception wont bite me later.
+                    print(f"User {i} already assigned to {operation_name}")
+                    continue
 
         sys.exit(0)
 
