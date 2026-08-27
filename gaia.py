@@ -66,8 +66,17 @@ assign_operation_subparser.add_argument("-o", "--operation-name", required=True,
 assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Users to be assigned to target operation")
 assign_operation_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
 
+list_operation_subparser = operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
 
-operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
+webhook_operation_subparser = operation_subparser.add_parser(name="webhook", formatter_class=formatter, help="Manage webhooks on an operation")
+webhook_subparser = webhook_operation_subparser.add_subparsers(title="Webhook Management", dest="webhook", description="")
+list_webhook_subparser = webhook_subparser.add_parser(name="list", formatter_class=formatter, help="List webhook information on the current operation")
+
+config_webhook_subparser = webhook_subparser.add_parser(name="config", formatter_class=formatter, help="Configure webhook for a given operation")
+platform_webhook_subparser = config_webhook_subparser.add_subparsers(title="Platform", dest="webhook_platform", description="")
+discord_platform_subparser = platform_webhook_subparser.add_parser(name="discord", formatter_class=formatter, help="Configure webhooks for Discord")
+discord_platform_subparser.add_argument("-u", "--url", type=str, metavar="", help="URL to Discord channel to send Mythic notifications")
+discord_platform_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
 
 
 # Mythic users management
@@ -1153,6 +1162,18 @@ async def main():
                 except Exception: # Surely Except Exception wont bite me later.
                     print(f"User {i} already assigned to {operation_name}")
                     continue
+
+        if args.operation == "webhook":
+            if args.webhook_platform == "discord":
+
+                operation_name = args.operation_name
+                webhook_url = args.url
+
+                # If op isnt specified, get the one currently in use by the logged in user
+                if operation_name == None:
+                    operation_name = await utils.operations.get_current_operation(mythic_instance=mythic_session)
+
+                await utils.operations.add_discord_webhook(mythic_instance=mythic_session, operation_name=operation_name, webhook_url=webhook_url)
 
         sys.exit(0)
 
