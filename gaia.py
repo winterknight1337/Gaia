@@ -71,6 +71,8 @@ list_operation_subparser = operation_subparser.add_parser(name="list", formatter
 webhook_operation_subparser = operation_subparser.add_parser(name="webhook", formatter_class=formatter, help="Manage webhooks on an operation")
 webhook_subparser = webhook_operation_subparser.add_subparsers(title="Webhook Management", dest="webhook", description="")
 list_webhook_subparser = webhook_subparser.add_parser(name="list", formatter_class=formatter, help="List webhook information on the current operation")
+list_webhook_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
+
 
 config_webhook_subparser = webhook_subparser.add_parser(name="config", formatter_class=formatter, help="Configure webhook for a given operation")
 platform_webhook_subparser = config_webhook_subparser.add_subparsers(title="Platform", dest="webhook_platform", description="")
@@ -1113,7 +1115,7 @@ async def main():
         import utils.operations, utils.env, utils.users
 
         if args.operation == "list":
-            operations = await utils.operations.get_operations(mythic_instance=mythic_session)
+            operations = await utils.operations.get_operation_names(mythic_instance=mythic_session)
             print("Current operations in Mythic:")
             for i in operations:
                 print(i)
@@ -1154,16 +1156,44 @@ async def main():
                     continue
 
         if args.operation == "webhook":
-            if args.webhook_platform == "discord":
+            # Show webhook URL for given operation
+            if args.webhook == "list":
 
                 operation_name = args.operation_name
-                webhook_url = args.url
 
-                # If op isnt specified, get the one currently in use by the logged in user
+                # If operation name is not given, grab the active operation
                 if operation_name == None:
-                    operation_name = await utils.operations.get_current_operation(mythic_instance=mythic_session)
+                    operation_name = await utils.operations.get_current_operation_name(mythic_instance=mythic_session)
 
-                await utils.operations.add_discord_webhook(mythic_instance=mythic_session, operation_name=operation_name, webhook_url=webhook_url)
+                # Grab operation information out of Mythic
+                operation_info = await utils.operations.get_operation_information(mythic_instance=mythic_session)
+
+                # Iterate over operation information to match name, then pull ID, and then the webhook URL.
+                for i in operation_info:
+                    if operation_name == i["name"]:
+                        operation_id = i["id"]
+                        webhook_info = await utils.operations.get_webhook_information(mythic_instance=mythic_session, operation_id=operation_id)
+                        webhook_url = webhook_info["operation_by_pk"]["webhook"]
+
+                        # Prevents the sentence in the print statement from cutting off for no reason
+                        if webhook_url == '':
+                            webhook_url = None
+
+                        break
+
+                print(f"Current webhook URL for {operation_name} is '{webhook_url}'")
+
+            if args.webhook == "config":
+                if args.webhook_platform == "discord":
+
+                    operation_name = args.operation_name
+                    webhook_url = args.url
+
+                    # If op isnt specified, get the one currently in use by the logged in user
+                    if operation_name == None:
+                        operation_name = await utils.operations.get_current_operation_name(mythic_instance=mythic_session)
+
+                    await utils.operations.add_discord_webhook(mythic_instance=mythic_session, operation_name=operation_name, webhook_url=webhook_url)
 
         sys.exit(0)
 
