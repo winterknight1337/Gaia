@@ -246,9 +246,7 @@ async def main():
         import paramiko, utils.install, utils.env
 
         # Initialize SSH
-        ssh = paramiko.SSHClient()
-        ssh.load_system_host_keys()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh = utils.install.initialize_ssh()
         
         # Get connection information
         server = utils.env.resolve_env_inputs(arg_parameter=args.server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
@@ -720,9 +718,7 @@ async def main():
                 instance_public_ip = interface_info["NetworkInterfaces"][0]["Association"]["PublicIp"]
 
                 # Initialize SSH
-                ssh = paramiko.SSHClient()
-                ssh.load_system_host_keys()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh = utils.install.initialize_ssh()
 
                 # Update EC2s
                 print("Connecting to EC2 instance over SSH.")
@@ -859,9 +855,7 @@ async def main():
             certbot_domain = args.domain
 
             # Initialize SSH
-            ssh = paramiko.SSHClient()
-            ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh = utils.install.initialize_ssh()
 
             # Get server from CLI or env, update env if required
             server = utils.env.resolve_env_inputs(arg_parameter=args.redirector_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
@@ -944,9 +938,7 @@ async def main():
 
             # Upload mod_rewrite rules to the redirector and reboot apache
             # Initialize SSH for redirector
-            redir_tunnel = paramiko.SSHClient()
-            redir_tunnel.load_system_host_keys()
-            redir_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            redir_tunnel = utils.install.initialize_ssh()
 
             print("Connecting to redirector.")
             redir_tunnel.connect(hostname=redirector_server, port=22, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
@@ -986,10 +978,8 @@ async def main():
             
             # Create the SSH tunnel to the redirector
             # Initialize SSH for redirector
-            mythic_tunnel = paramiko.SSHClient()
-            mythic_tunnel.load_system_host_keys()
-            mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+            mythic_tunnel = utils.install.initialize_ssh()
+            
             print("Connecting to Mythic server.")
             mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
 

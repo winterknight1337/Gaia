@@ -1,5 +1,14 @@
 import os
 
+def initialize_ssh():
+    import paramiko
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    return ssh
+
+
 def copy_and_execute_script(ssh, script: str, err: bool=False):
     # Open SFTP Channel to copy script
     sftp = ssh.open_sftp()
