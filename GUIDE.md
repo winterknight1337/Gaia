@@ -181,7 +181,7 @@ test5:OuCajjPD3LseR0Ko
 test6:2ywzXrH0DQS3XWDB
 ```
 
-Note that if you end up specifying the same user, you could have some issues. I'd recommend going into Hasura and deleting the user records from the operator table and re-creating them. In case of a user conflict, use the newer credentials if you don't want to go to hasura to delete the users first. You can get to Hasura in the Mythic UI, then retrieve the password by running `sudo cat /opt/Mythic/.env | grep HASURA_SECRET`. Future versions of Gaia will support more robust user management.
+Note that if you end up specifying the same user, you could have some issues. I'd recommend going into Hasura and deleting the user records from the operator table and re-creating them. In case of a user conflict, use the older credentials if you don't want to go to hasura to delete the users first. You can get to Hasura in the Mythic UI, then retrieve the password by running `sudo cat /opt/Mythic/.env | grep HASURA_SECRET`. Future versions of Gaia will support more robust user management.
 
 # Operation Creation
 Now, let's check out what operations are available to us.
@@ -204,6 +204,11 @@ Assigning users to operation
 Assigned user test1 to operation SpecterOp
 Assigned user test2 to operation SpecterOp
 Assigned user test3 to operation SpecterOp
+```
+
+Optional: Next, I'll add Mythic webhooks to Discord. We use these when monitoring callbacks and errors. 
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation webhook config discord --url https://discord.com/api/webhooks/<server_id>/<string> -o "SpecterOp"
 ```
 
 # Payload Creation

@@ -14,8 +14,9 @@ It supports the following capabilities:
     - [LDAP Browser](https://github.com/MythicC2Profiles/ldap_browser)
     - [Registry Browser](https://github.com/MythicC2Profiles/registry_browser)
     - [Webhooks](https://github.com/MythicC2Profiles/basic_webhook)
-- Operation creation and user assignment
 - User creation
+- Operation creation and user assignment
+- Webhook creation
 - Payload creation
 - Redirector creation and management
 - Domain management
@@ -178,6 +179,32 @@ Create a new Mythic operation with Gaia and assign specified users to it.
 Assign users to an operation in Mythic.
 ```
 ./gaia.py operation assign -o mwccdc -u WinterKnight, tal0n, AGrapplerNamedSam
+```
+
+Gaia operation webhook help
+```
+./gaia.py operation webhook  -h    
+usage: gaia operation webhook [-h] {list,config} ...
+
+options:
+  -h, --help     show this help message and exit
+
+Webhook Management:
+
+  {list,config}
+    list         List webhook information on the current operation
+    config       Configure webhook for a given operation
+```
+
+List Webhook information for Mythic operation
+```
+ ./gaia.py operation webhook list
+ Current webhook URL for Operation Chimera is 'https://discord.com/api/webhooks/<server_id>/<string>'
+```
+
+Create webhook in Discord for given operation. Note Discord is the only webhook target supported at this time, but Slack may be included in the future if there is demand for it.
+```
+./gaia.py operation webhook config discord --url https://discord.com/api/webhooks/<server_id>/<string> -o "SpecterOp"
 ```
 
 ### Gaia User
