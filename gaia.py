@@ -77,8 +77,8 @@ list_webhook_subparser.add_argument("-o", "--operation-name", type=str, metavar=
 config_webhook_subparser = webhook_subparser.add_parser(name="config", formatter_class=formatter, help="Configure webhook for a given operation")
 platform_webhook_subparser = config_webhook_subparser.add_subparsers(title="Platform", dest="webhook_platform", description="")
 discord_platform_subparser = platform_webhook_subparser.add_parser(name="discord", formatter_class=formatter, help="Configure webhooks for Discord")
-discord_platform_subparser.add_argument("-u", "--url", type=str, metavar="", help="URL to Discord channel to send Mythic notifications")
-discord_platform_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
+discord_platform_subparser.add_argument("-u", "--url", required=True, type=str, metavar="", help="URL to Discord channel to send Mythic notifications")
+discord_platform_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
 
 
 # Mythic users management
@@ -97,7 +97,7 @@ list_user_subparser = user_subparser.add_parser(name="list", formatter_class=for
 
 assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
 assign_user_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
-assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Mythic users to be assigned to target operation")
+assign_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Mythic users to be assigned to target operation")
 assign_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
 
 
@@ -245,7 +245,7 @@ async def main():
 
     # Install Mythic on designated system
     if args.subcommand == "install":
-        import paramiko, utils.install, utils.env
+        import utils.install, utils.env
 
         # Initialize SSH
         ssh = utils.install.initialize_ssh()
@@ -274,7 +274,6 @@ async def main():
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
-        
         # Update system if requested
         if args.install_updates == True:
             print("###########################")
@@ -360,13 +359,17 @@ async def main():
     if args.subcommand == "dns":
         import utils.env
 
+        if args.registrar == None:
+            dns_parser.print_help()
+            sys.exit(0)
+
         if args.registrar == "cloudflare":
             # Validate that we have the CF API key
             import utils.dns.cf
 
-            if args.dns_action != "list" and args.dns_action != "create" and args.dns_action != "delete":
-                print("Specify an action to take.")
-                sys.exit(1)
+            if args.dns_action == None:
+                cloudflare_subparser.print_help()
+                sys.exit(0)
 
             # Get the API key from env or CLI. Update env if needed
             api_token = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="CLOUDFLARE_API_TOKEN", getpass_text="Cloudflare API Key: ", env=config)
@@ -503,13 +506,12 @@ async def main():
                     print("No records to delete.")
                     sys.exit(1)
 
-
         if args.registrar == "porkbun":
             import utils.dns.porkbun
             domain_id = None
 
-            if args.dns_action != "list" and args.dns_action != "create" and args.dns_action != "delete":
-                print("Specify an action to take.")
+            if args.dns_action == None:
+                porkbun_subparser.print_help()
                 sys.exit(1)
 
             # Get the API key from env or CLI. Update env if needed
@@ -639,8 +641,18 @@ async def main():
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
         import utils.redirector, paramiko, utils.install, utils.env
+
+        if args.redir_action == None:
+            redir_parser.print_help()
+            sys.exit(0)
+
         # Create redir infra
         if args.redir_action == "create":
+
+            if args.cloud == None:
+                create_redir_subparser.print_help()
+                sys.exit(0)
+
             if args.cloud == "aws":
                 import boto3
 
@@ -751,6 +763,11 @@ async def main():
 
         # Delete redir infra
         if args.redir_action == "delete":
+
+            if args.cloud == None:
+                delete_redir_subparser.print_help()
+                sys.exit(0)
+
             if args.cloud == "aws":
                 import boto3
 
@@ -819,6 +836,11 @@ async def main():
     
         # Shows redir infra
         if args.redir_action == "list":
+
+            if args.cloud == None:
+                list_redir_subparser.print_help()
+                sys.exit(0)
+
             if args.cloud == "aws":
                 import boto3
 
@@ -1022,6 +1044,10 @@ async def main():
     if args.subcommand == "user":
         import utils.users, utils.operations
 
+        if args.user == None:
+            user_parser.print_help()
+            sys.exit(0)
+
         if args.user == "list":
             mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
             print(mythic_users)
@@ -1029,6 +1055,10 @@ async def main():
 
         # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
         if args.user == "create":
+
+            if args.users == None and args.user_list == None:
+                create_user_subparser.print_help()
+                sys.exit(0)
 
             users_stdin = args.users
             stdout = args.cred_stdout
@@ -1114,6 +1144,10 @@ async def main():
     if args.subcommand == "operation":
         import utils.operations, utils.env, utils.users
 
+        if args.operation == None:
+            operation_parser.print_help()
+            sys.exit(0)
+
         if args.operation == "list":
             operations = await utils.operations.get_operation_names(mythic_instance=mythic_session)
             print("Current operations in Mythic:")
@@ -1156,6 +1190,11 @@ async def main():
                     continue
 
         if args.operation == "webhook":
+
+            if args.webhook == None:
+                webhook_operation_subparser.print_help()
+                sys.exit(0)
+
             # Show webhook URL for given operation
             if args.webhook == "list":
 
@@ -1184,6 +1223,11 @@ async def main():
                 print(f"Current webhook URL for {operation_name} is '{webhook_url}'")
 
             if args.webhook == "config":
+
+                if args.webhook_platform == None:
+                    config_webhook_subparser.print_help()
+                    sys.exit(0)
+
                 if args.webhook_platform == "discord":
 
                     operation_name = args.operation_name
@@ -1200,6 +1244,11 @@ async def main():
     # Create payloads
     if args.subcommand == "payload":
         import utils.payloads
+
+        if args.payloads == None:
+            payload_parser.print_help()
+            sys.exit(0)
+
         if args.payloads == "create":
             import utils.env, datetime
 
