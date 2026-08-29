@@ -58,9 +58,6 @@ operation_subparser = operation_parser.add_subparsers(title="Operations", dest="
 create_operation_subparser = operation_subparser.add_parser(name="create", formatter_class=formatter, help="Create new operations in Mythic")
 create_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of new operation in Mythic")
 
-# delete_operation_subparser = operations_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete existing operations in Mythic")
-# delete_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specifies which operation to delete")
-
 assign_operation_subparser = operation_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
 assign_operation_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
 assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Users to be assigned to target operation")
@@ -88,10 +85,6 @@ create_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar
 create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing users to be created")
 create_user_subparser.add_argument("-d", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
 create_user_subparser.add_argument("--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
-
-# delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
-# delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Specify usernames of Mythic users to delete")
-# delete_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be deleted")
 
 list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users.")
 
@@ -125,8 +118,6 @@ athena_subparser.add_argument("-u", "--callback-url", type=str, metavar='', help
 athena_subparser.add_argument("-p", "--callback-port", type=int, default=80, metavar='80', help="Port that C2 agents will connect to")
 athena_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
 athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos", "windows"], help="Build C2 agents for the target operating system")
-
-# delete_payload_subparser = payload_subparser.add_parser(name="delete", formatter_class=formatter, description="Delete payloads")
 
 list_payload_subparser = payload_subparser.add_parser(name="list", formatter_class=formatter, description="List current Mythic payloads")
 
@@ -1099,17 +1090,6 @@ async def main():
                 print("Dumping new Mythic user credentials to disk.")
                 with open(user_list_out, 'a') as file:
                     file.writelines(cred_list)
-                
-        # if args.user == "delete":
-        #     users = args.users
-        #     mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
-
-        #     for i in users:
-        #         for j in mythic_users["operator"]:
-        #             if i == j["username"]:
-        #                 user_id = j["id"]
-        #                 user_delete = await utils.users.delete_mythic_user(mythic_instance=mythic_session, user_id=user_id)
-        #                 print(f"")
         
         # Assigns users to operations (functionally the same as operations subcommand, just providing another way to do it.)
         if args.user == "assign":
