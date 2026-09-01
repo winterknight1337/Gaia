@@ -1123,6 +1123,8 @@ async def main():
             # Modify env to include new operation
             utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
 
+            sys.exit(0)
+
         # Assigns users to operations
         if args.operation == "assign":
             # Get current operations to prepare to assign a default for a new user
@@ -1148,6 +1150,8 @@ async def main():
                 except Exception: # Surely Except Exception wont bite me later.
                     print(f"User {i} already assigned to {operation_name}")
                     continue
+
+            sys.exit(0)
 
         if args.operation == "webhook":
 
@@ -1181,6 +1185,7 @@ async def main():
                         break
 
                 print(f"Current webhook URL for {operation_name} is '{webhook_url}'")
+                sys.exit(0)
 
             if args.webhook == "config":
 
@@ -1198,6 +1203,7 @@ async def main():
                         operation_name = await utils.operations.get_current_operation_name(mythic_instance=mythic_session)
 
                     await utils.operations.add_discord_webhook(mythic_instance=mythic_session, operation_name=operation_name, webhook_url=webhook_url)
+                    sys.exit(0)
 
         sys.exit(0)
 
