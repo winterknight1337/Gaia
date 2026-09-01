@@ -1,5 +1,6 @@
 import boto3, os
 from mythic import mythic
+from prettytable import PrettyTable
 
 def create_aws_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_run:bool=False):
     # Create the keypair "gaia" in AWS
@@ -171,6 +172,26 @@ def get_gaia_security_groups(ec2_session: boto3.Session.client, dry_run:bool=Fal
     )
 
     return response
+
+def print_gaia_ec2(ec2_data:dict):
+    table = PrettyTable(["EC2 ID", "Status", "Size", "Arch", "Public IP"])
+
+    for reservations in ec2_data["Reservations"]:
+        for instances in reservations["Instances"]:
+
+            instance_id = instances["InstanceId"]
+            instance_status = instances["State"]["Name"]
+            instance_size = instances["InstanceType"]
+            instance_arch = instances["Architecture"]
+
+            try:
+                instance_public_ip = instances["NetworkInterfaces"][0]["Association"]["PublicIp"]
+            except:
+                instance_public_ip = None
+
+            table.add_row([instance_id, instance_status, instance_size, instance_arch, instance_public_ip])
+
+    print(table)
 
 def terminate_gaia_instances(ec2_session: boto3.Session.client, instance_ids:list, dry_run:bool=False):
     response = ec2_session.terminate_instances(

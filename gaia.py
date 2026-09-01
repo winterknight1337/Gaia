@@ -343,7 +343,7 @@ async def main():
         utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
         utils.env.update_env("MYTHIC_API_KEY", api_token)
 
-        print("Mythic authentication successful!")
+        print("Mythic authentication successful! JWT dumped to .env!")
         sys.exit(0)
 
     # Handles DNS management
@@ -376,11 +376,9 @@ async def main():
 
                 # Print domian records
                 if args.domain == None:
-                    # Print active domains
-                    print("Active domains:")
-                    for i in domains["result"]:
-                        if i["status"] == "active":
-                            print(i["name"])
+
+                    # Print domains in tabular format
+                    utils.dns.cf.print_domains(domains=domains)
 
                 elif args.domain != None:
                     domain = args.domain
@@ -391,13 +389,11 @@ async def main():
                             domain_id = i["id"]
                             break
 
-                    # Get the domain records and print them
+                    # Get the domain records
                     domain_records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
-                    for i in domain_records["result"]:
-                        record_name = i["name"]
-                        record_type = i["type"]
-                        record_value = i["content"]
-                        print(f"Name: {record_name}  Type: {record_type}  Value: {record_value}")
+
+                    # print domain records in tabular format
+                    utils.dns.cf.print_domain_records(domain_records=domain_records["result"])
 
                 sys.exit(0)
 
@@ -521,11 +517,8 @@ async def main():
                 if args.domain == None:
                     domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
                     
-                    # Print active domains
-                    print("Active domains:")
-                    for i in domains["domains"]:
-                        if i["status"] == "ACTIVE":
-                            print(i["domain"])
+                    # Print domains in tabular format
+                    utils.dns.porkbun.print_domains(domains=domains)
                     
                 elif args.domain != None:
 
@@ -533,12 +526,8 @@ async def main():
                     domain = args.domain
                     domain_records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=domain)
 
-                    # Print them
-                    for i in domain_records["records"]:
-                        record_name = i["name"]
-                        record_type = i["type"]
-                        record_value = i["content"]
-                        print(f"Name: {record_name}  Type: {record_type}  Value: {record_value}")
+                    # print domain records in tabular format
+                    utils.dns.porkbun.print_domain_records(domain_records=domain_records["records"])
 
                 sys.exit(0)
 
@@ -843,22 +832,8 @@ async def main():
                 print("Getting Gaia EC2s from AWS")
                 ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
 
-                # Iterate over reservations and instances to pull relevant info
-                print("Instances in account:")
-                for reservations in ec2_info["Reservations"]:
-                    for instances in reservations["Instances"]:
-
-                        instance_id = instances["InstanceId"]
-                        instance_status = instances["State"]["Name"]
-                        instance_size = instances["InstanceType"]
-                        instance_arch = instances["Architecture"]
-
-                        try:
-                            instance_public_ip = instances["NetworkInterfaces"][0]["Association"]["PublicIp"]
-                        except:
-                            instance_public_ip = None
-
-                        print(f"ID: {instance_id}  Status: {instance_status}  Size: {instance_size}  Arch: {instance_arch}  Public IP: {instance_public_ip}")
+                # Print EC2 information in tabular format
+                utils.redirector.print_gaia_ec2(ec2_data=ec2_info)
 
                 sys.exit(0)
 
@@ -1041,7 +1016,10 @@ async def main():
 
         if args.user == "list":
             mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
-            print(mythic_users)
+
+            # Print Mythic user information in tabular format
+            utils.users.print_mythic_users(mythic_users=mythic_users)
+            
             sys.exit(0)
 
         # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
@@ -1129,10 +1107,12 @@ async def main():
             sys.exit(0)
 
         if args.operation == "list":
-            operations = await utils.operations.get_operation_names(mythic_instance=mythic_session)
-            print("Current operations in Mythic:")
-            for i in operations:
-                print(i)
+            operations = await utils.operations.get_operation_information(mythic_instance=mythic_session)
+
+            # Print operations in tabular format
+            utils.operations.print_operations(operations=operations)
+
+            sys.exit(0)
 
         # Creates new operation
         if args.operation == "create":
@@ -1345,20 +1325,9 @@ async def main():
 
         if args.payloads == "list":
             payload_info = await utils.payloads.get_payloads(mythic_instance=mythic_session)
-            print("Current Payloads:")
-            for i in payload_info:
-                if i["deleted"] == False:
-                    payload_uuid = i["uuid"]
-                    payload_type = i["payloadtype"]["name"]
-                    payload_file_name = i["filemetum"]["filename_utf8"]
-                    payload_description = i["description"]
-                    payload_display = {
-                        "payload_uuid" : payload_uuid,
-                        "payload_type" : payload_type,
-                        "payload_file_name" : payload_file_name,
-                        "payload_description" : payload_description
-                        }
-                    print(payload_display)
+
+            # Print payload information in tabular format
+            utils.payloads.print_payload_information(payload_info=payload_info)
                 
         sys.exit(0)
 

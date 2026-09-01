@@ -1,5 +1,6 @@
-from mythic import mythic
 import secrets, string
+from mythic import mythic
+from prettytable import PrettyTable
 
 # Generates a password with the secrets module
 def generate_password():
@@ -59,6 +60,21 @@ async def get_mythic_users(mythic_instance: mythic):
         """
         )
     return users
+
+def print_mythic_users(mythic_users:dict):
+    table = PrettyTable(["Username", "User ID", "Account Type", "Active", "Admin"])
+
+    for i in mythic_users["operator"]:
+        username = i["username"]
+        user_id = i["id"]
+        user_type = i["account_type"]
+        user_active = i["active"]
+        user_admin = i["admin"]
+
+        table.add_row([username, user_id, user_type, user_active, user_admin])
+
+    print(table)
+
 
 # Still broken, need to figure out why. Works in Hasura console
 async def delete_mythic_user(mythic_instance: mythic, user_id: int):

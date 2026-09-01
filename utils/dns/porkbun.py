@@ -1,4 +1,5 @@
 import requests
+from prettytable import PrettyTable
 
 base_url = "https://api.porkbun.com/api/json/v3"
 
@@ -60,3 +61,29 @@ def create_domain_record(api_key: str, secret_key: str, domain: str, record_name
     response = requests.post(f"{base_url}/dns/create/{domain}", headers=headers, json=data)
     data = response.json()
     return data
+
+def print_domains(domains:dict):
+    table = PrettyTable(["Domain Name", "Domain Status", "Domain ID"])
+
+    for i in domains["domains"]:
+        domain_name = i["domain"]
+        domain_status = i["status"]
+        domain_api = i["apiAccess"]
+
+        table.add_row([domain_name, domain_status, domain_api])
+
+    print(table)
+
+def print_domain_records(domain_records:dict):
+
+    table = PrettyTable(["Record Name", "Record Type", "Record Value", "Record ID"])
+
+    for i in domain_records:
+        record_name = i["name"]
+        record_type = i["type"]
+        record_value = i["content"]
+        record_id = i["id"]
+
+        table.add_row([record_name, record_type, record_value, record_id])
+
+    print(table)
