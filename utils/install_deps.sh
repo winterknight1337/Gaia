@@ -5,13 +5,19 @@ if [ "$EUID" -ne 0 ]
   exit;
 fi
 
-echo "Updating apt sources!";
+echo "#########################";
+echo "# Updating apt sources! #";
+echo "#########################";
 apt update;
 
-echo "Installing prerequisites!";
+echo "#############################";
+echo "# Installing prerequisites! #";
+echo "#############################";
 apt install git vim make autossh -y;
 
-echo "Installing Docker!";
+echo "######################";
+echo "# Installing Docker! #";
+echo "######################";
 
 OS=$(cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2);
 VERSION_ID=$(cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2 | cut -d '"' -f 2);

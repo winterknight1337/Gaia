@@ -5,46 +5,52 @@ if [ "$EUID" -ne 0 ]
   then echo "[-] Please run as root";
   exit;
 fi
-echo "****Preparing to install Mythic! Standby!****";
+echo "#########################################";
+echo "# Preparing to install Mythic! Standby! #";
+echo "#########################################";
 
 # Download, build, and Install Mythic components
 cd /opt/;
 
-echo "Pulling Mythic Repo";
+echo "########################";
+echo "# Pulling Mythic Repo. #";
+echo "########################";
 git clone https://github.com/its-a-feature/Mythic.git --depth 1;
 cd Mythic;
 
-echo "Building mythic-cli binary";
+echo "###############################";
+echo "# Building mythic-cli binary. #";
+echo "###############################";
 make;
 
-echo "Booting Mythic up for the first time!";
+echo "**Booting Mythic up for the first time!**";
 $PWD/mythic-cli start;
 
-echo "Installing Apollo (Windows Agent)!";
+echo "**Installing Apollo (Windows Agent)!**";
 $PWD/mythic-cli install github https://github.com/MythicAgents/Apollo.git --force;
 
-echo "Installing Poseidon (POSIX Agent)!";
+echo "**Installing Poseidon (POSIX Agent)!**";
 $PWD/mythic-cli install github https://github.com/MythicAgents/poseidon.git --force;
 
-echo "Installing Athena (Cross-Platform Agent)";
+echo "**Installing Athena (Cross-Platform Agent)**";
 $PWD/mythic-cli install github https://github.com/MythicAgents/Athena.git --force;
 
-echo "Installing http C2 profile!";
+echo "**Installing http C2 profile!**";
 $PWD/mythic-cli install github https://github.com/MythicC2Profiles/http.git --force;
 
-echo "Installing smb C2 profile!";
+echo "**Installing smb C2 profile!**";
 $PWD/mythic-cli install github https://github.com/MythicC2Profiles/smb.git --force;
 
-echo "Installing Forge!";
+echo "**Installing Forge!**";
 $PWD/mythic-cli install github https://github.com/MythicAgents/forge.git --force;
 
-echo "Installing Webhooks!";
+echo "**Installing Webhooks!**";
 $PWD/mythic-cli install github https://github.com/MythicC2Profiles/basic_webhook.git --force;
 
-echo "Installing Registry Browser!";
+echo "**Installing Registry Browser!**";
 $PWD/mythic-cli install github https://github.com/MythicC2Profiles/registry_browser.git --force;
 
-echo "Installing LDAP Browser!";
+echo "**Installing LDAP Browser!**";
 $PWD/mythic-cli install github https://github.com/MythicC2Profiles/ldap_browser.git --force;
 
 echo "Mythic webserver hosted and ready via HTTPS on port 7443!";
