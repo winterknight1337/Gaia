@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 import argparse, sys, os, asyncio, dotenv, getpass, time, shutil
 
+# Copy .env template to .env
+if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
+    shutil.copy(".env-template", ".env")
+
 # Load environment variables first
 if os.path.isfile(".env"):
     config = dotenv.dotenv_values(".env")
@@ -225,14 +229,10 @@ args = global_parser.parse_args()
 
 
 async def main():
-    # If gaia runs on its own without args, print help
+    # If Gaia runs on its own without args, print help
     if args.subcommand == None:
         global_parser.print_help()
         sys.exit(1)
-
-    # Copy .env template to .env
-    if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
-        shutil.copy(".env-template", ".env")
 
     # Install Mythic on designated system
     if args.subcommand == "install":
@@ -264,7 +264,6 @@ async def main():
             
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
-
         print("Authentication success!")
 
         # Update system if requested
