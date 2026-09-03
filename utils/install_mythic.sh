@@ -12,15 +12,11 @@ echo "#########################################";
 # Download, build, and Install Mythic components
 cd /opt/;
 
-echo "########################";
-echo "# Pulling Mythic Repo. #";
-echo "########################";
+echo "**Pulling Mythic Repo.**";
 git clone https://github.com/its-a-feature/Mythic.git --depth 1;
 cd Mythic;
 
-echo "###############################";
-echo "# Building mythic-cli binary. #";
-echo "###############################";
+echo "**Building mythic-cli binary.**";
 make;
 
 echo "**Booting Mythic up for the first time!**";
