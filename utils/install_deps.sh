@@ -44,7 +44,7 @@ elif [ $OS == "debian" ] && [ $VERSION_ID == "13" ]
 
 elif [ $OS == "kali" ]
     then echo '[+] Installing Docker for Kali';
-    then wget https://github.com/its-a-feature/Mythic/raw/refs/heads/master/install_docker_kali.sh;
+    wget https://github.com/its-a-feature/Mythic/raw/refs/heads/master/install_docker_kali.sh;
     chmod 770 install_docker_kali.sh;
     source ./install_docker_kali.sh;
     echo '[+] Cleaning up Docker install script';
@@ -52,7 +52,7 @@ elif [ $OS == "kali" ]
 
 elif [ $OS == "ubuntu" ]
     then echo '[+] Installing Docker for Ubuntu';
-    then wget https://github.com/its-a-feature/Mythic/raw/refs/heads/master/install_docker_ubuntu.sh;
+    wget https://github.com/its-a-feature/Mythic/raw/refs/heads/master/install_docker_ubuntu.sh;
     chmod 770 install_docker_ubuntu.sh;
     source ./install_docker_ubuntu.sh;
     echo '[+] Cleaning up Docker install script';
