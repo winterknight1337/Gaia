@@ -265,6 +265,8 @@ async def main():
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
+        print("Authentication success!")
+
         # Update system if requested
         if args.install_updates == True:
             print("###########################")
