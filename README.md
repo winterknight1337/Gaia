@@ -107,8 +107,8 @@ Modules:
 ### Gaia Install
 Gaia install help
 ```
-./gaia.py install -h
-usage: gaia install [-h] [--install-updates] [--install-deps] [--install-mythic] -S  [-P 22] -u  [-p ] [-i path/to/file] [--stderr] [-k]
+./gaia install -h
+usage: gaia install [-h] [--install-updates] [--install-deps] [--install-mythic] -S  [-P 22] -u  [-p] [-i path/to/file] [--stderr]
 
 options:
   -h, --help                        show this help message and exit
@@ -118,10 +118,9 @@ options:
   -S, --server                      Hostname or IP address of target server
   -P, --port 22                     SSH port of target server
   -u, --user                        User to authenticate as over SSH on target server
-  -p, --password                    SSH user password or SSH key passphrase
+  -p, --password                    Prompt for SSH user password or SSH key passphrase
   -i, --identity-file path/to/file  SSH key for authentication
   --stderr                          Show stderr from install steps from target server after stdout
-  -k, --no-ssl                      Don't verify TLS certificates when authenticating to Mythic
 ```
 
 Mythic and depedency installation example with Gaia.
@@ -133,8 +132,8 @@ The above example assumes a relatively common SSH private key name that paramiko
 ### Gaia Auth
 Gaia auth help
 ```
-./gaia.py auth -h
-usage: gaia auth [-h] -S  -P 7443 -u mythic_admin -p
+./gaia auth -h
+usage: gaia auth [-h] -S  [-P 7443] [-u mythic_admin] -p [-k]
 
 options:
   -h, --help               show this help message and exit
@@ -142,6 +141,7 @@ options:
   -P, --port 7443          Port to access Mythic's web interface
   -u, --user mythic_admin  Target user for Mythic authentication
   -p, --password           Password for target user for Mythic authentication
+  -k, --no-ssl             Don't verify TLS certificates when authenticating to Mythic
 ```
 
 Authenticates to Mythic and dumps the API key to `.env`.
@@ -152,18 +152,19 @@ Authenticates to Mythic and dumps the API key to `.env`.
 ### Gaia Operation
 Gaia operation help
 ```
-./gaia.py operation -h
-usage: gaia operation [-h] {create,assign,list} ...
+./gaia operation -h
+usage: gaia operation [-h] {create,assign,list,webhook} ...
 
 options:
-  -h, --help            show this help message and exit
+  -h, --help                    show this help message and exit
 
 Operations:
 
-  {create,assign,list}
-    create              Create new operations in Mythic
-    assign              Assign users to operations in Mythic
-    list                List existing operations in Mythic
+  {create,assign,list,webhook}
+    create                      Create new operations in Mythic
+    assign                      Assign users to operations in Mythic
+    list                        List existing operations in Mythic
+    webhook                     Manage webhooks on an operation
 ```
 
 List current Mythic operations with Gaia.
@@ -178,33 +179,30 @@ Create a new Mythic operation with Gaia and assign specified users to it.
 
 Assign users to an operation in Mythic.
 ```
-./gaia.py operation assign -o mwccdc -u WinterKnight, tal0n, AGrapplerNamedSam
+./gaia.py operation assign -o mwccdc -u WinterKnight, toothlesstalon, AGrapplerNamedSam
 ```
 
-Gaia operation webhook help
+Gaia's Discord webhook creation help
 ```
 ./gaia.py operation webhook  -h    
-usage: gaia operation webhook [-h] {list,config} ...
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia operation webhook config discord -h
+usage: gaia operation webhook config discord [-h] -u  -o
 
 options:
-  -h, --help     show this help message and exit
-
-Webhook Management:
-
-  {list,config}
-    list         List webhook information on the current operation
-    config       Configure webhook for a given operation
+  -h, --help             show this help message and exit
+  -u, --url              URL to Discord channel to send Mythic notifications
+  -o, --operation-name   Update webhook in given operation (Defaults to current operation of logged in user)
 ```
 
 List Webhook information for Mythic operation
 ```
- ./gaia.py operation webhook list
- Current webhook URL for Operation Chimera is 'https://discord.com/api/webhooks/<server_id>/<string>'
+./gaia.py operation webhook list
+Current webhook URL for Operation Chimera is 'https://discord.com/api/webhooks/<server_id>/<string>'
 ```
 
-Create webhook in Discord for given operation. Note Discord is the only webhook target supported at this time, but Slack may be included in the future if there is demand for it.
+Create webhook in Discord for given operation. Note Discord is the only webhook target supported at this time, but Slack or other services may be included in the future if there is demand for it.
 ```
-./gaia.py operation webhook config discord --url https://discord.com/api/webhooks/<server_id>/<string> -o "SpecterOp"
+./gaia.py operation webhook config discord --url https://discord.com/api/webhooks/<server_id>/<string>
 ```
 
 ### Gaia User
@@ -226,7 +224,7 @@ Listing current payloads in Mythic with Gaia.
 
 Payload creation help
 ```
-./gaia.py payload create -h
+./gaia payload create -h
 usage: gaia payload create [-h] {apollo,poseidon,athena} ...
 
 Create new payloads
@@ -263,7 +261,7 @@ Gaia currently supports DNS record creation, deletion, and listing. As of now Ga
 #### Gaia DNS Through Cloudflare
 Cloudflare domain record creation help
 ```
-./gaia.py dns cloudflare create -h
+./gaia dns cloudflare create -h
 usage: gaia dns cloudflare create [-h] [-k] [-d ] [-n ] [-v ] [-t {a,aaaa,cname}]
 
 options:
@@ -320,7 +318,7 @@ Listing current records in Porkbun for a given domain
 
 Porkbun domain record creation help
 ```
-./gaia.py dns porkbun create -h
+./gaia dns porkbun create -h
 usage: gaia dns porkbun create [-h] [-k] [-s] [-d ] [-n ] [-v ] [-t {a,aaaa,cname}]
 
 options:
@@ -340,7 +338,7 @@ Porkbun domain record creation
 
 Porkbun domain record deletion help
 ```
-./gaia.py dns porkbun delete -h
+./gaia dns porkbun delete -h
 usage: gaia dns porkbun delete [-h] [-k] [-s] [-d ] [-n ]
 
 options:
@@ -361,44 +359,42 @@ This is the area that I expect students to struggle with the most. I will be wri
 
 Gaia redirector help
 ```
-./gaia.py redirector -h
-usage: gaia redirector [-h] {create,delete,certbot,generate,tunnel} ...
+./gaia redirector -h
+usage: gaia redirector [-h] {create,delete,list,certbot,generate,tunnel} ...
 
 options:
-  -h, --help                               show this help message and exit
+  -h, --help                                    show this help message and exit
 
 Redirector Actions:
   Manage redirectors
 
-  {create,delete,certbot,generate,tunnel}
-    create                                 Create a new redirector
-    delete                                 Delete a redirector
-    certbot                                Install Certbot and enable HTTPS on a redirector
-    generate                               Generate redirector rules based on existing payload in Mythic and upload them to redirector
-    tunnel                                 Configure SSH tunnel between Mythic server and redirector
+  {create,delete,list,certbot,generate,tunnel}
+    create                                      Create a new redirector
+    delete                                      Delete a redirector
+    list                                        Show current redirector infrastructure
+    certbot                                     Install Certbot and enable HTTPS on a redirector
+    generate                                    Generate redirector rules based on existing payload in Mythic and upload them to redirector
+    tunnel                                      Configure SSH tunnel between Mythic server and redirector
 ```
 
 Currently redirectors can only be created in AWS. Future versions of Gaia will include the ability to create redirectors in Azure as well.
 AWS Redirector creation help
 ```
-./gaia.py redirector create aws -h     
-usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.micro,t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
-                                                                                                                                         
-options:                                                                                               
-  -h, --help                                                            show this help message and exit
-  -a, --access-key                                                      Enter the AWS access key when requested
-  -s, --secret-key                                                      Enter the AWS secret key when requested
+./gaia redirector create aws -h
+usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
+
+options:
+  -h, --help                                                   show this help message and exit
+  -a, --access-key                                             Enter the AWS access key when requested
+  -s, --secret-key                                             Enter the AWS secret key when requested
   -S, --size {t2.small,t2,medium,t3.micro,t3.small,t3.medium}  Size of redirector EC2
-  -r, --region REGION                                                   Create redirector in target AWS region
-  -o, --os {debian,ubuntu}                                              Specify OS for the redirector
+  -r, --region REGION                                          Create redirector in target AWS region
+  -o, --os {debian,ubuntu}                                     Specify OS for the redirector
 ```
 
 Viewing current Gaia redirectors in AWS.
 ```
 ./gaia redirector list aws
-Getting Gaia EC2s from AWS
-Instances in account:
-ID: i-0da415d00a5d16257  Status: running  Size: t2.small  Arch: x86_64  Public IP: 18.191.140.215
 ```
 Gaia determines that a redirector was created by it by tagging `createdBy:gaia` on EC2 resource creation. When Gaia queries for EC2 instances, it uses this tag to determine if it's Gaia affiliated or not, then skips the resource if it's not.
 
@@ -416,8 +412,8 @@ When Gaia creates infrastructure in AWS, it tags it with `createdBy:gaia`. The A
 
 Redirector certbot help
 ```
-./gaia.py redirector certbot -h    
-usage: gaia redirector certbot [-h] -d  -S  -u  [-P ] [-i path/to/file] [--stderr]
+./gaia redirector certbot -h
+usage: gaia redirector certbot [-h] -d  [-S ] [-u ] [-P ] [-i path/to/file] [--stderr]
 
 options:
   -h, --help                        show this help message and exit
@@ -436,8 +432,8 @@ Creating a TLS certificate with Certbot
 
 Redirector generate help
 ```
-./baia.py redirector generate -h
-usage: gaia redirector generate [-h] -u  -t  -rS  -ru  [-rp ] [-ri path/to/file]
+./gaia redirector generate -h
+usage: gaia redirector generate [-h] -u  -t  [-rS ] [-ru ] [-rp ] [-ri path/to/file]
 
 options:
   -h, --help                                   show this help message and exit
@@ -456,8 +452,8 @@ options:
 
 Gaia redirector tunnel help
 ```
-./gaia.py redirector tunnel -h
-usage: gaia redirector tunnel [-h] -mS  [-mP ] -mu  [-mp ] [-mi path/to/file] -rS  -ru 
+./gaia redirector tunnel -h
+usage: gaia redirector tunnel [-h] -mS  [-mP ] -mu  [-mp ] [-mi path/to/file] [-rS ] [-ru ]
 
 options:
   -h, --help                                    show this help message and exit

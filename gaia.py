@@ -72,14 +72,14 @@ list_operation_subparser = operation_subparser.add_parser(name="list", formatter
 webhook_operation_subparser = operation_subparser.add_parser(name="webhook", formatter_class=formatter, help="Manage webhooks on an operation")
 webhook_subparser = webhook_operation_subparser.add_subparsers(title="Webhook Management", dest="webhook", description="")
 list_webhook_subparser = webhook_subparser.add_parser(name="list", formatter_class=formatter, help="List webhook information on the current operation")
-list_webhook_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
+list_webhook_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Show webhook config of given operation (Defaults to current operation of logged in user)")
 
 
 config_webhook_subparser = webhook_subparser.add_parser(name="config", formatter_class=formatter, help="Configure webhook for a given operation")
 platform_webhook_subparser = config_webhook_subparser.add_subparsers(title="Platform", dest="webhook_platform", description="")
 discord_platform_subparser = platform_webhook_subparser.add_parser(name="discord", formatter_class=formatter, help="Configure webhooks for Discord")
 discord_platform_subparser.add_argument("-u", "--url", required=True, type=str, metavar="", help="URL to Discord channel to send Mythic notifications")
-discord_platform_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
+discord_platform_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
 
 
 # Mythic users management
@@ -90,7 +90,7 @@ create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/
 create_user_subparser.add_argument("-d", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
 create_user_subparser.add_argument("--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
 
-list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users.")
+list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users")
 
 assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
 assign_user_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")

