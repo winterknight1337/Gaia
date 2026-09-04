@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 import argparse, sys, os, asyncio, dotenv, getpass, time, shutil
 
+# Copy .env template to .env
+if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
+    shutil.copy(".env-template", ".env")
+
 # Load environment variables first
 if os.path.isfile(".env"):
     config = dotenv.dotenv_values(".env")
@@ -19,7 +23,7 @@ global_parser = argparse.ArgumentParser(
     )
 
 # Global switches
-global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.0.1", help="Display software version")
+global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.1", help="Display software version")
 
 
 # Core modules
@@ -48,8 +52,8 @@ install_parser.add_argument("--stderr", action="store_true", help="Show stderr f
 # Authentication options
 auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
 auth_parser.add_argument("-P", "--port", default=7443, type=int, metavar='7443', help="Port to access Mythic's web interface")
-auth_parser.add_argument("-u", "--user", required=True, type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
-auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Prompt for password for target user for Mythic authentication")
+auth_parser.add_argument("-u", "--user", type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
+auth_parser.add_argument("-p", "--password", required=True, action="store_true", help="Password for target user for Mythic authentication")
 auth_parser.add_argument('-k', "--no-ssl", action="store_true", help="Don't verify TLS certificates when authenticating to Mythic")
 
 
@@ -58,32 +62,40 @@ operation_subparser = operation_parser.add_subparsers(title="Operations", dest="
 create_operation_subparser = operation_subparser.add_parser(name="create", formatter_class=formatter, help="Create new operations in Mythic")
 create_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Name of new operation in Mythic")
 
-# delete_operation_subparser = operations_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete existing operations in Mythic")
-# delete_operation_subparser.add_argument("-n", "--name", required=True, type=str, metavar='', help="Specifies which operation to delete")
-
 assign_operation_subparser = operation_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
 assign_operation_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
 assign_operation_subparser.add_argument("-u", "--users", required=True, nargs="+", type=str, metavar='', help="Users to be assigned to target operation")
+assign_operation_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
 
-operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
+list_operation_subparser = operation_subparser.add_parser(name="list", formatter_class=formatter, help="List existing operations in Mythic")
+
+webhook_operation_subparser = operation_subparser.add_parser(name="webhook", formatter_class=formatter, help="Manage webhooks on an operation")
+webhook_subparser = webhook_operation_subparser.add_subparsers(title="Webhook Management", dest="webhook", description="")
+list_webhook_subparser = webhook_subparser.add_parser(name="list", formatter_class=formatter, help="List webhook information on the current operation")
+list_webhook_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Show webhook config of given operation (Defaults to current operation of logged in user)")
+
+
+config_webhook_subparser = webhook_subparser.add_parser(name="config", formatter_class=formatter, help="Configure webhook for a given operation")
+platform_webhook_subparser = config_webhook_subparser.add_subparsers(title="Platform", dest="webhook_platform", description="")
+discord_platform_subparser = platform_webhook_subparser.add_parser(name="discord", formatter_class=formatter, help="Configure webhooks for Discord")
+discord_platform_subparser.add_argument("-u", "--url", required=True, type=str, metavar="", help="URL to Discord channel to send Mythic notifications")
+discord_platform_subparser.add_argument("-o", "--operation-name", type=str, metavar="", help="Update webhook in given operation (Defaults to current operation of logged in user)")
 
 
 # Mythic users management
 user_subparser = user_parser.add_subparsers(title="User Actions", dest="user", description="")
 create_user_subparser = user_subparser.add_parser(name="create", formatter_class=formatter, help="Create new users in Mythic")
 create_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Specify usernames of new Mythic users")
-create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file listing users to be created")
+create_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing users to be created")
 create_user_subparser.add_argument("-d", "--cred-file", type=str, metavar='path/to/file', help="Location of file to dump newly created credentials")
 create_user_subparser.add_argument("--cred-stdout", action="store_true", help="Print newly created user credentials to the terminal")
 
-# delete_user_subparser = user_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete users from Mythic")
-# delete_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Specify usernames of Mythic users to delete")
+list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Displays Mythic users")
 
-# list_user_subparser = user_subparser.add_parser(name="list", formatter_class=formatter, help="Lists users in Mythic")
-
-# assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
-# assign_user_subparser.add_argument("-o", "--operation", required=True, type=str, metavar='', help="Assign users to target operation")
-# assign_user_subparser.add_argument("-u", "--users", required=True, nargs="+", type=list, metavar='', help="Users to be assigned to target operation")
+assign_user_subparser = user_subparser.add_parser(name="assign", formatter_class=formatter, help="Assign users to operations in Mythic")
+assign_user_subparser.add_argument("-o", "--operation-name", required=True, type=str, metavar='', help="Assign users to target operation")
+assign_user_subparser.add_argument("-u", "--users", nargs="+", type=str, metavar='', help="Mythic users to be assigned to target operation")
+assign_user_subparser.add_argument("-l", "--user-list", type=str, metavar='path/to/file', help="Location of file containing Mythic users to be added to operation")
 
 
 # Mythic payloads 
@@ -111,13 +123,11 @@ athena_subparser.add_argument("-p", "--callback-port", type=int, default=80, met
 athena_subparser.add_argument("-k", "--callback-killdate", type=str, metavar='', help="Target date after which the C2 agents will no longer run (YYYY-MM-DD)")
 athena_subparser.add_argument("-o", "--os", required=True, type=str, choices=["linux", "macos", "windows"], help="Build C2 agents for the target operating system")
 
-# delete_payload_subparser = payload_subparser.add_parser(name="delete", formatter_class=formatter, description="Delete payloads")
-
 list_payload_subparser = payload_subparser.add_parser(name="list", formatter_class=formatter, description="List current Mythic payloads")
 
 
 # DNS management
-# Cloudflare optionsc
+# Cloudflare options
 dns_registrar_subparser = dns_parser.add_subparsers(title="Registrar", dest="registrar", description='')
 
 cloudflare_subparser = dns_registrar_subparser.add_parser(name="cloudflare", formatter_class=formatter, help="Manage DNS records via Cloudflare")
@@ -137,8 +147,10 @@ cf_delete_subparser.add_argument("-k", "--api-key", action="store_true", help="E
 cf_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Deletes records from target domain")
 cf_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
+# List domains
 cf_list_domains = cf_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
 cf_list_domains.add_argument("-k", "--api-key", action="store_true", help="Enter Cloudflare API token when requested")
+cf_list_domains.add_argument("-d", "--domain", type=str, metavar='', help="Display records for a given domain")
 
 # Porkbun options
 porkbun_subparser = dns_registrar_subparser.add_parser(name="porkbun", formatter_class=formatter, help="Manage DNS records via Porkbun")
@@ -160,9 +172,11 @@ pb_delete_subparser.add_argument("-s", "--secret-key", action="store_true", help
 pb_delete_subparser.add_argument("-d", "--domain", type=str, metavar='', help="Deletes records from target domain")
 pb_delete_subparser.add_argument("-n", "--record-name", type=str, metavar='', help="Name of domain record to delete")
 
+# List domains
 pb_list_domains = pb_actions_subparser.add_parser(name="list", formatter_class=formatter, help="List current domain records")
 pb_list_domains.add_argument("-k", "--api-key", action="store_true", help="Enter the Porkbun API key when requested")
 pb_list_domains.add_argument("-s", "--secret-key", action="store_true", help="Enter the Porkbun secret key when requested")
+pb_list_domains.add_argument("-d", "--domain", type=str, metavar='', help="Display records for a given domain")
 
 
 # Redirector config
@@ -173,28 +187,31 @@ cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="clou
 aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
 aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Enter the AWS access key when requested")
 aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the AWS secret key when requested")
-aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.micro", "t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
+aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
 aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
-
 
 delete_redir_subparser = redir_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a redirector")
 cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to decommission Gaia-created redirector infrastructure in")
 aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Delete Gaia redirector infrastructure from AWS")
 
+list_redir_subparser = redir_subparser.add_parser(name="list", formatter_class=formatter, help="Show current redirector infrastructure")
+cloud_list_redir_subparser = list_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to view Gaia related infrastructure")
+aws_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="View Gaia redirector infrastructure in AWS")
+
 certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
 certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
-certbot_redir_subparser.add_argument("-S", "--redirector-server", required=True, type=str, metavar='', help="Hostname or IP address of target server to execute certbot")
-certbot_redir_subparser.add_argument("-u", "--redirector-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on target server")
-certbot_redir_subparser.add_argument("-P", "--password", action="store_true", help="Prompt for SSH user password or SSH key passphrase")
+certbot_redir_subparser.add_argument("-S", "--redirector-server", type=str, metavar='', help="Hostname or IP address of target server to execute certbot")
+certbot_redir_subparser.add_argument("-u", "--redirector-user", type=str, metavar='', help="User to authenticate as over SSH on target server")
+certbot_redir_subparser.add_argument("-P", "--password", type=str, metavar='', help="SSH user password or SSH key passphrase")
 certbot_redir_subparser.add_argument("-i", "--identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 certbot_redir_subparser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
 rules_redir_subparser = redir_subparser.add_parser(name="generate", formatter_class=formatter, help="Generate redirector rules based on existing payload in Mythic and upload them to redirector")
 rules_redir_subparser.add_argument("-u", "--payload-uuid", required=True, type=str, metavar='', help="UUID of payload to use as the basis of apache mod_rewrite rule generation")
 rules_redir_subparser.add_argument("-t", "--redirect-target", required=True, type=str, metavar='', help="URL of website to redirect non-c2 traffic to")
-rules_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
+rules_redir_subparser.add_argument("-rS", "--redir-server", type=str, metavar='', help="Hostname or IP address of redirector server")
+rules_redir_subparser.add_argument("-ru", "--redir-ssh-user", type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 rules_redir_subparser.add_argument("-rp", "--redir-ssh-password", type=str, metavar='', help="Redirector SSH user password or SSH key passphrase")
 rules_redir_subparser.add_argument("-ri", "--redir-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
 
@@ -204,36 +221,38 @@ tunnel_redir_subparser.add_argument("-mP", "--mythic-ssh-port", default=22, type
 tunnel_redir_subparser.add_argument("-mu", "--mythic-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 tunnel_redir_subparser.add_argument("-mp", "--mythic-ssh-password", type=str, metavar='', help="Mythic SSH user password or SSH key passphrase")
 tunnel_redir_subparser.add_argument("-mi", "--mythic-ssh-identity-file", type=str, metavar='path/to/file', help="SSH key for authentication")
-tunnel_redir_subparser.add_argument("-rS", "--redir-server", required=True, type=str, metavar='', help="Hostname or IP address of redirector server")
-tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", required=True, type=str, metavar='', help="User to authenticate as over SSH on redirector server")
+tunnel_redir_subparser.add_argument("-rS", "--redir-server", type=str, metavar='', help="Hostname or IP address of redirector server")
+tunnel_redir_subparser.add_argument("-ru", "--redir-ssh-user", type=str, metavar='', help="User to authenticate as over SSH on redirector server")
 
 args = global_parser.parse_args()
 ##################################################################  END CLI PARSING ##################################################################
 
 
 async def main():
-    # If gaia runs on its own without args, print help
+    # If Gaia runs on its own without args, print help
     if args.subcommand == None:
         global_parser.print_help()
         sys.exit(1)
 
-    # Copy .env template to .env
-    if os.path.isfile(".env-template") == True and os.path.isfile(".env") == False:
-        shutil.copy(".env-template", ".env")
-
     # Install Mythic on designated system
     if args.subcommand == "install":
-        import paramiko, utils.install
+        import utils.install, utils.env
 
         # Initialize SSH
-        ssh = paramiko.SSHClient()
-        ssh.load_system_host_keys()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh = utils.install.initialize_ssh()
         
         # Get connection information
-        server = args.server
+        server = utils.env.resolve_env_inputs(arg_parameter=args.server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+        if server == None:
+            print("Specify a install server with --server or in .env.")
+            sys.exit(1)
+
+        user = utils.env.resolve_env_inputs(arg_parameter=args.user, env_key="MYTHIC_SERVER_USER", env=config)
+        if user == None:
+            print("Specify a server user with --user or in .env.")
+            sys.exit(1)
+
         port = args.port
-        user = args.user
         display_stderr = args.stderr
         ssh_key = args.identity_file
 
@@ -245,8 +264,8 @@ async def main():
             
         # Paramiko attempts SSH key auth first, then password as a fallback
         ssh.connect(hostname=server, port=port, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
+        print("Authentication success!")
 
-        
         # Update system if requested
         if args.install_updates == True:
             print("###########################")
@@ -325,45 +344,59 @@ async def main():
         utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
         utils.env.update_env("MYTHIC_API_KEY", api_token)
 
-        print("Mythic authentication successful!")
+        print("Mythic authentication successful! JWT dumped to .env!")
         sys.exit(0)
 
     # Handles DNS management
     if args.subcommand == "dns":
         import utils.env
 
+        if args.registrar == None:
+            dns_parser.print_help()
+            sys.exit(0)
+
         if args.registrar == "cloudflare":
             # Validate that we have the CF API key
             import utils.dns.cf
 
-            # Pull API key from env
-            if args.api_key == False:
-                api_token = config["CLOUDFLARE_API_TOKEN"]
+            if args.dns_action == None:
+                cloudflare_subparser.print_help()
+                sys.exit(0)
 
-            # Sepcify API key
-            elif args.api_key == True:
-                api_token = getpass.getpass("Cloudflare API Key: ")
-
-            # Update env file with API key
-            if api_token != None:
-                utils.env.update_env(env_key="CLOUDFLARE_API_TOKEN", env_value=api_token)
-            else:
+            # Get the API key from env or CLI. Update env if needed
+            api_token = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="CLOUDFLARE_API_TOKEN", getpass_text="Cloudflare API Key: ", env=config)
+            if api_token == None:
                 print("Specify a Cloudflare API Key with --api-key or in .env.")
                 sys.exit(1)
 
             # Print active domains
             if args.dns_action == "list":
+
                 # Get the domains listed in the account
                 domains = utils.dns.cf.get_domains(api_token=api_token)
 
-                # Print active domains
-                print("Active domains:")
-                for i in domains["result"]:
-                    if i["status"] == "active":
-                        print(i["name"])
+                # Print domian records
+                if args.domain == None:
+
+                    # Print domains in tabular format
+                    utils.dns.cf.print_domains(domains=domains)
+
+                elif args.domain != None:
+                    domain = args.domain
+
+                    # Get the domain ID from CF
+                    for i in domains["result"]:
+                        if i["name"] == domain:
+                            domain_id = i["id"]
+                            break
+
+                    # Get the domain records
+                    domain_records = utils.dns.cf.get_domain_records(api_token=api_token, zone_id=domain_id)
+
+                    # print domain records in tabular format
+                    utils.dns.cf.print_domain_records(domain_records=domain_records["result"])
 
                 sys.exit(0)
-
 
             if args.dns_action == "create":
                 domain = args.domain
@@ -461,52 +494,43 @@ async def main():
                     print("No records to delete.")
                     sys.exit(1)
 
-
         if args.registrar == "porkbun":
             import utils.dns.porkbun
             domain_id = None
 
-            # Pull Porkbun API from env
-            if args.api_key == False:
-                api_pk1 = config["PORKBUN_API_KEY"]
+            if args.dns_action == None:
+                porkbun_subparser.print_help()
+                sys.exit(1)
 
-            # Sepcify API key
-            elif args.api_key == True:
-                api_pk1 = getpass.getpass("Porkbun API Key: ")
-
-            # Update env file with API key
-            if api_pk1 != '':
-                utils.env.update_env(env_key="PORKBUN_API_KEY", env_value=api_pk1)
-            else:
+            # Get the API key from env or CLI. Update env if needed
+            api_pk1 = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="PORKBUN_API_KEY", getpass_text="Porkbun API Key: ", env=config)
+            if api_pk1 == None:
                 print("Specify a Porkbun API Key with --api-key or in .env.")
                 sys.exit(1)
-            
-            # Pull Porkbun secret from env
-            if args.secret_key == False:
-                api_sk1 = config["PORKBUN_SECRET_KEY"]
 
-            # Sepcify Secret key
-            elif args.secret_key == True:
-                api_sk1 = getpass.getpass("Porkbun Secret Key: ")
-
-            # Update env file with API key
-            if api_sk1 != '':
-                utils.env.update_env(env_key="PORKBUN_SECRET_KEY", env_value=api_sk1)
-            else:
+            # Get the API key from env or CLI. Update env if needed
+            api_sk1 = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="PORKBUN_SECRET_KEY", getpass_text="Porkbun Secret Key: ", env=config)
+            if api_sk1 == None:
                 print("Specify a Porkbun Secret Key with --secret-key or in .env.")
                 sys.exit(1)
 
             if args.dns_action == "list":
-                domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+                if args.domain == None:
+                    domains = utils.dns.porkbun.get_domains(api_pk1, api_sk1)
+                    
+                    # Print domains in tabular format
+                    utils.dns.porkbun.print_domains(domains=domains)
+                    
+                elif args.domain != None:
 
-                # Print active domains
-                print("Active domains:")
-                for i in domains["domains"]:
-                    if i["status"] == "ACTIVE":
-                        print(i["domain"])
+                    # Get the records for the domain
+                    domain = args.domain
+                    domain_records = utils.dns.porkbun.get_domain_records(api_key=api_pk1, secret_key=api_sk1, domain=domain)
+
+                    # print domain records in tabular format
+                    utils.dns.porkbun.print_domain_records(domain_records=domain_records["records"])
 
                 sys.exit(0)
-
 
             if args.dns_action == "create":
                 target_domain = None
@@ -598,44 +622,64 @@ async def main():
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
         import utils.redirector, paramiko, utils.install, utils.env
+
+        if args.redir_action == None:
+            redir_parser.print_help()
+            sys.exit(0)
+
+        # Create redir infra
         if args.redir_action == "create":
+
+            if args.cloud == None:
+                create_redir_subparser.print_help()
+                sys.exit(0)
+
             if args.cloud == "aws":
                 import boto3
 
-                if config["AWS_ACCESS_KEY_ID"] != "":
-                    aws_access_key = config["AWS_ACCESS_KEY_ID"]
-                else :
-                    aws_access_key = getpass.getpass("AWS Access Key: ")
-                    utils.env.update_env("AWS_ACCESS_KEY_ID", aws_access_key)
+                # Get AWS access key and update env if required
+                aws_access_key = utils.env.resolve_env_api_key(arg_parameter=args.access_key, env_key="AWS_ACCESS_KEY_ID", getpass_text="AWS Access Key: ", env=config)
+                if aws_access_key == None:
+                    print("Ensure that an AWS access key is specified in either .env or passed via cli")
+                    sys.exit(1)
 
-                if config["AWS_SECRET_ACCESS_KEY"] != "":
-                    aws_secret_key = config["AWS_SECRET_ACCESS_KEY"]
-                else :
-                    aws_secret_key = getpass.getpass("AWS Secret Key: ")
-                    utils.env.update_env("AWS_SECRET_ACCESS_KEY", aws_secret_key)
+                aws_secret_key = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="AWS_SECRET_ACCESS_KEY", getpass_text="AWS Secret Key: ",env=config)
+                if aws_secret_key == None:
+                    print("Ensure that an AWS secret key is specified in either .env or passed via cli")
+                    sys.exit(1)
 
-                if config["AWS_DEFAULT_REGION"] != "":
-                    aws_region = config["AWS_DEFAULT_REGION"]
-                else :
-                    aws_region = args.region
-                    utils.env.update_env("AWS_DEFAULT_REGION", aws_region)
+                aws_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AWS_DEFAULT_REGION", env=config)
+                if aws_region == None:
+                    print("Ensure that an AWS region is specified in either .env or passed via cli")
+                    sys.exit(1)
 
                 ec2_size = args.size
 
                 # Connect to EC2 Service
                 print("Connecting to AWS")
                 aws_session = boto3.Session(aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, region_name=aws_region)
-                ec2_client = aws_session.client("ec2")   
+                ec2_client = aws_session.client("ec2")
+
+                # Assign EC2 OS and user if in .env. This doesn't use the standard workflow because the user is dependent on the OS.
+                if config["REDIRECTOR_OS"] != '':
+                    ec2_os = config["REDIRECTOR_OS"]
+
+                if config["REDIRECTOR_USER"] != '':
+                    ec2_user = config["REDIRECTOR_USER"]
 
                 # Specify OS for redirector EC2
                 if args.os == "ubuntu":
                     ec2_os = "ubuntu"
                     ec2_user = "ubuntu"
-                    # Add these to env
+                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
+                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
 
                 elif args.os == "debian":
                     ec2_os = "debian"
                     ec2_user = "admin"
+                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
+                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
+
 
                 # Create EC2 key pair
                 print("Creating gaia-redir keypair for EC2")
@@ -669,9 +713,7 @@ async def main():
                 instance_public_ip = interface_info["NetworkInterfaces"][0]["Association"]["PublicIp"]
 
                 # Initialize SSH
-                ssh = paramiko.SSHClient()
-                ssh.load_system_host_keys()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh = utils.install.initialize_ssh()
 
                 # Update EC2s
                 print("Connecting to EC2 instance over SSH.")
@@ -700,7 +742,13 @@ async def main():
                 ssh.close()
                 sys.exit(0)
 
+        # Delete redir infra
         if args.redir_action == "delete":
+
+            if args.cloud == None:
+                delete_redir_subparser.print_help()
+                sys.exit(0)
+
             if args.cloud == "aws":
                 import boto3
 
@@ -767,6 +815,29 @@ async def main():
                 print("Gaia cleanup complete!")
                 sys.exit(0)
     
+        # Shows redir infra
+        if args.redir_action == "list":
+
+            if args.cloud == None:
+                list_redir_subparser.print_help()
+                sys.exit(0)
+
+            if args.cloud == "aws":
+                import boto3
+
+                # Auth to AWS and EC2
+                aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
+                ec2_client = aws_session.client("ec2")  
+
+                # Query for EC2s with gaia tags on them
+                print("Getting Gaia EC2s from AWS")
+                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+
+                # Print EC2 information in tabular format
+                utils.redirector.print_gaia_ec2(ec2_data=ec2_info)
+
+                sys.exit(0)
+
         # Handles configuration of certbot
         if args.redir_action == "certbot":
             import paramiko, utils.install
@@ -775,25 +846,30 @@ async def main():
             certbot_domain = args.domain
 
             # Initialize SSH
-            ssh = paramiko.SSHClient()
-            ssh.load_system_host_keys()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh = utils.install.initialize_ssh()
 
-            # Get connection information
-            server = args.redirector_server
-            user = args.redirector_user
+            # Get server from CLI or env, update env if required
+            server = utils.env.resolve_env_inputs(arg_parameter=args.redirector_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
+            if server == None:
+                print("Ensure that a server is specified in either .env or passed via cli")
+                sys.exit(1)
+
+
+            # Get user from CLI or env, update env if required
+            user = utils.env.resolve_env_inputs(arg_parameter=args.redirector_user, env_key="REDIRECTOR_USER", env=config)
+            if user == None:
+                print("Ensure that a user is specified in either .env or passed via cli")
+                sys.exit(1)
 
             # Determine if we show stderr on streamed terminal output
-            if args.stderr == True:
-                display_stderr = True
-            else:
-                display_stderr = False
+            display_stderr = args.stderr
 
             # Ready SSH key if one is specified
             if args.identity_file != None:
                 ssh_key = args.identity_file.strip()
             else:
-                ssh_key = None
+                home_dir = os.path.expanduser("~")
+                ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
 
             # Ready password or ssh passphrase
             if args.password == True:
@@ -813,11 +889,12 @@ async def main():
             ssh.close()
             sys.exit(0)
 
+        # Handles generation of mod_rewrite rules
         if args.redir_action == "generate":
             payload_uuid = args.payload_uuid
-            redirector_server = args.redir_server
-            redirector_server_user = args.redir_ssh_user
             redirect_target = args.redirect_target
+            redirector_server = utils.env.resolve_env_inputs(arg_parameter=args.redir_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
+            redirector_server_user = utils.env.resolve_env_inputs(arg_parameter=args.redir_ssh_user, env_key="REDIRECTOR_USER", env=config)
 
             if args.redir_ssh_password == True:
                 redirector_ssh_password = getpass.getpass("Redirector User SSH Password")
@@ -827,7 +904,8 @@ async def main():
             if args.redir_ssh_identity_file != None:
                 redirector_ssh_key = args.redir_ssh_identity_file
             else:
-                redirector_ssh_key = None
+                home_dir = os.path.expanduser("~")
+                ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
 
             # Query for mod_rewrite rules
             print("Generating base redirector rules.")
@@ -851,9 +929,7 @@ async def main():
 
             # Upload mod_rewrite rules to the redirector and reboot apache
             # Initialize SSH for redirector
-            redir_tunnel = paramiko.SSHClient()
-            redir_tunnel.load_system_host_keys()
-            redir_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            redir_tunnel = utils.install.initialize_ssh()
 
             print("Connecting to redirector.")
             redir_tunnel.connect(hostname=redirector_server, port=22, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
@@ -869,11 +945,12 @@ async def main():
             redir_tunnel.close()
             sys.exit(0)
 
+        # Creates SSH tunnel and systemd wrapper service
         if args.redir_action == "tunnel":
             import paramiko, utils.redirector, utils.payloads, utils.install
 
-            mythic_server = args.mythic_server
-            mythic_server_user = args.mythic_ssh_user
+            mythic_server = utils.env.resolve_env_inputs(arg_parameter=args.mythic_server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+            mythic_server_user = utils.env.resolve_env_inputs(arg_parameter=args.mythic_ssh_user, env_key="MYTHIC_SERVER_USER", env=config)
             mythic_ssh_port = args.mythic_ssh_port
 
             if args.mythic_ssh_identity_file != None:
@@ -887,15 +964,13 @@ async def main():
                 mythic_ssh_password = None
 
             # Redirector server connection information
-            redirector_server = args.redir_server
-            redirector_server_user = args.redir_ssh_user
+            redirector_server = utils.env.resolve_env_inputs(arg_parameter=args.redir_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
+            redirector_server_user = utils.env.resolve_env_inputs(arg_parameter=args.redir_ssh_user, env_key="REDIRECTOR_USER", env=config)
             
             # Create the SSH tunnel to the redirector
             # Initialize SSH for redirector
-            mythic_tunnel = paramiko.SSHClient()
-            mythic_tunnel.load_system_host_keys()
-            mythic_tunnel.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+            mythic_tunnel = utils.install.initialize_ssh()
+            
             print("Connecting to Mythic server.")
             mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
 
@@ -936,34 +1011,49 @@ async def main():
     if args.subcommand == "user":
         import utils.users, utils.operations
 
-        users_stdin = args.users
-        stdout = args.cred_stdout
-        # operation = args.operation
+        if args.user == None:
+            user_parser.print_help()
+            sys.exit(0)
 
-        # Ready user list as input and prepares for merge later
-        if args.user_list:
-            print("Reading user list from file.")
-            user_list_in = args.user_list.strip()
-        else:
-            user_list_in = []
+        if args.user == "list":
+            mythic_users = await utils.users.get_mythic_users(mythic_instance=mythic_session)
 
-        # Ready user credentials list for output
-        if args.cred_file:
-            user_list_out = args.cred_file.strip()
-            cred_list = []
-        else:
-            cred_list = None
+            # Print Mythic user information in tabular format
+            utils.users.print_mythic_users(mythic_users=mythic_users)
+            
+            sys.exit(0)
 
-        # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
-        print("Merging user file and cli specified users into a single list.")
-        users = utils.users.prepare_users(users_stdin=users_stdin, user_file_in=user_list_in)
-        
         # Create new users before assigning them to default operation (The first opeation that returns when getting all operations)
         if args.user == "create":
-            
+
+            if args.users == None and args.user_list == None:
+                create_user_subparser.print_help()
+                sys.exit(0)
+
+            users_stdin = args.users
+            stdout = args.cred_stdout
+
+            # Ready user list as input and prepares for merge later
+            if args.user_list:
+                print("Reading user list from file.")
+                user_list_in = args.user_list.strip()
+            else:
+                user_list_in = []
+
+            # Ready user credentials list for output
+            if args.cred_file:
+                user_list_out = args.cred_file.strip()
+                cred_list = []
+            else:
+                cred_list = None
+
+            # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+            print("Merging user file and cli specified users into a single list.")
+            users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
+                    
             print("Creating new Mythic users.")
             for i in users:
-                user_creds = await utils.users.create_user(mythic_instance=mythic_session, username=i)
+                user_creds = await utils.users.create_mythic_user(mythic_instance=mythic_session, username=i)
                 
                 # Print creds if user specifies to
                 if stdout == True:
@@ -979,105 +1069,177 @@ async def main():
                 print("Dumping new Mythic user credentials to disk.")
                 with open(user_list_out, 'a') as file:
                     file.writelines(cred_list)
-                
-    # if args.user == "delete":
-    #     pass    
-    
-    # if args.user == "assign":
-    #     # Get current operations to prepare to assign a default for a new user
-    #     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation, username=i)
+        
+        # Assigns users to operations (functionally the same as operations subcommand, just providing another way to do it.)
+        if args.user == "assign":
 
-    # if args.user == "list":
-    #     pass
+            # Get current operations to prepare to assign a default for a new user
+            operation_name = args.operation_name
+            users_stdin = args.users 
+            
+            # Ready user list as input and prepares for merge later
+            if args.user_list:
+                print("Reading user list from file")
+                user_list_in = args.user_list.strip()
+            else:
+                user_list_in = []
+
+            # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+            print("Merging user file and cli specified users into a single list.")
+            users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
+
+            print("Assigning users to operation")
+            for i in users:
+                try:
+                    await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
+                    print(f"Assigned {i} to {operation_name}")
+                except Exception: # Surely Except Exception wont bite me later.
+                    print(f"User {i} already assigned to {operation_name}")
+                    continue
 
         sys.exit(0)
 
     # Process operations
     if args.subcommand == "operation":
-        import utils.operations, utils.env
+        import utils.operations, utils.env, utils.users
+
+        if args.operation == None:
+            operation_parser.print_help()
+            sys.exit(0)
 
         if args.operation == "list":
-            operations = await utils.operations.get_operations(mythic_instance=mythic_session)
-            print("Current operations in Mythic:")
-            for i in operations:
-                print(i)
+            operations = await utils.operations.get_operation_information(mythic_instance=mythic_session)
+
+            # Print operations in tabular format
+            utils.operations.print_operations(operations=operations)
+
+            sys.exit(0)
 
         # Creates new operation
         if args.operation == "create":
             operation = args.name
-            print(f"Creating new Operation: {operation}")
+            print(f"Creating new operation: {operation}")
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
             utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
 
+            sys.exit(0)
+
         # Assigns users to operations
         if args.operation == "assign":
+            # Get current operations to prepare to assign a default for a new user
             operation_name = args.operation_name
-            users = args.users
+            users_stdin = args.users 
+            
+            # Ready user list as input and prepares for merge later
+            if args.user_list:
+                print("Reading user list from file")
+                user_list_in = args.user_list.strip()
+            else:
+                user_list_in = []
+
+            # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
+            print("Merging user file and cli specified users into a single list.")
+            users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
 
             print("Assigning users to operation")
             for i in users:
-                await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
-                print(f"Assigned user {i} to operation {operation_name}")
+                try:
+                    await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
+                    print(f"Assigned {i} to {operation_name}")
+                except Exception: # Surely Except Exception wont bite me later.
+                    print(f"User {i} already assigned to {operation_name}")
+                    continue
+
+            sys.exit(0)
+
+        if args.operation == "webhook":
+
+            if args.webhook == None:
+                webhook_operation_subparser.print_help()
+                sys.exit(0)
+
+            # Show webhook URL for given operation
+            if args.webhook == "list":
+
+                operation_name = args.operation_name
+
+                # If operation name is not given, grab the active operation
+                if operation_name == None:
+                    operation_name = await utils.operations.get_current_operation_name(mythic_instance=mythic_session)
+
+                # Grab operation information out of Mythic
+                operation_info = await utils.operations.get_operation_information(mythic_instance=mythic_session)
+
+                # Iterate over operation information to match name, then pull ID, and then the webhook URL.
+                for i in operation_info:
+                    if operation_name == i["name"]:
+                        operation_id = i["id"]
+                        webhook_info = await utils.operations.get_webhook_information(mythic_instance=mythic_session, operation_id=operation_id)
+                        webhook_url = webhook_info["operation_by_pk"]["webhook"]
+
+                        # Prevents the sentence in the print statement from cutting off for no reason
+                        if webhook_url == '':
+                            webhook_url = None
+
+                        break
+
+                print(f"Current webhook URL for {operation_name} is '{webhook_url}'")
+                sys.exit(0)
+
+            if args.webhook == "config":
+
+                if args.webhook_platform == None:
+                    config_webhook_subparser.print_help()
+                    sys.exit(0)
+
+                if args.webhook_platform == "discord":
+
+                    operation_name = args.operation_name
+                    webhook_url = args.url
+
+                    # If op isnt specified, get the one currently in use by the logged in user
+                    if operation_name == None:
+                        operation_name = await utils.operations.get_current_operation_name(mythic_instance=mythic_session)
+
+                    await utils.operations.add_discord_webhook(mythic_instance=mythic_session, operation_name=operation_name, webhook_url=webhook_url)
+                    sys.exit(0)
 
         sys.exit(0)
 
     # Create payloads
     if args.subcommand == "payload":
         import utils.payloads
+
+        if args.payloads == None:
+            payload_parser.print_help()
+            sys.exit(0)
+
         if args.payloads == "create":
             import utils.env, datetime
 
-            # Some spaghetti code incoming. If you know how to get args to play nice with a function, please tell me
-            # Use specified callback url if one is supplied
-            if args.callback_url:
-                callback_url = args.callback_url
-            
-            # Otherwise use the value saved in env
-            elif config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '' or config['MYTHIC_HTTP_CALLBACK_URL_BASE'] != '':
-                callback_url = config['MYTHIC_HTTP_CALLBACK_URL_BASE']
-            else:
-                print("Ensure that a callback url is specified in either .env or passed via cli")
-                payload_parser.print_help()
+            if args.agent == None:
+                create_payload_subparser.print_help()
                 sys.exit(1)
 
-            # Update env file if requested or required
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_URL_BASE', env_value=callback_url)
+            # Use specified callback url if one is supplied
+            callback_url = utils.env.resolve_env_inputs(arg_parameter=args.callback_url, env_key="MYTHIC_HTTP_CALLBACK_URL_BASE", env=config)
+            if callback_url == None:
+                print("Ensure that a callback url is specified in either .env or passed via cli")
+                sys.exit(1)
 
             # Callback Ports
-            # Use specified callback port if one is supplied
-            if args.callback_port:
-                callback_port = args.callback_port
-            
-            # Otherwise use the value saved in env
-            elif config['MYTHIC_HTTP_CALLBACK_PORT'] != '' or config['MYTHIC_HTTP_CALLBACK_PORT'] != '':
-                callback_port = config['MYTHIC_HTTP_CALLBACK_PORT']
-
-            else:
+            callback_port = utils.env.resolve_env_inputs(arg_parameter=args.callback_port, env_key="MYTHIC_HTTP_CALLBACK_PORT", env=config)
+            if callback_port == None:
                 print("Ensure that a callback port is specified in either .env or passed via cli")
-                payload_parser.print_help()
                 sys.exit(1)
 
-            # Update env file if requested or required
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_PORT', env_value=callback_port)
-
-            # Callback Killdate
-            # Use specified callback killdate if one is supplied
-            if args.callback_killdate:
-                callback_killdate = args.callback_killdate
-            
-            # Otherwise use the value saved in env
-            elif config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '' or config['MYTHIC_HTTP_CALLBACK_KILLDATE'] != '':
-                callback_killdate = config['MYTHIC_HTTP_CALLBACK_KILLDATE']
-            
-            # Otherwise use the default of a year
-            else:
+            # Callback Killdate, defaults to a year if not provided
+            callback_killdate = utils.env.resolve_env_inputs(arg_parameter=args.callback_killdate, env_key="MYTHIC_HTTP_CALLBACK_KILLDATE", env=config)
+            if callback_killdate == None:
                 callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
                 callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
-
-            # Update env file if requested or required
-            utils.env.update_env(env_key='MYTHIC_HTTP_CALLBACK_KILLDATE', env_value=callback_killdate)
 
             payload_name_base = args.name
 
@@ -1170,20 +1332,9 @@ async def main():
 
         if args.payloads == "list":
             payload_info = await utils.payloads.get_payloads(mythic_instance=mythic_session)
-            print("Current Payloads:")
-            for i in payload_info:
-                if i["deleted"] == False:
-                    payload_uuid = i["uuid"]
-                    payload_type = i["payloadtype"]["name"]
-                    payload_file_name = i["filemetum"]["filename_utf8"]
-                    payload_description = i["description"]
-                    payload_display = {
-                        "payload_uuid" : payload_uuid,
-                        "payload_type" : payload_type,
-                        "payload_file_name" : payload_file_name,
-                        "payload_description" : payload_description
-                        }
-                    print(payload_display)
+
+            # Print payload information in tabular format
+            utils.payloads.print_payload_information(payload_info=payload_info)
                 
         sys.exit(0)
 

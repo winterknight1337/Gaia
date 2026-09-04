@@ -1,4 +1,5 @@
 from mythic import mythic
+from prettytable import PrettyTable
 
 # Creates chonky apollo payloads
 # Parameter names and values are taken directly from the payload builder in the web UI
@@ -196,3 +197,17 @@ async def get_payloads(mythic_instance: mythic):
     payload_info = await mythic.get_all_payloads(mythic=mythic_instance)
     
     return payload_info
+
+def print_payload_information(payload_info:dict):
+    table = PrettyTable(["UUID", "Agent", "File Name", "Description"])
+
+    for i in payload_info:
+        if i["deleted"] == False:
+            payload_uuid = i["uuid"]
+            payload_type = i["payloadtype"]["name"]
+            payload_file_name = i["filemetum"]["filename_utf8"]
+            payload_description = i["description"]
+
+            table.add_row([payload_uuid, payload_type, payload_file_name, payload_description])
+
+    print(table)
