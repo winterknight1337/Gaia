@@ -1,8 +1,7 @@
 import boto3, os
-from mythic import mythic
 from prettytable import PrettyTable
 
-def create_aws_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_run:bool=False):
+def create_ec2_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_run:bool=False):
     # Create the keypair "gaia" in AWS
     response = ec2_session.create_key_pair(
         KeyName=key_name,
@@ -29,7 +28,7 @@ def create_aws_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_ru
 
     return response_key_name
 
-def create_aws_security_group(ec2_session: boto3.Session.client, dry_run:bool=False):
+def create_ec2_security_group(ec2_session: boto3.Session.client, dry_run:bool=False):
     response = ec2_session.create_security_group(
         Description="Created by Gaia",
         GroupName="Webservers",
@@ -51,8 +50,7 @@ def create_aws_security_group(ec2_session: boto3.Session.client, dry_run:bool=Fa
 
     return security_group_id
 
-
-def create_aws_security_group_entry(ec2_session: boto3.Session.client, security_group_id:str, transport_protocol:str, port: int, dry_run:bool=False):
+def create_ec2_security_group_entry(ec2_session: boto3.Session.client, security_group_id:str, transport_protocol:str, port: int, dry_run:bool=False):
     response = ec2_session.authorize_security_group_ingress(
         CidrIp = "0.0.0.0/0",
         GroupId = security_group_id,
@@ -117,7 +115,7 @@ def launch_ec2(ec2_session: boto3.Session.client, os: str, ec2_size: str, key_na
 
     return response
 
-def get_aws_network_interface_public_ip(ec2_session: boto3.Session.client, interface_id: str, dry_run:bool=False):
+def get_ec2_network_interface_public_ip(ec2_session: boto3.Session.client, interface_id: str, dry_run:bool=False):
     response = ec2_session.describe_network_interfaces(
         NetworkInterfaceIds = [
             interface_id,
@@ -215,31 +213,3 @@ def delete_gaia_security_groups(ec2_session: boto3.Session.client, group_id:str,
     )
 
     return response
-
-def delete_local_gaia_ssh_key(key_name:str):
-    home_dir = os.path.expanduser("~")
-    ssh_dir = f"{home_dir}/.ssh/"
-    ssh_file = f"{ssh_dir}/{key_name}.pem" 
-    
-    if os.path.exists(ssh_file):
-        os.remove(ssh_file)
-    else:
-        print("SSH Keyfile already removed, skipping.")
-
-async def generate_redirector_rules(mythic_instance: mythic, payload_uuid: str):
-    redir_rules = await mythic.execute_custom_query(
-        mythic=mythic_instance,
-        query = """
-        query generateRedirectRulesMutation($uuid: String!) {
-            redirect_rules(uuid: $uuid) {
-                status
-                error
-                output
-                __typename
-            }
-        }
-        """,
-        variables={"uuid" : payload_uuid}
-    )
-
-    return redir_rules

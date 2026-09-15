@@ -187,7 +187,7 @@ cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="clou
 aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
 aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Enter the AWS access key when requested")
 aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the AWS secret key when requested")
-aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
+aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2.medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
 aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
 
@@ -621,7 +621,7 @@ async def main():
     
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
-        import utils.redirector, paramiko, utils.install, utils.env
+        import utils.redirector.aws, utils.redirector.generic, utils.install, utils.env
 
         if args.redir_action == None:
             redir_parser.print_help()
@@ -683,24 +683,24 @@ async def main():
 
                 # Create EC2 key pair
                 print("Creating gaia-redir keypair for EC2")
-                aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
+                aws_key_name = utils.redirector.aws.create_ec2_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
                 home_dir = os.path.expanduser("~")
                 ssh_dir = f"{home_dir}/.ssh/"
                 aws_key_name_local_path = f"{ssh_dir}/{aws_key_name}.pem"
 
                 # Creates security group
                 print("Creating EC2 Security Group.")
-                aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
+                aws_security_group_id = utils.redirector.aws.create_ec2_security_group(ec2_session=ec2_client)
 
                 # Allows http, https, and ssh inbound
                 print("Allowing SSH, HTTP, and HTTPS into EC2 Instance.")
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
+                utils.redirector.aws.create_ec2_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
+                utils.redirector.aws.create_ec2_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
+                utils.redirector.aws.create_ec2_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
 
                 # Build EC2
                 print("Launching EC2.")
-                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
+                instance = utils.redirector.aws.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
                 instance_id = instance["Instances"][0]["InstanceId"]
                 interface_id = instance["Instances"][0]["NetworkInterfaces"][0]["NetworkInterfaceId"]
 
@@ -709,7 +709,7 @@ async def main():
                 
                 # Query for public IP address
                 print("Grabbing instance's public IP.")
-                interface_info = utils.redirector.get_aws_network_interface_public_ip(ec2_session=ec2_client, interface_id=interface_id)
+                interface_info = utils.redirector.aws.get_ec2_network_interface_public_ip(ec2_session=ec2_client, interface_id=interface_id)
                 instance_public_ip = interface_info["NetworkInterfaces"][0]["Association"]["PublicIp"]
 
                 # Initialize SSH
@@ -759,7 +759,7 @@ async def main():
 
                 # Query for EC2s with gaia tags on them
                 print("Getting Gaia EC2s from AWS")
-                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+                ec2_info = utils.redirector.aws.get_gaia_ec2s(ec2_session=ec2_client)
                 
                 # Collect instnace IDs and append them to a list to pass to deletion function later
                 for i in ec2_info["Reservations"]:
@@ -768,46 +768,46 @@ async def main():
 
                 # Query for ssh keys with gaia tags on them
                 print("Getting Gaia SSH keys from AWS.")
-                keypair_info = utils.redirector.get_gaia_key_pairs(ec2_session=ec2_client)
+                keypair_info = utils.redirector.aws.get_gaia_key_pairs(ec2_session=ec2_client)
                 for i in keypair_info["KeyPairs"]:
                     ssh_key_ids.append(i["KeyPairId"])
 
                 # Query for security groups with gaia tags on them
                 print("Getting Gaia Security Groups from AWS.")
-                security_group_info = utils.redirector.get_gaia_security_groups(ec2_session=ec2_client)
+                security_group_info = utils.redirector.aws.get_gaia_security_groups(ec2_session=ec2_client)
                 for i in security_group_info["SecurityGroups"]:
                     security_group_ids.append(i["GroupId"])
 
                 # Terminate Gaia instances
                 print("Terminating Gaia related EC2 instances.")
-                terminate = utils.redirector.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
+                terminate = utils.redirector.aws.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
                 print("Sleeping for 2 minutes to allow EC2 instances to terminate.")
                 time.sleep(120)
 
                 # Delete Gaia SSH Keys
                 print("Deleting Gaia SSH Keys within EC2.")
                 for i in ssh_key_ids:
-                    key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
+                    key_delete = utils.redirector.aws.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
                     if key_delete["Return"] == False:
                         print("Key delete failed, trying agian after 30 seconds.")
                         time.wait(30)
-                        key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
+                        key_delete = utils.redirector.aws.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
                         if key_delete["Return"] == False:
                             print("Key deletion failed again, retry later.")
                             continue
 
                 # Delete local copy of ssh key
                 print("Deleting local copy of SSH key for Gaia.")
-                utils.redirector.delete_local_gaia_ssh_key("gaia-redir")
+                utils.redirector.generic.delete_local_gaia_ssh_key("gaia-redir")
 
                 # Delete Gaia Security groups
                 print("Deleting Gaia Security Groups.")
                 for i in security_group_ids:
-                    group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
+                    group_delete = utils.redirector.aws.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
                     if group_delete["Return"] == False:
                         print("Security Group delete failed, trying agian after 30 seconds.")
                         time.wait(30)
-                        group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
+                        group_delete = utils.redirector.aws.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
                         if group_delete["Return"] == False:
                             print("Security Group deletion failed again, retry later.")
                             continue
@@ -831,16 +831,16 @@ async def main():
 
                 # Query for EC2s with gaia tags on them
                 print("Getting Gaia EC2s from AWS")
-                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+                ec2_info = utils.redirector.aws.get_gaia_ec2s(ec2_session=ec2_client)
 
                 # Print EC2 information in tabular format
-                utils.redirector.print_gaia_ec2(ec2_data=ec2_info)
+                utils.redirector.aws.print_gaia_ec2(ec2_data=ec2_info)
 
                 sys.exit(0)
 
         # Handles configuration of certbot
         if args.redir_action == "certbot":
-            import paramiko, utils.install
+            import utils.install
 
             # Get domain to activate certbot on
             certbot_domain = args.domain
