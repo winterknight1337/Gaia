@@ -49,7 +49,7 @@ install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/
 install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
 
-# Authentication options
+# Mythic Authentication options
 auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
 auth_parser.add_argument("-P", "--port", default=7443, type=int, metavar='7443', help="Port to access Mythic's web interface")
 auth_parser.add_argument("-u", "--user", type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
@@ -184,12 +184,25 @@ redir_subparser = redir_parser.add_subparsers(title="Redirector Actions", dest="
 create_redir_subparser = redir_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new redirector")
 cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider you'd like to build a redirector in")
 
+# AWS Options
 aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
 aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Enter the AWS access key when requested")
 aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the AWS secret key when requested")
 aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2.medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
 aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
+
+# Azure Options
+az_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="Create a redirector in Azure")
+az_create_redir_subparser.add_argument("--tenant-id", action="store_true", help="Enter the Azure tenant ID when requested")
+az_create_redir_subparser.add_argument("--subscription-id", action="store_true", help="Enter the Azure subscription ID when requested")
+az_create_redir_subparser.add_argument("--client-id", action="store_true", help="Enter the Azure client ID when requested")
+az_create_redir_subparser.add_argument("--client-secret", action="store_true", help="Enter the Azure client secret when requested")
+# az_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2.medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector VM")
+az_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target Azure region")
+# az_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
+az_create_redir_subparser.add_argument("-P", "--password", type=str, metavar='', help="User password for redirector")
+
 
 delete_redir_subparser = redir_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a redirector")
 cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to decommission Gaia-created redirector infrastructure in")
@@ -613,7 +626,7 @@ async def main():
         auth_parser.print_help()
         sys.exit(1)
 
-    # Authenticates to mythic with API key if auth is not specified
+    # Authenticates to Mythic with API key if auth is not specified
     api_key = config["MYTHIC_API_KEY"]
     mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
     mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
@@ -740,6 +753,204 @@ async def main():
                 print(f"EC2 created! Public IP address for the EC2 is {instance_public_ip}. The default user for your instance is {ec2_user}.")
 
                 ssh.close()
+                sys.exit(0)
+
+            if args.cloud == "azure":
+                # Code from this section shamelessly stolen from here and tweaked - https://learn.microsoft.com/en-us/azure/developer/python/sdk/examples/azure-sdk-example-virtual-machines
+                import azure.identity
+                from azure.mgmt.compute import ComputeManagementClient
+                from azure.mgmt.resource.resources import ResourceManagementClient
+                from azure.mgmt.network import NetworkManagementClient
+                from azure.mgmt.network.models import VirtualNetwork, PublicIPAddress, AddressSpace, NetworkInterface, NetworkInterfaceIPConfiguration, NetworkSecurityGroup, Subnet, SecurityRule
+                from azure.mgmt.compute.models import VirtualMachine, HardwareProfile, StorageProfile, ImageReference, OSProfile, LinuxConfiguration, SshPublicKey, SshConfiguration, NetworkInterfaceReference, OSDisk, NetworkProfile
+
+                az_region = args.region
+
+                # Resolve env vars
+                az_tenant_id = utils.env.resolve_env_api_key(arg_parameter=args.tenant_id, env_key="AZURE_TENANT_ID", getpass_text="Enter Azure Tenant ID: ", env=config)
+                az_sub_id = utils.env.resolve_env_api_key(arg_parameter=args.subscription_id, env_key="AZURE_SUBSCRIPTION_ID", getpass_text="Enter Azure Subscription ID: ", env=config)
+                az_client_id = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_ID", getpass_text="Enter Azure Client ID: ", env=config)
+                az_client_secret = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_SECRET", getpass_text="Enter Azure Client Secret: ", env=config)
+                az_region = utils.env.resolve_env_api_key(arg_parameter=args.region, env_key="AZURE_DEFAULT_REGION", getpass_text="Enter Azure Region: ", env=config)
+                az_redir_password = utils.env.resolve_env_api_key(arg_parameter=args.region, env_key="AZURE_REDIR_USER_PASS", getpass_text="Create password for redirector user: ", env=config)
+
+                az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
+
+                # Requires contributor role for built in role.
+                # Create resource group
+                az_resource = ResourceManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_resource_create = az_resource.resource_groups.create_or_update("Gaia", {"location":f"{az_region}"})
+
+                # Create netowrk 
+                az_network = NetworkManagementClient(credential=az_auth, subscription_id=az_sub_id)
+
+                az_network_create = az_network.virtual_networks.begin_create_or_update(
+                    resource_group_name = "Gaia",
+                    virtual_network_name = "Gaia-vNet",
+                    parameters = VirtualNetwork(
+                        location = az_region,
+                            address_space = AddressSpace(
+                                address_prefixes = ["172.16.0.0/16"]
+                        ),
+                        subnets = [
+                            Subnet(
+                                name = "Gaia",
+                                address_prefix = "172.16.0.0/16",
+                            )
+                        ],
+                    ),
+                )
+                az_network_result = az_network_create.result()
+                print(f'Created subnet in Azure with IP range {az_network_result.properties.address_space.address_prefixes[0]}')
+
+                # Provision Network Security Group
+                az_network_security = az_network.network_security_groups.begin_create_or_update(
+                    resource_group_name = "Gaia",
+                    network_security_group_name = "Gaia-NSG",
+                    parameters = NetworkSecurityGroup(
+                        location = az_region,
+                    ),
+                )
+                az_network_security_result = az_network_security.result()
+                
+                az_nsg_rules = {
+                    "Allow-SSH" : {
+                        "port" : 22,
+                        "priority" : 100
+                    },
+                    "Allow-HTTPS" : {
+                        "port" : 443,
+                        "priority" : 110
+                    },
+                    "Allow-HTTP" : {
+                        "port" : 80,
+                        "priority" : 120
+                    }
+                }
+
+                for i in az_nsg_rules:
+                    az_network.security_rules.begin_create_or_update(
+                        resource_group_name = "Gaia",
+                        network_security_group_name = "Gaia-NSG",
+                        security_rule_name = i,
+                        security_rule_parameters = SecurityRule(
+                            protocol = "Tcp",
+                            source_address_prefix = "*",
+                            source_port_range = "*",
+                            destination_address_prefix = "*",
+                            destination_port_range = str(az_nsg_rules[i]["port"]),
+                            access = "Allow",
+                            direction = "Inbound",
+                            priority = az_nsg_rules[i]["priority"]
+                        ),
+                    ).result()
+
+                # Provision Public IP Address   
+                az_network_ip = az_network.public_ip_addresses.begin_create_or_update(
+                    resource_group_name = "Gaia",
+                    public_ip_address_name= "Gaia-Redir-IP",
+                    parameters = PublicIPAddress(
+                        location = az_region,
+                        sku = {
+                            "name" : "Standard"
+                        },
+                        public_ip_allocation_method = "Static",
+                        public_ip_address_version = "IPv4"
+                    ),
+                )
+                az_network_ip_result = az_network_ip.result()
+                print(f"Assigned {az_network_ip_result.properties.ip_address} to the redirector")
+
+                # Assign network interface
+                az_network_interface = az_network.network_interfaces.begin_create_or_update(
+                    resource_group_name = "Gaia",
+                    network_interface_name="Gaia-Redir-NIC",
+                    parameters = NetworkInterface(
+                        location = az_region,
+                        ip_configurations = [
+                            NetworkInterfaceIPConfiguration(
+                                name = "Gaia",
+                                subnet = {
+                                    "id" : az_network_result.properties.subnets[0].id
+                                },
+                                public_ip_address = {
+                                    "id" : az_network_ip_result.id
+                                }
+                            )
+                        ]
+                    )
+                )
+                az_network_interface_result = az_network_interface.result()
+                print(f"Provisioned network interface")
+
+                # Generate the SSH key object in Azure
+                az_compute = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_vm_ssh_obj = az_compute.ssh_public_keys.create(
+                    resource_group_name = "Gaia",
+                    ssh_public_key_name = "gaia-redir.pem",
+                    parameters = {
+                        "location" : az_region
+                    },
+                )
+
+                # Generate the SSH key
+                az_vm_ssh_keypair = az_compute.ssh_public_keys.generate_key_pair(
+                    resource_group_name = "Gaia",
+                    ssh_public_key_name = "gaia-redir.pem"
+                )
+
+                # Save SSH key to file
+                print(az_vm_ssh_keypair.private_key)
+
+                # Provision the VM
+                az_vm = az_compute.virtual_machines.begin_create_or_update(
+                    resource_group_name = "Gaia",
+                    vm_name = "Gaia-Redir",
+                    parameters = VirtualMachine(
+                        location = az_region,
+                        hardware_profile = HardwareProfile(
+                            vm_size = "Standard_D2als_v7"
+                        ),
+                        storage_profile = StorageProfile(
+                            image_reference = ImageReference(
+                                publisher = "Canonical",
+                                offer = "ubuntu-24_04-lts",
+                                sku = "server",
+                                version = "latest"
+                            ),
+                            os_disk = OSDisk(
+                                disk_size_gb = 30,
+                                create_option = "FromImage",
+                            ),
+                        ),
+                        os_profile = OSProfile(
+                            computer_name = "Gaia-Redir",
+                            admin_username = "gaia",
+                            linux_configuration = LinuxConfiguration(
+                                disable_password_authentication = True,
+                                ssh = SshConfiguration (
+                                    public_keys = [
+                                        SshPublicKey(
+                                            path = f"/home/gaia/.ssh/authorized_keys",
+                                            key_data = az_vm_ssh_keypair.public_key,
+                                        ),
+                                    ]
+                                ),
+                            ),
+                        ),
+                        network_profile = NetworkProfile(
+                            network_interfaces = [
+                                NetworkInterfaceReference(
+                                    id = az_network_interface_result.id,
+                                    primary = True
+                                )
+                            ]
+                        ),
+                    ),
+                )
+                az_vm_result = az_vm.result()
+
+
                 sys.exit(0)
 
         # Delete redir infra
