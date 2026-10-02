@@ -1,4 +1,4 @@
-import boto3, os
+import boto3, os, utils.redirector.generic
 from prettytable import PrettyTable
 
 def create_ec2_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_run:bool=False):
@@ -21,10 +21,7 @@ def create_ec2_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_ru
     response_key_name = response["KeyName"]
 
     # Dump the new keypair to disk at ~/.ssh/gaia.pem overwriting an existing pair. This should work across both windows and linux. 
-    home_dir = os.path.expanduser("~")
-    ssh_dir = f"{home_dir}/.ssh/"
-    with open(f"{ssh_dir}/{response_key_name}.pem", "w") as file:
-        file.write(response["KeyMaterial"])
+    utils.redirector.generic.create_local_gaia_ssh_key(key_name=response["KeyName"], key_contents=response["KeyMaterial"])
 
     return response_key_name
 
