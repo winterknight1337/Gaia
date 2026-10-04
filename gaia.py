@@ -626,7 +626,7 @@ async def main():
     
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
-        import utils.redirector.aws, utils.redirector.generic, utils.install, utils.env
+        import utils.redirector.generic, utils.install, utils.env
 
         if args.redir_action == None:
             redir_parser.print_help()
@@ -640,7 +640,7 @@ async def main():
                 sys.exit(0)
 
             if args.cloud == "aws":
-                import boto3
+                import boto3, utils.redirector.aws
 
                 # Get AWS access key and update env if required
                 aws_access_key = utils.env.resolve_env_api_key(arg_parameter=args.access_key, env_key="AWS_ACCESS_KEY_ID", getpass_text="AWS Access Key: ", env=config)
@@ -736,7 +736,7 @@ async def main():
                 sys.exit(0)
 
             if args.cloud == "azure":
-                import azure.identity, utils.redirector.azure, utils.redirector.generic
+                import azure.identity, utils.redirector.azure
                 from azure.mgmt.compute import ComputeManagementClient
                 from azure.mgmt.resource.resources import ResourceManagementClient
                 from azure.mgmt.network import NetworkManagementClient
@@ -811,17 +811,47 @@ async def main():
                 print("Creating SSH key object.")
                 az_compute_auth = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
                 az_vm_ssh_obj = utils.redirector.azure.create_ssh_key_object(az_compute_auth=az_compute_auth, region=az_region)
-                print("Created SSH key object.")
+                print("Created SSH key object in Azure.")
 
                 # Generate the SSH key
                 print("Generating SSH key.")
                 az_vm_ssh_keypair = utils.redirector.azure.generate_ssh_key(az_compute_auth=az_compute_auth)
+                az_vm_ssh_key_name_list = az_vm_ssh_keypair.id.split("/")
+                az_vm_ssh_key_name = az_vm_ssh_key_name_list[-1]
                 ssh_public_key = az_vm_ssh_keypair.public_key
+
+                # Get local SSH key path
+                home_dir = os.path.expanduser("~")
+                ssh_dir = f"{home_dir}/.ssh/"
+                az_vm_ssh_key_local = f"{ssh_dir}/{az_vm_ssh_key_name}.pem"
                 print("Created SSH key and dumped to disk at ~/.ssh/gaia-redir.pem")
 
                 # Provision the VM
                 print("Deploying redirector VM in Azure.")
                 az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size="Standard_D2als_v7", vm_os=vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
+
+                # Initialize SSH
+                ssh = utils.install.initialize_ssh()
+
+                # Update VM
+                print("Connecting to VM over SSH.")
+                ssh.connect(hostname=az_public_ip_address, port=22, username="gaia", key_filename=az_vm_ssh_key_local)
+                print("Updating VM before rebooting.")
+                (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y && sudo reboot")
+                utils.install.print_terminal_output(stdout)
+                ssh.close()
+
+                print("Sleep for 60 more seconds to allow the VM to reboot and load new kernel")
+                time.sleep(60)
+
+                print("Reconnecting to VM before installing apache2")
+                ssh.connect(hostname=az_public_ip_address, port=22, username="gaia", key_filename=az_vm_ssh_key_local)
+
+                # Install and perform initial configuration of apache from the shell script
+                print("Installing and configuring Apache2")
+                utils.install.convert_line_endings("install_apache.sh")
+                utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
+
                 print(f"Deployed redirector VM in Azure with public IP {az_public_ip_address}.")
 
                 sys.exit(0)
