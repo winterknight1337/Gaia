@@ -198,7 +198,7 @@ az_create_redir_subparser.add_argument("--tenant-id", action="store_true", help=
 az_create_redir_subparser.add_argument("--subscription-id", action="store_true", help="Enter the Azure subscription ID when requested")
 az_create_redir_subparser.add_argument("--client-id", action="store_true", help="Enter the Azure client ID when requested")
 az_create_redir_subparser.add_argument("--client-secret", action="store_true", help="Enter the Azure client secret when requested")
-# az_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2.medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector VM")
+az_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["A1_v2", "A2_v2", "Standard_D2als_v7"], help="Size of redirector VM")
 az_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target Azure region")
 az_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
 
@@ -740,6 +740,8 @@ async def main():
                 from azure.mgmt.resource.resources import ResourceManagementClient
                 from azure.mgmt.network import NetworkManagementClient
 
+                az_vm_size = args.size
+
                 az_nsg_rules = {
                     "Allow-SSH" : {
                         "port" : 22,
@@ -761,7 +763,7 @@ async def main():
                 az_client_secret = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_SECRET", getpass_text="Enter Azure Client Secret: ", env=config)
                 az_sub_id = utils.env.resolve_env_inputs(arg_parameter=args.subscription_id, env_key="AZURE_SUBSCRIPTION_ID", env=config)
                 az_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AZURE_DEFAULT_REGION", env=config)
-                vm_os = utils.env.resolve_env_inputs(arg_parameter=args.os, env_key="REDIRECTOR_OS", env=config)
+                az_vm_os = utils.env.resolve_env_inputs(arg_parameter=args.os, env_key="REDIRECTOR_OS", env=config)
 
                 az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
 
@@ -827,7 +829,7 @@ async def main():
 
                 # Provision the VM
                 print("Deploying redirector VM in Azure.")
-                az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size="Standard_D2als_v7", vm_os=vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
+                az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size=az_vm_size, vm_os=az_vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
 
                 print("Waiting for 30 seconds.")
                 time.sleep(30)
