@@ -771,7 +771,7 @@ async def main():
 
                 # Create resource group
                 print(f"Creating Gaia resource group in {az_region} region.")
-                az_resource_create = az_resource_auth.resource_groups.create_or_update("Gaia", {"location":f"{az_region}"})
+                az_resource_create = utils.redirector.azure.create_resource_group(az_resource_auth=az_resource_auth, region=az_region)
                 print(f"Created Gaia resource group in {az_region} region.")
 
                 # Auth to network modules

@@ -1,9 +1,21 @@
 import sys, utils.redirector.generic, utils.env
+from azure.mgmt.resource.resources import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network.models import VirtualNetwork, AddressSpace, Subnet, NetworkSecurityGroup, SecurityRule, PublicIPAddress, NetworkInterface, NetworkInterfaceIPConfiguration
 from azure.mgmt.compute.models import VirtualMachine, HardwareProfile, StorageProfile, ImageReference, OSProfile, LinuxConfiguration, SshPublicKey, SshConfiguration, NetworkInterfaceReference, OSDisk, NetworkProfile
 from prettytable import PrettyTable
+
+def create_resource_group(az_resource_auth: ResourceManagementClient, region: str):
+    az_resource_auth.resource_groups.create_or_update(
+        resource_group_name = "Gaia",
+        parameters= {
+            "location" : region,
+            "tags" : {
+                "createdBy" : "Gaia"
+            }
+        }
+    )
 
 def create_network(az_network_auth: NetworkManagementClient, region: str, address_prefix: str):
     response = az_network_auth.virtual_networks.begin_create_or_update(
@@ -20,6 +32,9 @@ def create_network(az_network_auth: NetworkManagementClient, region: str, addres
                     address_prefix = address_prefix,
                 )
             ],
+            tags = {
+                "createdBy" : "Gaia"
+            },
         ),
     ).result()
 
@@ -31,6 +46,9 @@ def create_network_security_group(az_network_auth: NetworkManagementClient, regi
         network_security_group_name = "Gaia-NSG",
         parameters = NetworkSecurityGroup(
             location = region,
+            tags = {
+                "createdBy" : "Gaia"
+            },
         ),
     ).result()
 
@@ -65,7 +83,10 @@ def create_public_ip_address(az_network_auth: NetworkManagementClient, region: s
                 "name" : "Standard"
             },
             public_ip_allocation_method = "Static",
-            public_ip_address_version = "IPv4"
+            public_ip_address_version = "IPv4",
+            tags = {
+                "createdBy" : "Gaia"
+            }
         ),
     ).result()
 
@@ -88,6 +109,9 @@ def create_network_interface(az_network_auth: NetworkManagementClient, region: s
                     }
                 )
             ],
+            tags = {
+                "createdBy" : "Gaia"
+            },
             network_security_group = NetworkSecurityGroup(
                 id = nsg_id
             ),
@@ -101,8 +125,11 @@ def create_ssh_key_object(az_compute_auth: ComputeManagementClient, region:str):
         resource_group_name = "Gaia",
         ssh_public_key_name = "gaia-redir",
         parameters = {
-            "location" : region
-        },
+            "location" : region,
+            "tags" : {
+                "createdBy" : "Gaia"
+            },
+        }
     )
 
     return response
@@ -141,6 +168,9 @@ def deploy_vm(az_compute_auth: ComputeManagementClient, region:str, vm_size:str,
         vm_name = "Gaia-Redir",
         parameters = VirtualMachine(
             location = region,
+            tags = {
+                "createdBy" : "Gaia"
+            },
             hardware_profile = HardwareProfile(
                 vm_size = vm_size
             ),
