@@ -919,6 +919,10 @@ async def main():
                 az_resource_auth.resource_groups.begin_delete(resource_group_name="Gaia").result()
                 print("Gaia's resources deleted from Azure.")
 
+                print("Deleting Gaia SSH keys.")
+                utils.redirector.generic.delete_local_gaia_ssh_key(key_name="gaia-redir.pem")
+                print("Gaia cleanup completed.")
+
                 sys.exit(0)
     
         # Shows redir infra
