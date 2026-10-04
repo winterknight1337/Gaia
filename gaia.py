@@ -354,9 +354,9 @@ async def main():
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
         # Dumps API key and mythic connection information into .env
-        utils.env.update_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
-        utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
-        utils.env.update_env("MYTHIC_API_KEY", api_token)
+        utils.env.resolve_env_inputs(arg_parameter=mythic_host, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+        utils.env.resolve_env_inputs(arg_parameter=str(mythic_port), env_key="MYTHIC_LOGIN_SERVER_PORT", env=config)
+        utils.env.resolve_env_inputs(arg_parameter=mythic_host, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
 
         print("Mythic authentication successful! JWT dumped to .env!")
         sys.exit(0)
@@ -664,15 +664,14 @@ async def main():
                 if args.os == "ubuntu":
                     ec2_os = "ubuntu"
                     ec2_user = "ubuntu"
-                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
-                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_os, env_key="REDIRECTOR_OS", env=config)
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_user, env_key="REDIRECTOR_USER", env=config)
 
                 elif args.os == "debian":
                     ec2_os = "debian"
                     ec2_user = "admin"
-                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
-                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
-
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_os, env_key="REDIRECTOR_OS", env=config)
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_user, env_key="REDIRECTOR_USER", env=config)
 
                 # Create EC2 key pair
                 print("Creating gaia-redir keypair for EC2")
@@ -720,7 +719,7 @@ async def main():
                 time.sleep(60)
 
                 # Save the public IP for the redirector
-                utils.env.update_env("REDIRECTOR_PUBLIC_IP", instance_public_ip)
+                utils.env.resolve_env_inputs(arg_parameter=instance_public_ip, env_key="REDIRECTOR_PUBLIC_IP", env=config)
 
                 print("Reconnecting to EC2 before installing apache2")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
@@ -1293,7 +1292,7 @@ async def main():
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
-            utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
+            utils.env.resolve_env_inputs(arg_parameter=operation, env_key="MYTHIC_OPERATION_NAME", env=config)
 
             sys.exit(0)
 
