@@ -781,7 +781,7 @@ async def main():
                 print(f"Creating subnet in Azure.")
                 az_network_create = utils.redirector.azure.create_network(az_network_auth=az_network_auth, region=az_region, address_prefix="172.16.0.0/16")
                 az_network_create_id = az_network_create.properties.subnets[0].id
-                print(f'Created subnet in Azure with IP range {az_network_create.properties.address_space.address_prefixes[0]}')
+                print(f'Created subnet in Azure with IP range {az_network_create.properties.address_space.address_prefixes[0]}.')
 
                 # Provision Network Security Group
                 print("Creating Network Security Group.")
@@ -799,6 +799,7 @@ async def main():
                 az_public_ip_id = az_public_ip.id
                 az_public_ip_address = az_public_ip.properties.ip_address
                 print(f"Assigned {az_public_ip_address} to the redirector")
+                utils.env.resolve_env_inputs(arg_parameter=az_public_ip_address, env_key="REDIRECTOR_PUBLIC_IP", env=config)
 
                 # Assign network interface
                 print("Provisioning network interface for redirector.")
