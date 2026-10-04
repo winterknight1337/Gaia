@@ -1075,11 +1075,12 @@ async def main():
                 redirector_ssh_key = args.redir_ssh_identity_file
             else:
                 home_dir = os.path.expanduser("~")
-                ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
+                ssh_dir = f"{home_dir}/.ssh/"
+                redirector_ssh_key = f"{ssh_dir}/gaia-redir.pem"
 
             # Query for mod_rewrite rules
             print("Generating base redirector rules.")
-            redirector_rules_line = await utils.redirector.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
+            redirector_rules_line = await utils.redirector.generic.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
 
             # Modify mod_rewrite rules so they work as expected
             print("Modifying redirector rules to ensure they work with given parameters.")
