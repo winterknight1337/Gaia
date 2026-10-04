@@ -1118,7 +1118,7 @@ async def main():
 
         # Creates SSH tunnel and systemd wrapper service
         if args.redir_action == "tunnel":
-            import paramiko, utils.redirector, utils.payloads, utils.install
+            import utils.redirector, utils.payloads, utils.install
 
             mythic_server = utils.env.resolve_env_inputs(arg_parameter=args.mythic_server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
             mythic_server_user = utils.env.resolve_env_inputs(arg_parameter=args.mythic_ssh_user, env_key="MYTHIC_SERVER_USER", env=config)
@@ -1407,7 +1407,7 @@ async def main():
                 sys.exit(1)
 
             # Callback Killdate, defaults to a year if not provided
-            callback_killdate = utils.env.resolve_env_inputs(arg_parameter=args.callback_killdate, env_key="MYTHIC_HTTP_CALLBACK_KILLDATE", env=config)
+            callback_killdate = args.callback_killdate
             if callback_killdate == None:
                 callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
                 callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
