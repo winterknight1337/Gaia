@@ -854,6 +854,7 @@ async def main():
 
                 print(f"Deployed redirector VM in Azure with public IP {az_public_ip_address}.")
 
+                ssh.close()
                 sys.exit(0)
 
         # Delete redir infra
