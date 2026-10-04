@@ -210,6 +210,7 @@ aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws",
 list_redir_subparser = redir_subparser.add_parser(name="list", formatter_class=formatter, help="Show current redirector infrastructure")
 cloud_list_redir_subparser = list_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to view Gaia related infrastructure")
 aws_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="View Gaia redirector infrastructure in AWS")
+az_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="View Gaia redirector infrastructure in Azure")
 
 certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
 certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
@@ -642,11 +643,8 @@ async def main():
 
                 # Get AWS access key and update env if required
                 aws_access_key = utils.env.resolve_env_api_key(arg_parameter=args.access_key, env_key="AWS_ACCESS_KEY_ID", getpass_text="AWS Access Key: ", env=config)
-
                 aws_secret_key = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="AWS_SECRET_ACCESS_KEY", getpass_text="AWS Secret Key: ",env=config)
-
                 aws_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AWS_DEFAULT_REGION", env=config)
-
                 ec2_size = args.size
 
                 # Connect to EC2 Service
@@ -759,9 +757,9 @@ async def main():
 
                 # Resolve env vars
                 az_tenant_id = utils.env.resolve_env_inputs(arg_parameter=args.tenant_id, env_key="AZURE_TENANT_ID", env=config)
-                az_sub_id = utils.env.resolve_env_inputs(arg_parameter=args.subscription_id, env_key="AZURE_SUBSCRIPTION_ID", env=config)
                 az_client_id = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_ID", getpass_text="Enter Azure Client ID: ", env=config)
                 az_client_secret = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_SECRET", getpass_text="Enter Azure Client Secret: ", env=config)
+                az_sub_id = utils.env.resolve_env_inputs(arg_parameter=args.subscription_id, env_key="AZURE_SUBSCRIPTION_ID", env=config)
                 az_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AZURE_DEFAULT_REGION", env=config)
                 vm_os = utils.env.resolve_env_inputs(arg_parameter=args.os, env_key="REDIRECTOR_OS", env=config)
 
@@ -913,6 +911,31 @@ async def main():
                 utils.redirector.aws.print_gaia_ec2(ec2_data=ec2_info)
 
                 sys.exit(0)
+
+            if args.cloud == "azure":
+                import azure.identity, utils.redirector.azure
+                from azure.mgmt.compute import ComputeManagementClient
+                from azure.mgmt.network import NetworkManagementClient
+
+                # Pull the Azure information
+                az_tenant_id = config["AZURE_TENANT_ID"]
+                az_client_id = config["AZURE_CLIENT_ID"]
+                az_client_secret = config["AZURE_CLIENT_SECRET"]
+                az_sub_id = config["AZURE_SUBSCRIPTION_ID"]
+
+                # Auth to Azure
+                az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
+                az_compute_auth = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_network_auth = NetworkManagementClient(credential=az_auth, subscription_id=az_sub_id)
+
+                # Get the VMs in Gaia's resource group
+                az_vm_list = az_compute_auth.virtual_machines.list(resource_group_name="Gaia")
+
+                # Print Gaia VMs in a table
+                utils.redirector.azure.print_gaia_vms(az_network_auth=az_network_auth, vm_list=az_vm_list)
+
+                sys.exit(0)
+
 
         # Handles configuration of certbot
         if args.redir_action == "certbot":

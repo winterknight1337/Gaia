@@ -3,6 +3,7 @@ from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network.models import VirtualNetwork, AddressSpace, Subnet, NetworkSecurityGroup, SecurityRule, PublicIPAddress, NetworkInterface, NetworkInterfaceIPConfiguration
 from azure.mgmt.compute.models import VirtualMachine, HardwareProfile, StorageProfile, ImageReference, OSProfile, LinuxConfiguration, SshPublicKey, SshConfiguration, NetworkInterfaceReference, OSDisk, NetworkProfile
+from prettytable import PrettyTable
 
 def create_network(az_network_auth: NetworkManagementClient, region: str, address_prefix: str):
     response = az_network_auth.virtual_networks.begin_create_or_update(
@@ -182,3 +183,32 @@ def deploy_vm(az_compute_auth: ComputeManagementClient, region:str, vm_size:str,
     ).result()
 
     return result
+
+def print_gaia_vms(az_network_auth: NetworkManagementClient, vm_list):
+    table = PrettyTable(["VM ID", "VM Name", "Status", "Size", "Public IP"])
+
+    for i in vm_list:
+        # Get base VM Information
+        vm_name = i["name"]
+        vm_status = i.properties.provisioning_state
+        vm_size = i.properties.hardware_profile.vm_size
+        vm_id = i.properties.vm_id
+
+        # Get the name of the NIC
+        nic_id = i.properties.network_profile.network_interfaces[0].id
+        nic_name_list = nic_id.split("/")
+        nic_name = nic_name_list[-1]
+
+        # Query NIC for reference to public IP address 
+        nic_info = az_network_auth.network_interfaces.get(resource_group_name="Gaia", network_interface_name=nic_name)
+        ip_name_list = nic_info.properties.ip_configurations[0].public_ip_address.id.split("/")
+        ip_name = ip_name_list[-1]
+
+        # Get the public IP address info
+        ip_info = az_network_auth.public_ip_addresses.get(resource_group_name="Gaia", public_ip_address_name=ip_name)
+        vm_ip_address = ip_info.properties.ip_address
+
+        # Append to table
+        table.add_row([vm_id, vm_name, vm_status, vm_size, vm_ip_address])
+
+    print(table)

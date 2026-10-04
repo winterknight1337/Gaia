@@ -1,4 +1,4 @@
-import boto3, os, utils.redirector.generic
+import boto3, utils.redirector.generic
 from prettytable import PrettyTable
 
 def create_ec2_key_pair(ec2_session: boto3.Session.client, key_name: str, dry_run:bool=False):
