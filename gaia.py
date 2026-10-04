@@ -784,7 +784,7 @@ async def main():
                 print(f'Created subnet in Azure with IP range {az_network_create.properties.address_space.address_prefixes[0]}.')
 
                 # Provision Network Security Group
-                print("Creating Network Security Group.")
+                print("Creating network security group.")
                 az_network_security = utils.redirector.azure.create_network_security_group(az_network_auth=az_network_auth, region=az_region)
                 az_network_secuirty_id = az_network_security.id
                 print(f"Created network security group.")
@@ -830,6 +830,9 @@ async def main():
                 print("Deploying redirector VM in Azure.")
                 az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size="Standard_D2als_v7", vm_os=vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
 
+                print("Waiting for 30 seconds.")
+                time.sleep(30)
+
                 # Initialize SSH
                 ssh = utils.install.initialize_ssh()
 
@@ -841,8 +844,8 @@ async def main():
                 utils.install.print_terminal_output(stdout)
                 ssh.close()
 
-                print("Sleep for 60 more seconds to allow the VM to reboot and load new kernel")
-                time.sleep(60)
+                print("Sleep for 120 more seconds to allow the VM to reboot and load new kernel")
+                time.sleep(120)
 
                 print("Reconnecting to VM before installing apache2")
                 ssh.connect(hostname=az_public_ip_address, port=22, username="gaia", key_filename=az_vm_ssh_key_local)
