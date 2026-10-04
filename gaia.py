@@ -356,7 +356,7 @@ async def main():
         # Dumps API key and mythic connection information into .env
         utils.env.resolve_env_inputs(arg_parameter=mythic_host, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
         utils.env.resolve_env_inputs(arg_parameter=str(mythic_port), env_key="MYTHIC_LOGIN_SERVER_PORT", env=config)
-        utils.env.resolve_env_inputs(arg_parameter=mythic_host, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+        utils.env.resolve_env_inputs(arg_parameter=api_token, env_key="MYTHIC_API_KEY", env=config)
 
         print("Mythic authentication successful! JWT dumped to .env!")
         sys.exit(0)
