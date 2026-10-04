@@ -767,60 +767,60 @@ async def main():
                 az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
 
                 # Auth to resource group module
-                az_resource = ResourceManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_resource_auth = ResourceManagementClient(credential=az_auth, subscription_id=az_sub_id)
 
                 # Create resource group
                 print(f"Creating Gaia resource group in {az_region} region.")
-                az_resource_create = az_resource.resource_groups.create_or_update("Gaia", {"location":f"{az_region}"})
+                az_resource_create = az_resource_auth.resource_groups.create_or_update("Gaia", {"location":f"{az_region}"})
                 print(f"Created Gaia resource group in {az_region} region.")
 
                 # Auth to network modules
-                az_network = NetworkManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_network_auth = NetworkManagementClient(credential=az_auth, subscription_id=az_sub_id)
                 
                 # Create network
                 print(f"Creating subnet in Azure.")
-                az_network_create = utils.redirector.azure.create_network(az_network_auth=az_network, region=az_region, address_prefix="172.16.0.0/16")
+                az_network_create = utils.redirector.azure.create_network(az_network_auth=az_network_auth, region=az_region, address_prefix="172.16.0.0/16")
                 az_network_create_id = az_network_create.properties.subnets[0].id
                 print(f'Created subnet in Azure with IP range {az_network_create.properties.address_space.address_prefixes[0]}')
 
                 # Provision Network Security Group
                 print("Creating Network Security Group.")
-                az_network_security = utils.redirector.azure.create_network_security_group(az_network_auth=az_network, region=az_region)
+                az_network_security = utils.redirector.azure.create_network_security_group(az_network_auth=az_network_auth, region=az_region)
                 az_network_secuirty_id = az_network_security.id
                 print(f"Created network security group.")
 
                 for i in az_nsg_rules:
-                    az_nsg_rule_create = utils.redirector.azure.create_network_security_group_rule(az_network_auth=az_network, rule_name=i, rule_port=az_nsg_rules[i]["port"], rule_priority=az_nsg_rules[i]["priority"])
+                    az_nsg_rule_create = utils.redirector.azure.create_network_security_group_rule(az_network_auth=az_network_auth, rule_name=i, rule_port=az_nsg_rules[i]["port"], rule_priority=az_nsg_rules[i]["priority"])
                     print(f"Created {i} network security group rule")
 
                 # Provision Public IP Address   
                 print("Getting public IP address.")
-                az_public_ip = utils.redirector.azure.create_public_ip_address(az_network_auth=az_network, region=az_region)
+                az_public_ip = utils.redirector.azure.create_public_ip_address(az_network_auth=az_network_auth, region=az_region)
                 az_public_ip_id = az_public_ip.id
                 az_public_ip_address = az_public_ip.properties.ip_address
                 print(f"Assigned {az_public_ip_address} to the redirector")
 
                 # Assign network interface
                 print("Provisioning network interface for redirector.")
-                az_network_interface = utils.redirector.azure.create_network_interface(az_network_auth=az_network, region=az_region, subnet_id=az_network_create_id, ip_id=az_public_ip_id, nsg_id=az_network_secuirty_id)
+                az_network_interface = utils.redirector.azure.create_network_interface(az_network_auth=az_network_auth, region=az_region, subnet_id=az_network_create_id, ip_id=az_public_ip_id, nsg_id=az_network_secuirty_id)
                 az_network_interface_id = az_network_interface.id
                 print(f"Provisioned network interface for redirector.")
 
                 # Generate the SSH key object in Azure
                 print("Creating SSH key object.")
-                az_compute = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
-                az_vm_ssh_obj = utils.redirector.azure.create_ssh_key_object(az_compute_auth=az_compute, region=az_region)
+                az_compute_auth = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_vm_ssh_obj = utils.redirector.azure.create_ssh_key_object(az_compute_auth=az_compute_auth, region=az_region)
                 print("Created SSH key object.")
 
                 # Generate the SSH key
                 print("Generating SSH key.")
-                az_vm_ssh_keypair = utils.redirector.azure.generate_ssh_key(az_compute_auth=az_compute)
+                az_vm_ssh_keypair = utils.redirector.azure.generate_ssh_key(az_compute_auth=az_compute_auth)
                 ssh_public_key = az_vm_ssh_keypair.public_key
                 print("Created SSH key and dumped to disk at ~/.ssh/gaia-redir.pem")
 
                 # Provision the VM
                 print("Deploying redirector VM in Azure.")
-                az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute, region=az_region, vm_size="Standard_D2als_v7", vm_os=vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
+                az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size="Standard_D2als_v7", vm_os=vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
                 print(f"Deployed redirector VM in Azure with public IP {az_public_ip_address}.")
 
                 sys.exit(0)
