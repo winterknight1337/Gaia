@@ -206,6 +206,7 @@ az_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, ch
 delete_redir_subparser = redir_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a redirector")
 cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to decommission Gaia-created redirector infrastructure in")
 aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Delete Gaia redirector infrastructure from AWS")
+azure_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="Delete Gaia redirector infrastructure from Azure")
 
 list_redir_subparser = redir_subparser.add_parser(name="list", formatter_class=formatter, help="Show current redirector infrastructure")
 cloud_list_redir_subparser = list_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to view Gaia related infrastructure")
@@ -887,6 +888,29 @@ async def main():
                             continue
 
                 print("Gaia cleanup complete!")
+                sys.exit(0)
+
+            if args.cloud == "azure":
+                import azure.identity
+                from azure.mgmt.resource.resources import ResourceManagementClient
+
+                # Pull the Azure information
+                az_tenant_id = config["AZURE_TENANT_ID"]
+                az_client_id = config["AZURE_CLIENT_ID"]
+                az_client_secret = config["AZURE_CLIENT_SECRET"]
+                az_sub_id = config["AZURE_SUBSCRIPTION_ID"]
+
+                # Auth to Azure
+                az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
+
+                # Auth to resource group module
+                az_resource_auth = ResourceManagementClient(credential=az_auth, subscription_id=az_sub_id)
+
+                # Delete the resource group
+                print("Deleting Gaia's resource group. This will take a while.")
+                az_resource_auth.resource_groups.begin_delete(resource_group_name="Gaia").result()
+                print("Gaia's resources deleted from Azure.")
+
                 sys.exit(0)
     
         # Shows redir infra
