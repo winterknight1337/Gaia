@@ -954,7 +954,7 @@ async def main():
                 print("Gaia's resources deleted from Azure.")
 
                 print("Deleting Gaia SSH keys.")
-                utils.redirector.generic.delete_local_gaia_ssh_key(key_name="gaia-redir.pem")
+                utils.redirector.generic.delete_local_gaia_ssh_key(key_name="gaia-redir")
                 print("Gaia cleanup completed.")
 
                 sys.exit(0)
