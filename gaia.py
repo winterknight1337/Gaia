@@ -377,9 +377,6 @@ async def main():
 
             # Get the API key from env or CLI. Update env if needed
             api_token = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="CLOUDFLARE_API_TOKEN", getpass_text="Cloudflare API Key: ", env=config)
-            if api_token == None:
-                print("Specify a Cloudflare API Key with --api-key or in .env.")
-                sys.exit(1)
 
             # Print active domains
             if args.dns_action == "list":
@@ -516,15 +513,9 @@ async def main():
 
             # Get the API key from env or CLI. Update env if needed
             api_pk1 = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="PORKBUN_API_KEY", getpass_text="Porkbun API Key: ", env=config)
-            if api_pk1 == None:
-                print("Specify a Porkbun API Key with --api-key or in .env.")
-                sys.exit(1)
 
             # Get the API key from env or CLI. Update env if needed
             api_sk1 = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="PORKBUN_SECRET_KEY", getpass_text="Porkbun Secret Key: ", env=config)
-            if api_sk1 == None:
-                print("Specify a Porkbun Secret Key with --secret-key or in .env.")
-                sys.exit(1)
 
             if args.dns_action == "list":
                 if args.domain == None:
@@ -651,19 +642,10 @@ async def main():
 
                 # Get AWS access key and update env if required
                 aws_access_key = utils.env.resolve_env_api_key(arg_parameter=args.access_key, env_key="AWS_ACCESS_KEY_ID", getpass_text="AWS Access Key: ", env=config)
-                if aws_access_key == None:
-                    print("Ensure that an AWS access key is specified in either .env or passed via cli")
-                    sys.exit(1)
 
                 aws_secret_key = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="AWS_SECRET_ACCESS_KEY", getpass_text="AWS Secret Key: ",env=config)
-                if aws_secret_key == None:
-                    print("Ensure that an AWS secret key is specified in either .env or passed via cli")
-                    sys.exit(1)
 
                 aws_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AWS_DEFAULT_REGION", env=config)
-                if aws_region == None:
-                    print("Ensure that an AWS region is specified in either .env or passed via cli")
-                    sys.exit(1)
 
                 ec2_size = args.size
 
