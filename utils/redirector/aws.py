@@ -71,7 +71,6 @@ def create_ec2_security_group_entry(ec2_session: boto3.Session.client, security_
     return response
 
 def launch_ec2(ec2_session: boto3.Session.client, os: str, ec2_size: str, key_name: str, security_group_id: str, dry_run:bool=False):
-
     if os == "ubuntu":
         ImageId="ami-0e5497a77ef21b5ac"
     elif os == "debian":
