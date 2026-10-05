@@ -31,11 +31,11 @@ def copy_and_execute_script(ssh, script: str, err: bool=False):
     print_terminal_output(stdout)
 
     if err == True:
-        print("stderr output:")
+        print("[-] stderr output:")
         print_terminal_output(stderr)
 
     # Removing shell script
-    print(f"Cleaning up {script} script")
+    print(f"[+] Cleaning up {script} script")
     ssh.exec_command(f"rm {script}")
 
 def print_terminal_output(channel):
