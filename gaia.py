@@ -194,8 +194,8 @@ aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, c
 
 # Azure Options
 az_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="Create a redirector in Azure")
-az_create_redir_subparser.add_argument("--tenant-id", action="store_true", help="Enter the Azure tenant ID when requested")
-az_create_redir_subparser.add_argument("--subscription-id", action="store_true", help="Enter the Azure subscription ID when requested")
+az_create_redir_subparser.add_argument("--tenant-id", type=str, help="Target Azure tenant ID")
+az_create_redir_subparser.add_argument("--subscription-id", type=str, help="Target Azure subscription ID")
 az_create_redir_subparser.add_argument("--client-id", action="store_true", help="Enter the Azure client ID when requested")
 az_create_redir_subparser.add_argument("--client-secret", action="store_true", help="Enter the Azure client secret when requested")
 az_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["A1_v2", "A2_v2", "Standard_D2als_v7"], help="Size of redirector VM")
