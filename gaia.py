@@ -831,8 +831,8 @@ async def main():
                 print("Deploying redirector VM in Azure.")
                 az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size=az_vm_size, vm_os=az_vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
 
-                print("Waiting for 30 seconds.")
-                time.sleep(30)
+                print("Waiting for 60 seconds.")
+                time.sleep(60)
 
                 # Initialize SSH
                 ssh = utils.install.initialize_ssh()
