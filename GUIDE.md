@@ -342,7 +342,7 @@ Redirector Actions:
     tunnel                                      Configure SSH tunnel between Mythic server and redirector
 ```
 
-First up, creating the redirector. As of now, only AWS is supported but Azure is planned to be supported in the future. Let's get the help menu.
+First up, creating the redirector. AWS and Azure are both supported for redirector creation. Let's get the help menu.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector create aws -h
 usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
@@ -370,7 +370,7 @@ Once the EC2 is built, then Gaia handles some post-build configuration:
 5. Enable `rewrite` `proxy` and `proxy_http`
 6. Create a new entry in `/etc/apache2/sites-enabled/000-default.conf` to allow usage of `.htaccess` files.
 7. Creates an empty `.htaccess` file at `/var/www/html`
-8. Installs Certbot
+8. Install Certbot
 
 Here's what all that looks like (to some extent, the output is long). `.env` will update the following values `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `REDIRECTOR_PUBLIC_IP`, `REDIRECTOR_OS`, `REDIRECTOR_USER`
 ```
@@ -658,7 +658,7 @@ You should also see a message in your webhook channel in Discord.
 For CCDC, this is more or less where infrastructure stops. However, we don't want to rack up AWS charges all day, so lets take the infrastructure down. First thing we will have to do is stop payload execution either by using `CTRL+C` or Task Manager. 
 
 ## Tearing down Redirectors
-Once that's done, we will delete the EC2 and it's associated components. Gaia identifies components to delete using those `createdBy:gaia` tags I mentioned when we spun up the redirector. It searches for EC2 Keypairs, Security Groups, and Instances with those tags before deleting them.
+Once that's done, we will delete the EC2 and it's associated components. Gaia identifies components to delete using those `createdBy:gaia` tags I mentioned when we spun up the redirector. It searches for EC2 Keypairs, Security Groups, and Instances with those tags before deleting them. If you build a redirector in Azure, it's resources gets grouped in a Resource Group in addition to being tagged with `createdBy:Gaia`. Deleting the resources from Azure consists of deleting the resource group, which will then implicitly delete all the child objects in the resource group as well.
 ```
 (.venv) PS C:\tools\gaia_guide\Gaia> ./gaia.py redirector delete aws
 Getting Gaia EC2s from AWS
@@ -672,6 +672,8 @@ Deleting Gaia Security Groups.
 Gaia cleanup complete!
 ```
 If you check your AWS console, you'll notice that the EC2 is gone, along with the `Webservers` security group, and the `gaia-redir.pem` keypair. You will also notice that `~/.ssh/gaia-redir.pem` was deleted from your local system, so Gaia does not leave SSH keys on your system once they are of no more use. 
+
+On the Azure side, you'll notice the resource group and all the components related to Gaia are gone.
 
 ## Deleting DNS records
 Next up, deleting the A record we created earlier. Despite the resource that backed it being gone, it used a public IP address from AWS. At some point, another EC2 could spin up and take the IP, effectively hijacking the domain. This is a way to perform a subdomain takeover. 

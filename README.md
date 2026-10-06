@@ -1,5 +1,5 @@
 # Description
-Gaia is a tool designed to manage a [Mythic C2](https://github.com/its-a-feature/Mythic) installation with an emphasis on learning and lab usage. This emphasis is enforced by its usage of non-evasive payloads and Mythic C2 profiles. Gaia streamlines server standup to create a solid foundation of bundled tools and deafults to make Mythic easy to use for training.
+Gaia is a portable tool designed to manage a [Mythic C2](https://github.com/its-a-feature/Mythic) installation for students, CTF players, mythic developers, and researchers. Gaia is not meant to be used in situations where OPSEC is a concern.
 
 Quick note, this is more of a reference-style document. If you are looking for something more of a usage guide, click [here](./GUIDE.md).
 
@@ -48,10 +48,12 @@ It supports the following capabilities:
     ```
 
 ## Optional Pre-requisites
-These are used if you wish to create redirectors in AWS.
+These are used if you wish to create redirectors in AWS or Azure.
+
 ### AWS account scoped to modification of EC2 resources
-This can technically be the root account, however I would recommend creating another Gaia specific user with MFA and group in IAM to accomplish this.
-The IAM account needs the following rights assigned in IAM Policies
+This can technically be the root account, however I recommend creating another Gaia specific user with MFA and group in IAM to accomplish this.
+
+The IAM account needs the following rights assigned in IAM Policies:
 - `ec2:RunInstances`
 - `ec2:DescribeInstances`
 - `ec2:TerminateInstances`
@@ -77,6 +79,42 @@ The IAM account needs the following rights assigned in IAM Policies
 
 ### Access Keys for given AWS account
 Access keys for IAM users can be created in IAM on the user page. You will need both the access and secret access keys so Gaia can connect to you AWS account and modify resources over the API.
+
+### Azure App Registration
+In an Azure account, create an application registration with a client secert.
+
+### Azure Permissions
+Your app registration service principal for Gaia will need the following permissions assigned to it:
+- `Microsoft.Authorization/*/read`
+- `Microsoft.Compute/disks/delete`
+- `Microsoft.Compute/disks/read`
+- `Microsoft.Compute/disks/write`
+- `Microsoft.Compute/locations/*`
+- `Microsoft.Compute/sshpublickeys/delete`
+- `Microsoft.Compute/sshpublickeys/generatekeypair/action`
+- `Microsoft.Compute/sshpublickeys/read`
+- `Microsoft.Compute/sshpublickeys/write`
+- `Microsoft.Compute/virtualMachines/*`
+- `Microsoft.Insights/alertRules/*`
+- `Microsoft.Network/locations/*`
+- `Microsoft.Network/networkInterfaces/*`
+- `Microsoft.Network/networkSecurityGroups/join/action`
+- `Microsoft.Network/networkSecurityGroups/read`
+- `Microsoft.Network/networkSecurityGroups/securityRules/read`
+- `Microsoft.Network/networkSecurityGroups/securityRules/write`
+- `Microsoft.Network/networkSecurityGroups/write`
+- `Microsoft.Network/publicIPAddresses/join/action`
+- `Microsoft.Network/publicIPAddresses/read`
+- `Microsoft.Network/publicIPAddresses/write`
+- `Microsoft.Network/virtualNetworks/read`
+- `Microsoft.Network/virtualNetworks/subnets/join/action`
+- `Microsoft.Network/virtualNetworks/write`
+- `Microsoft.ResourceHealth/availabilityStatuses/read`
+- `Microsoft.Resources/deployments/*`
+- `Microsoft.Resources/subscriptions/resourceGroups/delete`
+- `Microsoft.Resources/subscriptions/resourceGroups/read`
+- `Microsoft.Resources/subscriptions/resourceGroups/write`
+- `Microsoft.Support/*`
 
 ### Cloudflare or PorkBun account with API keys
 Finally, if you wish to manage DNS through Gaia, you'll need API keys for either Cloudflare or Porkbun, along with a secondary domain you don't care about potentially harming it's reputation with your shenanagins.
@@ -377,8 +415,9 @@ Redirector Actions:
     tunnel                                      Configure SSH tunnel between Mythic server and redirector
 ```
 
-Currently redirectors can only be created in AWS. Future versions of Gaia will include the ability to create redirectors in Azure as well.
-AWS Redirector creation help
+Redirectors can be created in either AWS or Azure.
+
+AWS redirector creation help
 ```
 ./gaia redirector create aws -h
 usage: gaia redirector create aws [-h] [-a] [-s] -S {t2.small,t2,medium,t3.micro,t3.small,t3.medium} [-r REGION] -o {debian,ubuntu}
@@ -392,7 +431,23 @@ options:
   -o, --os {debian,ubuntu}                                     Specify OS for the redirector
 ```
 
-Viewing current Gaia redirectors in AWS.
+Azure redirector creation help
+```
+./gaia redirector create azure -h
+usage: gaia redirector create azure [-h] [--tenant-id ] [--subscription-id ] [--client-id] [--client-secret] -S {A1_v2,A2_v2,Standard_D2als_v7} [-r REGION] -o {debian,ubuntu}
+
+options:
+  -h, --help                                  show this help message and exit
+  --tenant-id                                 Target Azure tenant ID
+  --subscription-id                           Target Azure subscription ID
+  --client-id                                 Enter the Azure client ID when requested
+  --client-secret                             Enter the Azure client secret when requested
+  -S, --size {A1_v2,A2_v2,Standard_D2als_v7}  Size of redirector VM
+  -r, --region REGION                         Create redirector in target Azure region
+  -o, --os {debian,ubuntu}                    Specify OS for the redirector
+```
+
+Viewing current Gaia redirectors in AWS. Note this command has an azure equivelant
 ```
 ./gaia redirector list aws
 ```
@@ -403,12 +458,22 @@ Creating a redirector in AWS
 ./gaia.py redirector create aws -r us-east-2 -S t3.micro -o debian -a -s
 ```
 
+Creating a redirector in Azure
+```
+./gaia.py redirector create azure -r centralus -S Standard_D2als_v7 -o debian --tenant-id <tenant_id> --subscription-id <subscription_id> --client-id --client-secret
+```
+
 Deleting a redirector in AWS
 ```
 ./gaia.py redirector delete aws
 ```
-
 When Gaia creates infrastructure in AWS, it tags it with `createdBy:gaia`. The AWS redirector deletion functionality searches for, and deletes EC2 instances, keypairs, and security groups with this tag.
+
+Deleting a redirector in Azure
+```
+./gaia.py redirector delete azure
+```
+Azure bundles all Gaia-created resources in a single resource group in addition to the `createdBy:Gaia` tags. The cleanup function deletes the Gaia resource group and all the child objects from Azure.
 
 Redirector certbot help
 ```
@@ -479,4 +544,5 @@ Some items in this tool uses a `.env` file. You may either pre-fill the values b
 I want to give a shout out to [@its-a-feature](https://github.com/its-a-feature) for his work creating and mainting Mythic, it's libraries, and providing support for this project.
 I'd like to give another shout out to [@BlaiseOfGlory](https://github.com/BlaiseOfGlory) for giving me some tips on where to start.
 Next, [@elreydetoda](https://github.com/elreydetoda) and [@AGrapplerNamedSam](https://github.com/AGrapplerNamedSam) for helping me test pre-release versions of Gaia. Having both a Specter's and a student's perspective for the project was extremely helpful!
+
 Last but not least @leidy-tector and the greater SpecterOps team for enabling and encouraging me to work on this!
