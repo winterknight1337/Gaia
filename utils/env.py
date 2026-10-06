@@ -1,4 +1,4 @@
-import getpass
+import getpass, sys
 from argparse import Namespace
 
 # Update env file
@@ -51,6 +51,7 @@ def resolve_env_api_key(arg_parameter:Namespace, env_key:str, getpass_text:str, 
         api_key = env[env_key]
     
     else:
-        api_key = None
+        print(f"[!] {env_key} required in either .env or as an input parameter. Exiting!")
+        sys.exit(1)
 
     return api_key

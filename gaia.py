@@ -23,7 +23,7 @@ global_parser = argparse.ArgumentParser(
     )
 
 # Global switches
-global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.1", help="Display software version")
+global_parser.add_argument('-v', "--version", action="version", version="%(prog)s v1.2", help="Display software version")
 
 
 # Core modules
@@ -49,7 +49,7 @@ install_parser.add_argument("-i", "--identity-file", type=str, metavar='path/to/
 install_parser.add_argument("--stderr", action="store_true", help="Show stderr from install steps from target server after stdout")
 
 
-# Authentication options
+# Mythic Authentication options
 auth_parser.add_argument("-S", "--server", required=True, type=str, metavar='', help="Hostname or IP address of Mythic server")
 auth_parser.add_argument("-P", "--port", default=7443, type=int, metavar='7443', help="Port to access Mythic's web interface")
 auth_parser.add_argument("-u", "--user", type=str, default="mythic_admin", metavar='mythic_admin', help="Target user for Mythic authentication")
@@ -184,20 +184,34 @@ redir_subparser = redir_parser.add_subparsers(title="Redirector Actions", dest="
 create_redir_subparser = redir_subparser.add_parser(name="create", formatter_class=formatter, help="Create a new redirector")
 cloud_create_redir_subparser = create_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider you'd like to build a redirector in")
 
+# AWS Options
 aws_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Create a redirector in AWS")
 aws_create_redir_subparser.add_argument("-a", "--access-key", action="store_true", help="Enter the AWS access key when requested")
 aws_create_redir_subparser.add_argument("-s", "--secret-key", action="store_true", help="Enter the AWS secret key when requested")
-aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2,medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
+aws_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["t2.small", "t2.medium", "t3.micro", "t3.small", "t3.medium"], help="Size of redirector EC2")
 aws_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target AWS region")
 aws_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
+
+# Azure Options
+az_create_redir_subparser = cloud_create_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="Create a redirector in Azure")
+az_create_redir_subparser.add_argument("--tenant-id", type=str, metavar="", help="Target Azure tenant ID")
+az_create_redir_subparser.add_argument("--subscription-id", type=str, metavar="", help="Target Azure subscription ID")
+az_create_redir_subparser.add_argument("--client-id", action="store_true", help="Enter the Azure client ID when requested")
+az_create_redir_subparser.add_argument("--client-secret", action="store_true", help="Enter the Azure client secret when requested")
+az_create_redir_subparser.add_argument("-S", "--size", required=True, type=str, choices=["A1_v2", "A2_v2", "Standard_D2als_v7"], help="Size of redirector VM")
+az_create_redir_subparser.add_argument("-r", "--region", type=str, help="Create redirector in target Azure region")
+az_create_redir_subparser.add_argument("-o", "--os", required=True, type=str, choices=["debian", "ubuntu"], help="Specify OS for the redirector")
+
 
 delete_redir_subparser = redir_subparser.add_parser(name="delete", formatter_class=formatter, help="Delete a redirector")
 cloud_delete_redir_subparser = delete_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to decommission Gaia-created redirector infrastructure in")
 aws_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="Delete Gaia redirector infrastructure from AWS")
+azure_delete_redir_subparser = cloud_delete_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="Delete Gaia redirector infrastructure from Azure")
 
 list_redir_subparser = redir_subparser.add_parser(name="list", formatter_class=formatter, help="Show current redirector infrastructure")
 cloud_list_redir_subparser = list_redir_subparser.add_subparsers(title="cloud", dest="cloud", description="Specify which cloud provider to view Gaia related infrastructure")
 aws_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="aws", formatter_class=formatter, help="View Gaia redirector infrastructure in AWS")
+az_list_redir_subparser = cloud_list_redir_subparser.add_parser(name="azure", formatter_class=formatter, help="View Gaia redirector infrastructure in Azure")
 
 certbot_redir_subparser = redir_subparser.add_parser(name="certbot", formatter_class=formatter, help="Install Certbot and enable HTTPS on a redirector")
 certbot_redir_subparser.add_argument("-d", "--domain", required=True, type=str, metavar='', help="FQDN for target website to request TLS certificates")
@@ -244,12 +258,12 @@ async def main():
         # Get connection information
         server = utils.env.resolve_env_inputs(arg_parameter=args.server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
         if server == None:
-            print("Specify a install server with --server or in .env.")
+            print("[-] Specify a install server with --server or in .env.")
             sys.exit(1)
 
         user = utils.env.resolve_env_inputs(arg_parameter=args.user, env_key="MYTHIC_SERVER_USER", env=config)
         if user == None:
-            print("Specify a server user with --user or in .env.")
+            print("[-] Specify a server user with --user or in .env.")
             sys.exit(1)
 
         port = args.port
@@ -307,7 +321,7 @@ async def main():
                 mythic_admin_creds = "mythic_admin:" + mythic_admin_password
                 file.write(mythic_admin_creds)
 
-            print("NOTE: If the password for `mythic_admin` is lost, run `grep \"MYTHIC_ADMIN_PASSWORD\" /opt/Mythic/.env | cut -d \'\"\' -f 2` on the server mythic is installed on.")
+            print("[!] NOTE: If the password for `mythic_admin` is lost, run `grep \"MYTHIC_ADMIN_PASSWORD\" /opt/Mythic/.env | cut -d \'\"\' -f 2` on the server mythic is installed on.")
 
         ssh.close()
         sys.exit(0)
@@ -340,11 +354,11 @@ async def main():
         api_token = await utils.auth.mythic_get_api_token(mythic_instance=mythic_session)    
 
         # Dumps API key and mythic connection information into .env
-        utils.env.update_env("MYTHIC_LOGIN_SERVER_HOST", mythic_host)
-        utils.env.update_env("MYTHIC_LOGIN_SERVER_PORT", str(mythic_port))
-        utils.env.update_env("MYTHIC_API_KEY", api_token)
+        utils.env.resolve_env_inputs(arg_parameter=mythic_host, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
+        utils.env.resolve_env_inputs(arg_parameter=str(mythic_port), env_key="MYTHIC_LOGIN_SERVER_PORT", env=config)
+        utils.env.resolve_env_inputs(arg_parameter=api_token, env_key="MYTHIC_API_KEY", env=config)
 
-        print("Mythic authentication successful! JWT dumped to .env!")
+        print("[+] Mythic authentication successful! JWT dumped to .env!")
         sys.exit(0)
 
     # Handles DNS management
@@ -365,9 +379,6 @@ async def main():
 
             # Get the API key from env or CLI. Update env if needed
             api_token = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="CLOUDFLARE_API_TOKEN", getpass_text="Cloudflare API Key: ", env=config)
-            if api_token == None:
-                print("Specify a Cloudflare API Key with --api-key or in .env.")
-                sys.exit(1)
 
             # Print active domains
             if args.dns_action == "list":
@@ -417,7 +428,7 @@ async def main():
 
                 # Make sure that the domain returned
                 if domain_id == None:
-                    print("Please specify a valid domain.")
+                    print("[-] Please specify a valid domain.")
                     sys.exit(1)
 
                 # Get the current dns records for the given domain
@@ -437,7 +448,7 @@ async def main():
 
                         # Exit if there is a domain record name conflict
                         if existing_record_name == target_fqdn:
-                            print("New record name conflicts with existing record.")
+                            print("[-] New record name conflicts with existing record.")
                             sys.exit(1)
                         
                     # If domain record does not exist and we are trying to create a new record, create it.
@@ -467,7 +478,7 @@ async def main():
 
                 # Make sure that the domain returned
                 if domain_id == None:
-                    print("Please specify a valid domain.")
+                    print("[-] Please specify a valid domain.")
                     sys.exit(1)
 
                 # Get the current dns records for the given domain
@@ -504,15 +515,9 @@ async def main():
 
             # Get the API key from env or CLI. Update env if needed
             api_pk1 = utils.env.resolve_env_api_key(arg_parameter=args.api_key, env_key="PORKBUN_API_KEY", getpass_text="Porkbun API Key: ", env=config)
-            if api_pk1 == None:
-                print("Specify a Porkbun API Key with --api-key or in .env.")
-                sys.exit(1)
 
             # Get the API key from env or CLI. Update env if needed
             api_sk1 = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="PORKBUN_SECRET_KEY", getpass_text="Porkbun Secret Key: ", env=config)
-            if api_sk1 == None:
-                print("Specify a Porkbun Secret Key with --secret-key or in .env.")
-                sys.exit(1)
 
             if args.dns_action == "list":
                 if args.domain == None:
@@ -549,7 +554,7 @@ async def main():
                         break
                     
                 if target_domain == None:
-                    print("Please specify a valid domain.")
+                    print("[-] Please specify a valid domain.")
                     sys.exit(1)
 
                 # Get the current dns records
@@ -561,7 +566,7 @@ async def main():
                 # Compare records with the intended incoming record, skip creation if it exists. Delete the record if specified.
                 for i in records["records"]:
                     if i["name"] == target_fqdn:
-                        print("New record name conflicts with existing record.")
+                        print("[-] New record name conflicts with existing record.")
                         sys.exit(1)
 
                 # Catch Porkbun quirk of wanting an empty string for a root domain object
@@ -569,7 +574,7 @@ async def main():
                     record_name = ""
 
                 record_create = utils.dns.porkbun.create_domain_record(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_name=record_name, record_type=record_type, record_target=record_value)
-                print("Created requested domain record.")
+                print("[+] Created requested domain record.")
                 sys.exit(0)
 
             if args.dns_action == "delete":
@@ -587,7 +592,7 @@ async def main():
                         break
                     
                 if target_domain == None:
-                    print("Please specify a valid domain.")
+                    print("[-] Please specify a valid domain.")
                     sys.exit(1)
 
                 # Get the current dns records
@@ -601,19 +606,19 @@ async def main():
                     if i["name"] == target_fqdn:
                         record_id = i["id"]
                         utils.dns.porkbun.delete_domain_record_by_id(api_key=api_pk1, secret_key=api_sk1, domain=target_domain, record_id=record_id)
-                        print("Successfully deleted specified domain record.")
+                        print("[+] Successfully deleted specified domain record.")
                         sys.exit(0)
 
-                print("No matching records to delete.")
-                sys.exit(1)
+                print("[+] No matching records to delete.")
+                sys.exit(0)
 
     # Check if config has been changed, if not then env has not been loaded.
     if config["MYTHIC_API_KEY"] == "":
-        print("No Mythic API key detected in .env. Have you authenticated to Mythic?")
+        print("[-] No Mythic API key detected in .env. Have you authenticated to Mythic?")
         auth_parser.print_help()
         sys.exit(1)
 
-    # Authenticates to mythic with API key if auth is not specified
+    # Authenticates to Mythic with API key if auth is not specified
     api_key = config["MYTHIC_API_KEY"]
     mythic_host = config["MYTHIC_LOGIN_SERVER_HOST"]
     mythic_port = config["MYTHIC_LOGIN_SERVER_PORT"]
@@ -621,7 +626,7 @@ async def main():
     
     # Handles creation and destruction of redirectors
     if args.subcommand == "redirector":
-        import utils.redirector, paramiko, utils.install, utils.env
+        import utils.redirector.generic, utils.install, utils.env
 
         if args.redir_action == None:
             redir_parser.print_help()
@@ -635,24 +640,12 @@ async def main():
                 sys.exit(0)
 
             if args.cloud == "aws":
-                import boto3
+                import boto3, utils.redirector.aws
 
                 # Get AWS access key and update env if required
                 aws_access_key = utils.env.resolve_env_api_key(arg_parameter=args.access_key, env_key="AWS_ACCESS_KEY_ID", getpass_text="AWS Access Key: ", env=config)
-                if aws_access_key == None:
-                    print("Ensure that an AWS access key is specified in either .env or passed via cli")
-                    sys.exit(1)
-
                 aws_secret_key = utils.env.resolve_env_api_key(arg_parameter=args.secret_key, env_key="AWS_SECRET_ACCESS_KEY", getpass_text="AWS Secret Key: ",env=config)
-                if aws_secret_key == None:
-                    print("Ensure that an AWS secret key is specified in either .env or passed via cli")
-                    sys.exit(1)
-
                 aws_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AWS_DEFAULT_REGION", env=config)
-                if aws_region == None:
-                    print("Ensure that an AWS region is specified in either .env or passed via cli")
-                    sys.exit(1)
-
                 ec2_size = args.size
 
                 # Connect to EC2 Service
@@ -671,73 +664,199 @@ async def main():
                 if args.os == "ubuntu":
                     ec2_os = "ubuntu"
                     ec2_user = "ubuntu"
-                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
-                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_os, env_key="REDIRECTOR_OS", env=config)
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_user, env_key="REDIRECTOR_USER", env=config)
 
                 elif args.os == "debian":
                     ec2_os = "debian"
                     ec2_user = "admin"
-                    utils.env.update_env(env_key="REDIRECTOR_OS", env_value=ec2_os)
-                    utils.env.update_env(env_key="REDIRECTOR_USER", env_value=ec2_user)
-
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_os, env_key="REDIRECTOR_OS", env=config)
+                    utils.env.resolve_env_inputs(arg_parameter=ec2_user, env_key="REDIRECTOR_USER", env=config)
 
                 # Create EC2 key pair
-                print("Creating gaia-redir keypair for EC2")
-                aws_key_name = utils.redirector.create_aws_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
+                print("[+] Creating gaia-redir keypair for EC2")
+                aws_key_name = utils.redirector.aws.create_ec2_key_pair(ec2_session=ec2_client, key_name="gaia-redir")
                 home_dir = os.path.expanduser("~")
                 ssh_dir = f"{home_dir}/.ssh/"
                 aws_key_name_local_path = f"{ssh_dir}/{aws_key_name}.pem"
 
                 # Creates security group
-                print("Creating EC2 Security Group.")
-                aws_security_group_id = utils.redirector.create_aws_security_group(ec2_session=ec2_client)
+                print("[+] Creating EC2 Security Group.")
+                aws_security_group_id = utils.redirector.aws.create_ec2_security_group(ec2_session=ec2_client)
 
                 # Allows http, https, and ssh inbound
-                print("Allowing SSH, HTTP, and HTTPS into EC2 Instance.")
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
-                utils.redirector.create_aws_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
+                print("[+] Allowing SSH, HTTP, and HTTPS into EC2 Instance.")
+                utils.redirector.aws.create_ec2_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=80)
+                utils.redirector.aws.create_ec2_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=443)
+                utils.redirector.aws.create_ec2_security_group_entry(ec2_session=ec2_client, security_group_id=aws_security_group_id, transport_protocol="tcp", port=22)
 
                 # Build EC2
-                print("Launching EC2.")
-                instance = utils.redirector.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
+                print("[+] Launching EC2.")
+                instance = utils.redirector.aws.launch_ec2(ec2_session=ec2_client, os=ec2_os, ec2_size=ec2_size, key_name=aws_key_name, security_group_id=aws_security_group_id)
                 instance_id = instance["Instances"][0]["InstanceId"]
                 interface_id = instance["Instances"][0]["NetworkInterfaces"][0]["NetworkInterfaceId"]
 
-                print("Sleeping for 60 seconds to allow EC2 to provision VM.")
+                print("[+] Sleeping for 60 seconds to allow EC2 to provision VM.")
                 time.sleep(60)
                 
                 # Query for public IP address
-                print("Grabbing instance's public IP.")
-                interface_info = utils.redirector.get_aws_network_interface_public_ip(ec2_session=ec2_client, interface_id=interface_id)
+                print("[+] Grabbing instance's public IP.")
+                interface_info = utils.redirector.aws.get_ec2_network_interface_public_ip(ec2_session=ec2_client, interface_id=interface_id)
                 instance_public_ip = interface_info["NetworkInterfaces"][0]["Association"]["PublicIp"]
 
                 # Initialize SSH
                 ssh = utils.install.initialize_ssh()
 
                 # Update EC2s
-                print("Connecting to EC2 instance over SSH.")
+                print("[+] Connecting to EC2 instance over SSH.")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
-                print("Updating EC2 before rebooting.")
+                print("[+] Updating EC2 before rebooting.")
                 (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y && sudo reboot")
                 utils.install.print_terminal_output(stdout)
                 ssh.close()
 
-                print("Sleep for 60 more seconds to allow the VM to reboot and load new kernel")
+                print("[+] Sleep for 60 more seconds to allow the VM to reboot and load new kernel")
                 time.sleep(60)
 
                 # Save the public IP for the redirector
-                utils.env.update_env("REDIRECTOR_PUBLIC_IP", instance_public_ip)
+                utils.env.resolve_env_inputs(arg_parameter=instance_public_ip, env_key="REDIRECTOR_PUBLIC_IP", env=config)
 
-                print("Reconnecting to EC2 before installing apache2")
+                print("[+] Reconnecting to EC2 before installing apache2")
                 ssh.connect(hostname=instance_public_ip, port=22, username=ec2_user, key_filename=aws_key_name_local_path)
 
                 # Install and perform initial configuration of apache from the shell script
-                print("Installing and configuring Apache2")
+                print("[+] Installing and configuring Apache2")
                 utils.install.convert_line_endings("install_apache.sh")
                 utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
 
                 print(f"EC2 created! Public IP address for the EC2 is {instance_public_ip}. The default user for your instance is {ec2_user}.")
+
+                ssh.close()
+                sys.exit(0)
+
+            if args.cloud == "azure":
+                import azure.identity, utils.redirector.azure
+                from azure.mgmt.compute import ComputeManagementClient
+                from azure.mgmt.resource.resources import ResourceManagementClient
+                from azure.mgmt.network import NetworkManagementClient
+
+                az_vm_size = args.size
+
+                az_nsg_rules = {
+                    "Allow-SSH" : {
+                        "port" : 22,
+                        "priority" : 100
+                    },
+                    "Allow-HTTPS" : {
+                        "port" : 443,
+                        "priority" : 110
+                    },
+                    "Allow-HTTP" : {
+                        "port" : 80,
+                        "priority" : 120
+                    }
+                }
+
+                # Resolve env vars
+                az_tenant_id = utils.env.resolve_env_inputs(arg_parameter=args.tenant_id, env_key="AZURE_TENANT_ID", env=config)
+                az_client_id = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_ID", getpass_text="Enter Azure Client ID: ", env=config)
+                az_client_secret = utils.env.resolve_env_api_key(arg_parameter=args.client_id, env_key="AZURE_CLIENT_SECRET", getpass_text="Enter Azure Client Secret: ", env=config)
+                az_sub_id = utils.env.resolve_env_inputs(arg_parameter=args.subscription_id, env_key="AZURE_SUBSCRIPTION_ID", env=config)
+                az_region = utils.env.resolve_env_inputs(arg_parameter=args.region, env_key="AZURE_DEFAULT_REGION", env=config)
+                az_vm_os = utils.env.resolve_env_inputs(arg_parameter=args.os, env_key="REDIRECTOR_OS", env=config)
+
+                az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
+
+                # Auth to resource group module
+                az_resource_auth = ResourceManagementClient(credential=az_auth, subscription_id=az_sub_id)
+
+                # Create resource group
+                print(f"[+] Creating Gaia resource group in {az_region} region.")
+                az_resource_create = utils.redirector.azure.create_resource_group(az_resource_auth=az_resource_auth, region=az_region)
+                print(f"[+] Created Gaia resource group in {az_region} region.")
+
+                # Auth to network modules
+                az_network_auth = NetworkManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                
+                # Create network
+                print(f"[+] Creating subnet in Azure.")
+                az_network_create = utils.redirector.azure.create_network(az_network_auth=az_network_auth, region=az_region, address_prefix="172.16.0.0/16")
+                az_network_create_id = az_network_create.properties.subnets[0].id
+                print(f"[+] Created subnet in Azure with IP range {az_network_create.properties.address_space.address_prefixes[0]}.")
+
+                # Provision Network Security Group
+                print("[+] Creating network security group.")
+                az_network_security = utils.redirector.azure.create_network_security_group(az_network_auth=az_network_auth, region=az_region)
+                az_network_secuirty_id = az_network_security.id
+                print(f"[+] Created network security group.")
+
+                for i in az_nsg_rules:
+                    az_nsg_rule_create = utils.redirector.azure.create_network_security_group_rule(az_network_auth=az_network_auth, rule_name=i, rule_port=az_nsg_rules[i]["port"], rule_priority=az_nsg_rules[i]["priority"])
+                    print(f"[+] Created {i} network security group rule")
+
+                # Provision Public IP Address   
+                print("[+] Getting public IP address.")
+                az_public_ip = utils.redirector.azure.create_public_ip_address(az_network_auth=az_network_auth, region=az_region)
+                az_public_ip_id = az_public_ip.id
+                az_public_ip_address = az_public_ip.properties.ip_address
+                print(f"[+] Assigned {az_public_ip_address} to the redirector")
+                utils.env.resolve_env_inputs(arg_parameter=az_public_ip_address, env_key="REDIRECTOR_PUBLIC_IP", env=config)
+
+                # Assign network interface
+                print("[+] Provisioning network interface for redirector.")
+                az_network_interface = utils.redirector.azure.create_network_interface(az_network_auth=az_network_auth, region=az_region, subnet_id=az_network_create_id, ip_id=az_public_ip_id, nsg_id=az_network_secuirty_id)
+                az_network_interface_id = az_network_interface.id
+                print(f"[+] Provisioned network interface for redirector.")
+
+                # Generate the SSH key object in Azure
+                print("[+] Creating SSH key object.")
+                az_compute_auth = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_vm_ssh_obj = utils.redirector.azure.create_ssh_key_object(az_compute_auth=az_compute_auth, region=az_region)
+                print("[+] Created SSH key object in Azure.")
+
+                # Generate the SSH key
+                print("[+] Generating SSH key.")
+                az_vm_ssh_keypair = utils.redirector.azure.generate_ssh_key(az_compute_auth=az_compute_auth)
+                az_vm_ssh_key_name_list = az_vm_ssh_keypair.id.split("/")
+                az_vm_ssh_key_name = az_vm_ssh_key_name_list[-1]
+                ssh_public_key = az_vm_ssh_keypair.public_key
+
+                # Get local SSH key path
+                home_dir = os.path.expanduser("~")
+                ssh_dir = f"{home_dir}/.ssh/"
+                az_vm_ssh_key_local = f"{ssh_dir}/{az_vm_ssh_key_name}.pem"
+                print("[+] Created SSH key and dumped to disk at ~/.ssh/gaia-redir.pem")
+
+                # Provision the VM
+                print("[+] Deploying redirector VM in Azure.")
+                az_vm = utils.redirector.azure.deploy_vm(az_compute_auth=az_compute_auth, region=az_region, vm_size=az_vm_size, vm_os=az_vm_os, net_interface_id=az_network_interface_id, ssh_public_key=ssh_public_key, env=config)
+
+                print("Waiting for 60 seconds.")
+                time.sleep(60)
+
+                # Initialize SSH
+                ssh = utils.install.initialize_ssh()
+
+                # Update VM
+                print("[+] Connecting to VM over SSH.")
+                ssh.connect(hostname=az_public_ip_address, port=22, username="gaia", key_filename=az_vm_ssh_key_local)
+                print("[+] Updating VM before rebooting.")
+                (stdin, stdout, stderr) = ssh.exec_command("sudo apt update && sudo apt upgrade -y && sudo reboot")
+                utils.install.print_terminal_output(stdout)
+                ssh.close()
+
+                print("[+] Sleep for 120 more seconds to allow the VM to reboot and load new kernel")
+                time.sleep(120)
+
+                print("[+] Reconnecting to VM before installing apache2")
+                ssh.connect(hostname=az_public_ip_address, port=22, username="gaia", key_filename=az_vm_ssh_key_local)
+
+                # Install and perform initial configuration of apache from the shell script
+                print("[+] Installing and configuring Apache2")
+                utils.install.convert_line_endings("install_apache.sh")
+                utils.install.copy_and_execute_script(ssh=ssh, script="install_apache.sh", err=False)
+
+                print(f"[+] Deployed redirector VM in Azure with public IP {az_public_ip_address}.")
 
                 ssh.close()
                 sys.exit(0)
@@ -758,8 +877,8 @@ async def main():
                 ec2_client = aws_session.client("ec2")  
 
                 # Query for EC2s with gaia tags on them
-                print("Getting Gaia EC2s from AWS")
-                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+                print("[+] Getting Gaia EC2s from AWS")
+                ec2_info = utils.redirector.aws.get_gaia_ec2s(ec2_session=ec2_client)
                 
                 # Collect instnace IDs and append them to a list to pass to deletion function later
                 for i in ec2_info["Reservations"]:
@@ -767,52 +886,79 @@ async def main():
                         instance_ids.append(j["InstanceId"])
 
                 # Query for ssh keys with gaia tags on them
-                print("Getting Gaia SSH keys from AWS.")
-                keypair_info = utils.redirector.get_gaia_key_pairs(ec2_session=ec2_client)
+                print("[+] Getting Gaia SSH keys from AWS.")
+                keypair_info = utils.redirector.aws.get_gaia_key_pairs(ec2_session=ec2_client)
                 for i in keypair_info["KeyPairs"]:
                     ssh_key_ids.append(i["KeyPairId"])
 
                 # Query for security groups with gaia tags on them
-                print("Getting Gaia Security Groups from AWS.")
-                security_group_info = utils.redirector.get_gaia_security_groups(ec2_session=ec2_client)
+                print("[+] Getting Gaia Security Groups from AWS.")
+                security_group_info = utils.redirector.aws.get_gaia_security_groups(ec2_session=ec2_client)
                 for i in security_group_info["SecurityGroups"]:
                     security_group_ids.append(i["GroupId"])
 
                 # Terminate Gaia instances
-                print("Terminating Gaia related EC2 instances.")
-                terminate = utils.redirector.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
-                print("Sleeping for 2 minutes to allow EC2 instances to terminate.")
+                print("[+] Terminating Gaia related EC2 instances.")
+                terminate = utils.redirector.aws.terminate_gaia_instances(ec2_session=ec2_client, instance_ids=instance_ids)
+                print("[+] Sleeping for 2 minutes to allow EC2 instances to terminate.")
                 time.sleep(120)
 
                 # Delete Gaia SSH Keys
-                print("Deleting Gaia SSH Keys within EC2.")
+                print("[+] Deleting Gaia SSH Keys within EC2.")
                 for i in ssh_key_ids:
-                    key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
+                    key_delete = utils.redirector.aws.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
                     if key_delete["Return"] == False:
                         print("Key delete failed, trying agian after 30 seconds.")
                         time.wait(30)
-                        key_delete = utils.redirector.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
+                        key_delete = utils.redirector.aws.delete_gaia_ssh_keys(ec2_session=ec2_client, key_pair_id=i)
                         if key_delete["Return"] == False:
                             print("Key deletion failed again, retry later.")
                             continue
 
                 # Delete local copy of ssh key
-                print("Deleting local copy of SSH key for Gaia.")
-                utils.redirector.delete_local_gaia_ssh_key("gaia-redir")
+                print("[+] Deleting local copy of SSH key for Gaia.")
+                utils.redirector.generic.delete_local_gaia_ssh_key("gaia-redir")
 
                 # Delete Gaia Security groups
-                print("Deleting Gaia Security Groups.")
+                print("[+] Deleting Gaia Security Groups.")
                 for i in security_group_ids:
-                    group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
+                    group_delete = utils.redirector.aws.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
                     if group_delete["Return"] == False:
                         print("Security Group delete failed, trying agian after 30 seconds.")
                         time.wait(30)
-                        group_delete = utils.redirector.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
+                        group_delete = utils.redirector.aws.delete_gaia_security_groups(ec2_session=ec2_client, group_id=i)
                         if group_delete["Return"] == False:
                             print("Security Group deletion failed again, retry later.")
                             continue
 
-                print("Gaia cleanup complete!")
+                print("[+] Gaia cleanup complete!")
+                sys.exit(0)
+
+            if args.cloud == "azure":
+                import azure.identity
+                from azure.mgmt.resource.resources import ResourceManagementClient
+
+                # Pull the Azure information
+                az_tenant_id = config["AZURE_TENANT_ID"]
+                az_client_id = config["AZURE_CLIENT_ID"]
+                az_client_secret = config["AZURE_CLIENT_SECRET"]
+                az_sub_id = config["AZURE_SUBSCRIPTION_ID"]
+
+                # Auth to Azure
+                az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
+
+                # Auth to resource group module
+                az_resource_auth = ResourceManagementClient(credential=az_auth, subscription_id=az_sub_id)
+
+                # Delete the resource group
+                print("[+] Deleting Gaia's resource group and associated resources. This will take a while.")
+                az_resource_auth.resource_groups.begin_delete(resource_group_name="Gaia").result()
+                print("[+] Gaia's resources deleted from Azure.")
+
+                print("[+] Deleting Gaia SSH keys.")
+                utils.redirector.generic.delete_local_gaia_ssh_key(key_name="gaia-redir")
+                print("[+] Gaia cleanup completed.")
+
                 sys.exit(0)
     
         # Shows redir infra
@@ -830,17 +976,43 @@ async def main():
                 ec2_client = aws_session.client("ec2")  
 
                 # Query for EC2s with gaia tags on them
-                print("Getting Gaia EC2s from AWS")
-                ec2_info = utils.redirector.get_gaia_ec2s(ec2_session=ec2_client)
+                print("[+] Getting Gaia EC2s from AWS")
+                ec2_info = utils.redirector.aws.get_gaia_ec2s(ec2_session=ec2_client)
 
                 # Print EC2 information in tabular format
-                utils.redirector.print_gaia_ec2(ec2_data=ec2_info)
+                utils.redirector.aws.print_gaia_ec2(ec2_data=ec2_info)
 
                 sys.exit(0)
 
+            if args.cloud == "azure":
+                import azure.identity, utils.redirector.azure
+                from azure.mgmt.compute import ComputeManagementClient
+                from azure.mgmt.network import NetworkManagementClient
+
+                # Pull the Azure information
+                az_tenant_id = config["AZURE_TENANT_ID"]
+                az_client_id = config["AZURE_CLIENT_ID"]
+                az_client_secret = config["AZURE_CLIENT_SECRET"]
+                az_sub_id = config["AZURE_SUBSCRIPTION_ID"]
+
+                # Auth to Azure
+                az_auth = azure.identity.ClientSecretCredential(tenant_id=az_tenant_id, client_id=az_client_id, client_secret=az_client_secret)
+                az_compute_auth = ComputeManagementClient(credential=az_auth, subscription_id=az_sub_id)
+                az_network_auth = NetworkManagementClient(credential=az_auth, subscription_id=az_sub_id)
+
+                # Get the VMs in Gaia's resource group
+                print("[+] Getting Gaia VMs from Azure")
+                az_vm_list = az_compute_auth.virtual_machines.list(resource_group_name="Gaia")
+
+                # Print Gaia VMs in a table
+                utils.redirector.azure.print_gaia_vms(az_network_auth=az_network_auth, vm_list=az_vm_list)
+
+                sys.exit(0)
+
+
         # Handles configuration of certbot
         if args.redir_action == "certbot":
-            import paramiko, utils.install
+            import utils.install
 
             # Get domain to activate certbot on
             certbot_domain = args.domain
@@ -851,14 +1023,14 @@ async def main():
             # Get server from CLI or env, update env if required
             server = utils.env.resolve_env_inputs(arg_parameter=args.redirector_server, env_key="REDIRECTOR_PUBLIC_HOST", env=config)
             if server == None:
-                print("Ensure that a server is specified in either .env or passed via cli")
+                print("[-] Ensure that a server is specified in either .env or passed via cli")
                 sys.exit(1)
 
 
             # Get user from CLI or env, update env if required
             user = utils.env.resolve_env_inputs(arg_parameter=args.redirector_user, env_key="REDIRECTOR_USER", env=config)
             if user == None:
-                print("Ensure that a user is specified in either .env or passed via cli")
+                print("[-] Ensure that a user is specified in either .env or passed via cli")
                 sys.exit(1)
 
             # Determine if we show stderr on streamed terminal output
@@ -877,12 +1049,12 @@ async def main():
             else:
                 password = None
                 
-            print("Connecting to redirector.")
+            print("[+] Connecting to redirector.")
             # Paramiko attempts SSH key auth first, then password as a fallback
             ssh.connect(hostname=server, port=22, username=user, key_filename=ssh_key, password=password, look_for_keys=True, allow_agent=True)
 
             # Configures certbot
-            print("Running certbot.")
+            print("[+] Running certbot.")
             (stdin, stdout, stderr) = ssh.exec_command(f"sudo certbot run -n --apache --agree-tos -d {certbot_domain}")
             utils.install.print_terminal_output(stdout)
 
@@ -905,14 +1077,15 @@ async def main():
                 redirector_ssh_key = args.redir_ssh_identity_file
             else:
                 home_dir = os.path.expanduser("~")
-                ssh_key = f"{home_dir}/.ssh/gaia-redir.pem"
+                ssh_dir = f"{home_dir}/.ssh/"
+                redirector_ssh_key = f"{ssh_dir}/gaia-redir.pem"
 
             # Query for mod_rewrite rules
-            print("Generating base redirector rules.")
-            redirector_rules_line = await utils.redirector.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
+            print("[+] Generating base redirector rules.")
+            redirector_rules_line = await utils.redirector.generic.generate_redirector_rules(mythic_instance=mythic_session, payload_uuid=payload_uuid)
 
             # Modify mod_rewrite rules so they work as expected
-            print("Modifying redirector rules to ensure they work with given parameters.")
+            print("[+] Modifying redirector rules to ensure they work with given parameters.")
             redirector_rules = redirector_rules_line["redirect_rules"]["output"].split("\n")
             for i in range(len(redirector_rules)):
                 if "http://C2_SERVER_HERE:80" in redirector_rules[i]:
@@ -923,7 +1096,7 @@ async def main():
                 redirector_rules[i] = redirector_rules[i] + '\n'
 
             # Write .htaccess file
-            print("Saving redirector rules on disk as .htaccess.")
+            print("[+] Saving redirector rules on disk as .htaccess.")
             with open (".htaccess", "w") as file:
                 file.writelines(redirector_rules)
 
@@ -931,23 +1104,23 @@ async def main():
             # Initialize SSH for redirector
             redir_tunnel = utils.install.initialize_ssh()
 
-            print("Connecting to redirector.")
+            print("[+] Connecting to redirector.")
             redir_tunnel.connect(hostname=redirector_server, port=22, username=redirector_server_user, password=redirector_ssh_password, key_filename=redirector_ssh_key, allow_agent=True, look_for_keys=True)
             
-            print("Copying .htaccess to redirector.")
+            print("[+] Copying .htaccess to redirector.")
             utils.install.copy_file(ssh=redir_tunnel, file=".htaccess")
 
-            print("Moving .htaccess to /var/www/html/ and reloading apache.")
+            print("[+] Moving .htaccess to /var/www/html/ and reloading apache.")
             (stdin, stdout, stderr) = redir_tunnel.exec_command("sudo cp .htaccess /var/www/html/.htaccess && sudo chmod 644 /var/www/html/.htaccess && sudo systemctl restart apache2")
             utils.install.print_terminal_output(stdout)
 
-            print("Redirector file successfully configured!")
+            print("[+] Redirector file successfully configured!")
             redir_tunnel.close()
             sys.exit(0)
 
         # Creates SSH tunnel and systemd wrapper service
         if args.redir_action == "tunnel":
-            import paramiko, utils.redirector, utils.payloads, utils.install
+            import utils.redirector, utils.payloads, utils.install
 
             mythic_server = utils.env.resolve_env_inputs(arg_parameter=args.mythic_server, env_key="MYTHIC_LOGIN_SERVER_HOST", env=config)
             mythic_server_user = utils.env.resolve_env_inputs(arg_parameter=args.mythic_ssh_user, env_key="MYTHIC_SERVER_USER", env=config)
@@ -971,18 +1144,18 @@ async def main():
             # Initialize SSH for redirector
             mythic_tunnel = utils.install.initialize_ssh()
             
-            print("Connecting to Mythic server.")
+            print("[+] Connecting to Mythic server.")
             mythic_tunnel.connect(hostname=mythic_server, port=mythic_ssh_port, username=mythic_server_user, password=mythic_ssh_password, key_filename=mythic_ssh_key, allow_agent=True, look_for_keys=True)
 
-            print("Copying Gaia-created SSH key for redirector to Mythic server.")
+            print("[+] Copying Gaia-created SSH key for redirector to Mythic server.")
             utils.install.copy_gaia_ssh_key(ssh=mythic_tunnel)
             (stdin, stdout, stderr) = mythic_tunnel.exec_command(f"chmod 600 ~/.ssh/gaia-redir.pem")
 
-            print("Creating systemd service file to build SSH tunnel on redirector.")
+            print("[+] Creating systemd service file to build SSH tunnel on redirector.")
             with open("utils/redirector-tunnel-key.service", "r") as file:
                 service = file.readlines()
 
-            print("Modifying systemd service file with specified parameters.")
+            print("[+] Modifying systemd service file with specified parameters.")
             for i in range(len(service)):
                 if "user@example.com" in service[i]:
                     service[i] = service[i].replace("user@example.com", f"{redirector_server_user}@{redirector_server}")
@@ -990,7 +1163,7 @@ async def main():
                 if "User=" in service[i]:
                     service[i] = service[i].replace("User=\n", f"User={mythic_server_user}\n")
                     
-            print("Saving modified systemd service file on disk before sending it to Mythic server.")
+            print("[+] Saving modified systemd service file on disk before sending it to Mythic server.")
             with open("redirector-tunnel.service", "w") as file:
                 file.writelines(service)
 
@@ -1003,7 +1176,7 @@ async def main():
             mythic_tunnel.exec_command("sudo systemctl start redirector-tunnel.service")
             mythic_tunnel.exec_command("sudo systemctl enable redirector-tunnel.service")
 
-            print("SSH tunnel and service successfully created!")
+            print("[+] SSH tunnel and service successfully created!")
             mythic_tunnel.close()
             sys.exit(0)
 
@@ -1035,7 +1208,7 @@ async def main():
 
             # Ready user list as input and prepares for merge later
             if args.user_list:
-                print("Reading user list from file.")
+                print("[+] Reading user list from file.")
                 user_list_in = args.user_list.strip()
             else:
                 user_list_in = []
@@ -1048,10 +1221,10 @@ async def main():
                 cred_list = None
 
             # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
-            print("Merging user file and cli specified users into a single list.")
+            print("[+] Merging user file and cli specified users into a single list.")
             users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
                     
-            print("Creating new Mythic users.")
+            print("[+] Creating new Mythic users.")
             for i in users:
                 user_creds = await utils.users.create_mythic_user(mythic_instance=mythic_session, username=i)
                 
@@ -1066,7 +1239,7 @@ async def main():
 
             # Dump creds to file
             if cred_list != None:
-                print("Dumping new Mythic user credentials to disk.")
+                print("[+] Dumping new Mythic user credentials to disk.")
                 with open(user_list_out, 'a') as file:
                     file.writelines(cred_list)
         
@@ -1079,7 +1252,7 @@ async def main():
             
             # Ready user list as input and prepares for merge later
             if args.user_list:
-                print("Reading user list from file")
+                print("[+] Reading user list from file")
                 user_list_in = args.user_list.strip()
             else:
                 user_list_in = []
@@ -1088,7 +1261,7 @@ async def main():
             print("Merging user file and cli specified users into a single list.")
             users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
 
-            print("Assigning users to operation")
+            print("[+] Assigning users to operation")
             for i in users:
                 try:
                     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
@@ -1118,11 +1291,11 @@ async def main():
         # Creates new operation
         if args.operation == "create":
             operation = args.name
-            print(f"Creating new operation: {operation}")
+            print(f"[+] Creating new operation: {operation}")
             await utils.operations.create_operation(mythic_instance=mythic_session, operation_name=operation)
 
             # Modify env to include new operation
-            utils.env.update_env("MYTHIC_OPERATION_NAME", operation)
+            utils.env.resolve_env_inputs(arg_parameter=operation, env_key="MYTHIC_OPERATION_NAME", env=config)
 
             sys.exit(0)
 
@@ -1134,22 +1307,22 @@ async def main():
             
             # Ready user list as input and prepares for merge later
             if args.user_list:
-                print("Reading user list from file")
+                print("[+] Reading user list from file")
                 user_list_in = args.user_list.strip()
             else:
                 user_list_in = []
 
             # Take users from stdin and list, merge, deduplicate, and prepare for passing to mythic
-            print("Merging user file and cli specified users into a single list.")
+            print("[+] Merging user file and cli specified users into a single list.")
             users = utils.users.prepare_mythic_users(users_stdin=users_stdin, user_file_in=user_list_in)
 
-            print("Assigning users to operation")
+            print("[+] Assigning users to operation")
             for i in users:
                 try:
                     await utils.operations.add_operator_to_operation(mythic_instance=mythic_session, operation_name=operation_name, username=i)
-                    print(f"Assigned {i} to {operation_name}")
+                    print(f"[+] Assigned {i} to {operation_name}")
                 except Exception: # Surely Except Exception wont bite me later.
-                    print(f"User {i} already assigned to {operation_name}")
+                    print(f"[-] User {i} already assigned to {operation_name}")
                     continue
 
             sys.exit(0)
@@ -1185,7 +1358,7 @@ async def main():
 
                         break
 
-                print(f"Current webhook URL for {operation_name} is '{webhook_url}'")
+                print(f"[+] Current webhook URL for {operation_name} is '{webhook_url}'")
                 sys.exit(0)
 
             if args.webhook == "config":
@@ -1236,7 +1409,7 @@ async def main():
                 sys.exit(1)
 
             # Callback Killdate, defaults to a year if not provided
-            callback_killdate = utils.env.resolve_env_inputs(arg_parameter=args.callback_killdate, env_key="MYTHIC_HTTP_CALLBACK_KILLDATE", env=config)
+            callback_killdate = args.callback_killdate
             if callback_killdate == None:
                 callback_killdate_raw = datetime.date.today() + datetime.timedelta(days=365)
                 callback_killdate = callback_killdate_raw.strftime("%Y-%m-%d")
@@ -1246,22 +1419,22 @@ async def main():
             # Process apollo payloads
             if args.agent == "apollo":
                 # Generate normal executable
-                print("Apollo portable executable building")
+                print("[+] Apollo portable executable building")
                 payload_name_exe = payload_name_base + ".exe"
                 await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="WinExe", payload_name=payload_name_exe, payload_description="Windows x64 .NET Framework Portable Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Apollo portable executable built")
+                print("[+] Apollo portable executable built")
 
                 # Generate shellcode
-                print("Apollo shellcode building")
+                print("[+] Apollo shellcode building")
                 payload_name_bin = payload_name_base + ".bin"
                 await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Shellcode", payload_name=payload_name_bin, payload_description="Windows x64 Shellcode", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Apollo shellcode built")
+                print("[+] Apollo shellcode built")
 
                 # Generate service executable
-                print("Apollo service executable building")
+                print("[+] Apollo service executable building")
                 payload_name_svc = payload_name_base + "Svc.exe"
                 await utils.payloads.create_apollo_payload(mythic_instance=mythic_session, output_type="Service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Framework Service Executable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                print("Apollo service executable built")
+                print("[+] Apollo service executable built")
 
                 sys.exit(0)
 
@@ -1271,23 +1444,23 @@ async def main():
 
                 if args.os == "linux":
                     # Generate linux x64 static elf
-                    print("Poseidon linux x64 elf building")
+                    print("[+] Poseidon linux x64 elf building")
                     await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="AMD_x64", payload_name=payload_name_base, static_linking="True", payload_description="Linux x64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Poseidon linux x64 elf built")
+                    print("[+] Poseidon linux x64 elf built")
 
                     # Generate linux arm64 static elf
-                    print("Poseidon linux arm64 elf building")
+                    print("[+] Poseidon linux arm64 elf building")
                     await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name_base, static_linking="True", payload_description="Linux arm64 Static ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Poseidon linux arm64 elf built")
+                    print("[+] Poseidon linux arm64 elf built")
 
                 elif args.os == "macos":
                     # Translates to value poseidon builder expects
                     payload_os = "macOS"
 
                     # Generate macos arm64 static elf. macOS does not like static bins for some reason.
-                    print("Poseidon macos x64 bin building")
+                    print("[+] Poseidon macos x64 bin building")
                     await utils.payloads.create_poseidon_payload(mythic_instance=mythic_session, os=payload_os, arch="ARM_x64", payload_name=payload_name_base, static_linking="False", payload_description="macOS arm64 Static bin", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Poseidon macos x64 bin built")
+                    print("[+] Poseidon macos x64 bin built")
         
                 sys.exit(0)
 
@@ -1297,36 +1470,36 @@ async def main():
 
                 if args.os == "windows":
                     # Generate windows x64 .net portable executable
-                    print("Athena windows x64 portable executable building")
+                    print("[+] Athena windows x64 portable executable building")
                     payload_name_exe = payload_name_base + ".exe"
                     await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_exe, payload_description="Windows x64 .NET Portable Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Athena windows x64 portable executable built")
+                    print("[+] Athena windows x64 portable executable built")
 
                     # Generate windows x64 .net service executable
-                    print("Athena windows x64 service executable building")
+                    print("[+] Athena windows x64 service executable building")
                     payload_name_svc = payload_name_base + "Svc.exe"
                     await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="windows service", payload_name=payload_name_svc, payload_description="Windows x64 .NET Service Excutable", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Athena windows x64 service executable built")
+                    print("[+] Athena windows x64 service executable built")
                 
                 elif args.os == "linux":
                     # Generate linux x64 .net elf
-                    print("Athena linux x64 elf building")
+                    print("[+] Athena linux x64 elf building")
                     await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="x64", output_type="binary", payload_name=payload_name_base, payload_description="Linux x64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Athena linux x64 elf built")
+                    print("[+] Athena linux x64 elf built")
 
                     # Generate linux arm64 .net elf
-                    print("Athena linux arm64 elf building")
+                    print("[+] Athena linux arm64 elf building")
                     await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="Linux arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Athena linux arm64 elf built")
+                    print("[+] Athena linux arm64 elf built")
 
                 elif args.os == "macos":
                     # Translates to value athena builder expects
                     payload_os = "macOS"
 
                     # Generate macOS arm64 .net elf
-                    print("Athena macos arm64 elf building")
+                    print("[+] Athena macos arm64 elf building")
                     await utils.payloads.build_athena_payload(mythic_instance=mythic_session, os=payload_os, arch="arm64", output_type="binary", payload_name=payload_name_base, payload_description="macOS arm64 .NET ELF", http_callback_url=callback_url, http_callback_port=callback_port, http_callback_killdate=callback_killdate)
-                    print("Athena macos arm64 elf built")
+                    print("[+] Athena macos arm64 elf built")
 
                 sys.exit(0)
 
