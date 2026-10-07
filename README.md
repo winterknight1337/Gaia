@@ -1,5 +1,5 @@
 # Description
-Gaia is a portable tool designed to manage a [Mythic C2](https://github.com/its-a-feature/Mythic) installation for students, CTF players, mythic developers, and researchers. Gaia is not meant to be used in situations where OPSEC is a concern.
+Gaia is a portable tool designed to manage a [Mythic C2](https://github.com/its-a-feature/Mythic) installation for students, lab rats, CTF players, mythic developers, and researchers. Gaia is not meant to be used in situations where OPSEC is a concern.
 
 Quick note, this is more of a reference-style document. If you are looking for something more of a usage guide, click [here](./GUIDE.md).
 
