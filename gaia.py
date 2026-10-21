@@ -869,7 +869,7 @@ async def main():
                 sys.exit(0)
 
             if args.cloud == "aws":
-                import boto3
+                import boto3, utils.redirector.aws
 
                 instance_ids, ssh_key_ids, security_group_ids = [], [], []
 
@@ -969,7 +969,7 @@ async def main():
                 sys.exit(0)
 
             if args.cloud == "aws":
-                import boto3
+                import boto3, utils.redirector.aws
 
                 # Auth to AWS and EC2
                 aws_session = boto3.Session(aws_access_key_id=config["AWS_ACCESS_KEY_ID"], aws_secret_access_key=config["AWS_SECRET_ACCESS_KEY"], region_name=config["AWS_DEFAULT_REGION"])
@@ -1168,6 +1168,7 @@ async def main():
                 file.writelines(service)
 
             print("Copying finished systemd service file to Mythic server, enabling the new service, and building the SSH tunnel to redirector.")
+            utils.install.convert_line_endings(script="../redirector-tunnel.service")
             utils.install.copy_file(ssh=mythic_tunnel, file="redirector-tunnel.service")
             mythic_tunnel.exec_command("sudo cp redirector-tunnel.service /etc/systemd/system/redirector-tunnel.service")
             mythic_tunnel.exec_command("sudo chown root:root /etc/systemd/system/redirector-tunnel.service")
